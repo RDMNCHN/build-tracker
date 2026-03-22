@@ -337,19 +337,40 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
       <p>Grindset — Nur für dich sichtbar</p>
     </div>
 
-    <div class="section-header">Einladungscodes</div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <button class="btn btn-accent btn-sm" onclick="generateInviteCode()">+ Code generieren</button>
-      <button class="btn btn-card btn-sm" onclick="loadInviteCodes()">Aktualisieren</button>
+    <!-- Admin tab switcher -->
+    <div style="display:flex;gap:0;margin-bottom:16px;background:var(--card);border-radius:var(--radius);padding:4px;border:1px solid var(--border)">
+      <button id="adminTabUsersBtn" onclick="switchAdminTab('users')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:700;border:none;border-radius:8px;cursor:pointer;background:var(--accent);color:#fff;transition:all .2s">👥 Users</button>
+      <button id="adminTabExercisesBtn" onclick="switchAdminTab('exercises')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:700;border:none;border-radius:8px;cursor:pointer;background:none;color:var(--muted);transition:all .2s">💪 Übungen</button>
+      <button id="adminTabLogsBtn" onclick="switchAdminTab('logs')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:700;border:none;border-radius:8px;cursor:pointer;background:none;color:var(--muted);transition:all .2s">📋 Logs</button>
     </div>
-    <div id="inviteCodesList" style="margin-bottom:20px"></div>
 
-    <div class="section-header">User Verwaltung</div>
-    <div id="adminUserList"></div>
-    <div class="section-header" style="margin-top:20px">Genehmigte Übungen</div>
-    <div id="approvedExercisesList" style="margin-bottom:20px"></div>
-    <div class="section-header" style="margin-top:20px">Audit Log</div>
-    <div id="adminAuditLog"></div>
+    <!-- Users tab -->
+    <div id="adminTabUsers">
+      <div class="section-header">Einladungscodes</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-accent btn-sm" onclick="generateInviteCode()">+ Code generieren</button>
+        <button class="btn btn-card btn-sm" onclick="loadInviteCodes()">Aktualisieren</button>
+      </div>
+      <div id="inviteCodesList" style="margin-bottom:20px"></div>
+      <div class="section-header">User Verwaltung</div>
+      <div id="adminUserList"></div>
+    </div>
+
+    <!-- Exercises tab -->
+    <div id="adminTabExercises" style="display:none">
+      <div style="display:flex;gap:0;margin-bottom:14px;background:var(--bg3);border-radius:var(--radius);padding:3px">
+        <button id="adminExApprovedBtn" onclick="switchAdminExTab('approved')" style="flex:1;padding:8px;font-size:12px;font-weight:700;border:none;border-radius:7px;cursor:pointer;background:var(--green);color:#fff;transition:all .2s">✅ Genehmigt</button>
+        <button id="adminExPendingBtn" onclick="switchAdminExTab('pending')" style="flex:1;padding:8px;font-size:12px;font-weight:700;border:none;border-radius:7px;cursor:pointer;background:none;color:var(--muted);transition:all .2s">⏳ Ausstehend</button>
+        <button id="adminExRejectedBtn" onclick="switchAdminExTab('rejected')" style="flex:1;padding:8px;font-size:12px;font-weight:700;border:none;border-radius:7px;cursor:pointer;background:none;color:var(--muted);transition:all .2s">❌ Abgelehnt</button>
+      </div>
+      <div id="adminExContent"></div>
+    </div>
+
+    <!-- Logs tab -->
+    <div id="adminTabLogs" style="display:none">
+      <div class="section-header">Audit Log</div>
+      <div id="adminAuditLog"></div>
+    </div>
   </div>
 </div>
 
@@ -1751,7 +1772,6 @@ async function renderPit() {
 async function renderAdmin() {
   if (!isAdmin()) return
   loadInviteCodes()
-  loadApprovedExercises()
   const { data: profiles } = await sb.from('profiles').select('*').order('xp', {ascending:false})
   const adminList = document.getElementById('adminUserList')
   adminList.innerHTML = (profiles||[]).map(p => {
@@ -1790,22 +1810,6 @@ async function renderAdmin() {
     document.getElementById('adminUserList').insertAdjacentHTML('beforebegin', reqHtml)
   }
 
-  const { data: logs } = await sb.from('audit_log').select('*').order('created_at', {ascending:false}).limit(30)
-  const auditEl = document.getElementById('adminAuditLog')
-  const userMap = {}
-  ;(profiles||[]).forEach(p => userMap[p.user_id] = p.username || 'Anonym')
-  if (!logs?.length) { auditEl.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:10px">Keine Einträge</p>'; return }
-  auditEl.innerHTML = logs.map(log => {
-    const date = new Date(log.created_at).toLocaleString('de-DE', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
-    const user = userMap[log.user_id] || log.user_id?.slice(0,8)
-    return `<div style="padding:8px 12px;background:var(--bg3);border-radius:8px;margin-bottom:6px;font-size:12px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:2px">
-        <span style="font-weight:600;color:var(--text)">${user}</span>
-        <span style="color:var(--muted)">${date}</span>
-      </div>
-      <div style="color:var(--muted)">${log.action}</div>
-    </div>`
-  }).join('')
 }
 
 async function adminViewHistory(userId, username) {
@@ -1874,6 +1878,88 @@ async function adminResetXP(userId, username) {
   renderAdmin()
 }
 
+let currentAdminTab = 'users'
+let currentAdminExTab = 'approved'
+
+function switchAdminTab(tab) {
+  currentAdminTab = tab
+  const tabs = ['users','exercises','logs']
+  tabs.forEach(t => {
+    const el = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1))
+    const btn = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1) + 'Btn')
+    if (el) el.style.display = t === tab ? 'block' : 'none'
+    if (btn) { btn.style.background = t === tab ? 'var(--accent)' : 'none'; btn.style.color = t === tab ? '#fff' : 'var(--muted)' }
+  })
+  if (tab === 'exercises') loadAdminExercises('approved')
+  if (tab === 'logs') loadAdminLogs()
+}
+
+function switchAdminExTab(tab) {
+  currentAdminExTab = tab
+  const tabs = ['approved','pending','rejected']
+  const colors = {approved:'var(--green)', pending:'var(--gold)', rejected:'var(--accent)'}
+  tabs.forEach(t => {
+    const btn = document.getElementById('adminEx' + t.charAt(0).toUpperCase() + t.slice(1) + 'Btn')
+    if (btn) { btn.style.background = t === tab ? colors[t] : 'none'; btn.style.color = t === tab ? '#fff' : 'var(--muted)' }
+  })
+  loadAdminExercises(tab)
+}
+
+async function loadAdminLogs() {
+  const { data: logs } = await sb.from('audit_log').select('*').order('created_at', {ascending:false}).limit(50)
+  const { data: profiles } = await sb.from('profiles').select('user_id,username')
+  const userMap = {}
+  ;(profiles||[]).forEach(p => userMap[p.user_id] = p.username || 'Anonym')
+  const el = document.getElementById('adminAuditLog')
+  if (!el) return
+  if (!logs?.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:10px">Keine Einträge</p>'; return }
+  el.innerHTML = logs.map(log => {
+    const date = new Date(log.created_at).toLocaleString('de-DE', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+    const user = userMap[log.user_id] || log.user_id?.slice(0,8)
+    return `<div style="padding:8px 12px;background:var(--bg3);border-radius:8px;margin-bottom:6px;font-size:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+        <span style="font-weight:600;color:var(--text)">${user}</span>
+        <span style="color:var(--muted)">${date}</span>
+      </div>
+      <div style="color:var(--muted)">${log.action}</div>
+    </div>`
+  }).join('')
+}
+
+async function loadAdminExercises(status) {
+  const el = document.getElementById('adminExContent')
+  if (!el) return
+  el.innerHTML = '<div class="spinner"></div>'
+  const { data: exercises } = await sb.from('exercise_requests').select('*').eq('status', status).order('votes', {ascending:false})
+  if (!exercises?.length) {
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">Keine ${status === 'approved' ? 'genehmigten' : status === 'pending' ? 'ausstehenden' : 'abgelehnten'} Übungen</div>`
+    return
+  }
+  el.innerHTML = exercises.map(ex => {
+    const copyCode = `  {id:'${ex.name.toLowerCase().replace(/[^a-z0-9]/g,'_')}',name:'${ex.name}',${ex.name_en?`en:'${ex.name_en}',`:''}search:'${(ex.name_en||ex.name).toLowerCase()}',muscle:'${ex.muscle}',tips:['','','','']},`
+    return `<div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:10px;border:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div>
+          <div style="font-size:14px;font-weight:700">${ex.name}${ex.name_en?' / '+ex.name_en:''}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${ex.muscle} · 👍 ${ex.votes} Votes</div>
+          ${ex.description?`<div style="font-size:11px;color:var(--muted);margin-top:4px">${ex.description}</div>`:''}
+        </div>
+      </div>
+      ${status === 'approved' ? `
+      <div style="background:var(--bg3);border-radius:8px;padding:10px;margin-top:8px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600">CODE ZUM EINFÜGEN:</div>
+        <div style="font-size:11px;font-family:monospace;color:var(--green);word-break:break-all;line-height:1.6">${copyCode}</div>
+        <button onclick="navigator.clipboard.writeText(\`${copyCode.replace(/`/g,"'")}\`).then(()=>toast('Kopiert!'))" style="margin-top:8px;font-size:11px;color:var(--blue);background:none;border:1px solid var(--blue);border-radius:6px;padding:4px 10px;cursor:pointer">📋 Kopieren</button>
+      </div>` : ''}
+      ${status === 'pending' ? `
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn btn-green btn-sm" onclick="adminApproveExercise('${ex.id}','${ex.name}','${ex.name_en||''}','${ex.muscle}')">✅ Genehmigen</button>
+        <button class="btn btn-danger btn-sm" onclick="adminRejectExercise('${ex.id}')">❌ Ablehnen</button>
+      </div>` : ''}
+    </div>`
+  }).join('')
+}
+
 async function loadApprovedExercises() {
   const list = document.getElementById('approvedExercisesList')
   if (!list) return
@@ -1939,15 +2025,17 @@ async function deleteInviteCode(id) {
 async function adminApproveExercise(reqId, name, nameEn, muscle) {
   await sb.from('exercise_requests').update({ status: 'approved' }).eq('id', reqId)
   await sb.from('audit_log').insert({ user_id: ADMIN_ID, action: `Übung genehmigt: ${name}`, details: { request_id: reqId } })
-  toast(`✅ "${name}" genehmigt! Vergiss nicht sie manuell zum Code hinzuzufügen.`)
-  renderAdmin()
+  toast(`✅ "${name}" genehmigt!`)
+  if (currentAdminTab === 'exercises') loadAdminExercises('pending')
+  else renderAdmin()
 }
 
 async function adminRejectExercise(reqId) {
   await sb.from('exercise_requests').update({ status: 'rejected' }).eq('id', reqId)
   await sb.from('audit_log').insert({ user_id: ADMIN_ID, action: `Übung abgelehnt: ${reqId}`, details: { request_id: reqId } })
   toast('Anfrage abgelehnt')
-  renderAdmin()
+  if (currentAdminTab === 'exercises') loadAdminExercises('pending')
+  else renderAdmin()
 }
 
 function showTab(tab, btn) {
