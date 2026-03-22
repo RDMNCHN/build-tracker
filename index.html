@@ -878,7 +878,7 @@ async function uploadAvatar(input) {
   if (error) { toast('Upload fehlgeschlagen: ' + error.message, true); return }
 
   const { data } = sb.storage.from('avatars').getPublicUrl(fileName)
-  const avatarUrl = data.publicUrl + '?t=' + Date.now()
+  const avatarUrl = data.publicUrl.replace('/object/p/', '/object/public/') + '?t=' + Date.now()
 
   await sb.from('profiles').update({ avatar_url: avatarUrl }).eq('user_id', currentUser.id)
   renderProfile()
