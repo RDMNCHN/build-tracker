@@ -843,7 +843,8 @@ async function showApp() {
 function toggleAuthMode() {
   isSignup = !isSignup
   document.getElementById('authToggle').textContent = isSignup ? 'Schon einen Account? Einloggen' : 'Noch kein Account? Registrieren'
-  document.querySelector('#loginPage .btn-accent').textContent = isSignup ? 'Account erstellen' : 'Einloggen'
+  document.getElementById('authSubmitBtn').textContent = isSignup ? 'Account erstellen' : 'Einloggen'
+  document.getElementById('inviteCodeField').style.display = isSignup ? 'block' : 'none'
 }
 
 async function handleAuth() {
