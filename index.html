@@ -795,11 +795,74 @@ async function saveSession() {
   })
   const { error } = await sb.from('sessions').insert({user_id:currentUser.id, plan_id:activePlanId, date, day_id:selectedDay.id, day_name:selectedDay.name, exercises:exercisesData})
   if (error) return toast('Fehler beim Speichern', true)
-  toast('Session gespeichert!')
+
+  // Award XP
+  await awardXP(exercisesData, date)
+
+  toast(lang==='en'?'Session saved! XP awarded 🔥':'Session gespeichert! XP erhalten 🔥')
   await loadSessions()
   selectedDay = null
   document.getElementById('exerciseSection').style.display = 'none'
   renderTrainPage()
+}
+
+async function awardXP(exercisesData, date) {
+  const xpEntries = []
+  let totalXP = 0
+
+  // +50 XP for completing a session
+  xpEntries.push({ user_id: currentUser.id, amount: 50, reason: lang==='en'?'💪 Session completed':'💪 Session abgeschlossen' })
+  totalXP += 50
+
+  // Check for PRs — compare against all previous sessions
+  const { data: prevSessions } = await sb.from('sessions').select('exercises').eq('user_id', currentUser.id)
+  const allPrevSets = {}
+  for (const s of (prevSessions || [])) {
+    for (const ex of (s.exercises || [])) {
+      const maxKg = Math.max(...(ex.sets||[]).map(s => s.kg||0).filter(k => k > 0))
+      if (maxKg > 0) {
+        if (!allPrevSets[ex.id] || maxKg > allPrevSets[ex.id]) allPrevSets[ex.id] = maxKg
+      }
+    }
+  }
+
+  for (const ex of exercisesData) {
+    const validSets = (ex.sets||[]).filter(s => s.kg > 0)
+    if (!validSets.length) continue
+    const maxKg = Math.max(...validSets.map(s => s.kg))
+    const prevMax = allPrevSets[ex.id] || 0
+    if (maxKg > prevMax) {
+      xpEntries.push({ user_id: currentUser.id, amount: 150, reason: `🏆 PR: ${ex.name} — ${maxKg}kg` })
+      totalXP += 150
+    }
+  }
+
+  // Weekly bonus — count sessions this week (Mon-Sun)
+  const weekStart = new Date(date)
+  const day = weekStart.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  weekStart.setDate(weekStart.getDate() + diff)
+  const weekStartStr = weekStart.toISOString().slice(0,10)
+  const weekEnd = new Date(weekStart)
+  weekEnd.setDate(weekEnd.getDate() + 6)
+  const weekEndStr = weekEnd.toISOString().slice(0,10)
+  const { data: weekSessions } = await sb.from('sessions').select('id').eq('user_id', currentUser.id).gte('date', weekStartStr).lte('date', weekEndStr)
+  const weekCount = (weekSessions?.length || 0) // includes current session
+  const weekBonuses = {1:0, 2:0, 3:0, 4:0, 5:0}
+  const weekBonusXP = {2:40, 3:90, 4:120, 5:170} // incremental on top of previous
+  // Only award the incremental bonus when crossing a threshold
+  if (weekCount === 2) { xpEntries.push({ user_id: currentUser.id, amount: 40, reason: lang==='en'?'📅 2 sessions this week':'📅 2 Sessions diese Woche' }); totalXP += 40 }
+  else if (weekCount === 3) { xpEntries.push({ user_id: currentUser.id, amount: 90, reason: lang==='en'?'📅 3 sessions this week':'📅 3 Sessions diese Woche' }); totalXP += 90 }
+  else if (weekCount === 4) { xpEntries.push({ user_id: currentUser.id, amount: 130, reason: lang==='en'?'📅 4 sessions this week':'📅 4 Sessions diese Woche' }); totalXP += 130 }
+  else if (weekCount >= 5) { xpEntries.push({ user_id: currentUser.id, amount: 170, reason: lang==='en'?'📅 5+ sessions this week':'📅 5+ Sessions diese Woche' }); totalXP += 170 }
+
+  // Save XP history entries
+  if (xpEntries.length) await sb.from('xp_history').insert(xpEntries)
+
+  // Update profile XP
+  const { data: prof } = await sb.from('profiles').select('xp').eq('user_id', currentUser.id).single()
+  const currentXP = prof?.xp || 0
+  await sb.from('profiles').upsert({ user_id: currentUser.id, xp: currentXP + totalXP }, { onConflict: 'user_id' })
 }
 
 const RAPIDAPI_KEY = '97f87cf90amsh539c733e15b2ba7p176d29jsn4b747e8f34a6'
