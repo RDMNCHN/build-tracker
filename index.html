@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Build Tracker</title>
+<title>Anime Build Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -200,7 +200,8 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div style="font-size:17px;font-weight:700;margin-bottom:4px" id="tutTitle"></div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:14px" id="tutMuscle"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:6px" id="tutMuscle"></div>
+    <div id="tutWarning" style="font-size:11px;color:var(--gold);margin-bottom:10px;display:none"></div>
     <div id="tutVideo"></div>
     <ul id="tutTips" style="list-style:none"></ul>
     <button class="btn btn-card" style="margin-top:16px" onclick="document.getElementById('tutorialModal').classList.remove('open')">Schließen</button>
@@ -594,6 +595,8 @@ async function openTutorial(exId) {
   if (!ex) return
   document.getElementById('tutTitle').textContent = exName(ex)
   document.getElementById('tutMuscle').textContent = ex.muscle
+  document.getElementById('tutWarning').style.display = 'none'
+  document.getElementById('tutWarning').textContent = ''
   document.getElementById('tutTips').innerHTML = (ex.tips||[]).map((t,i) => `<li style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg3);font-size:13px;line-height:1.6"><div style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div><span>${t}</span></li>`).join('')
   document.getElementById('tutorialModal').classList.add('open')
   const vid = document.getElementById('tutVideo')
@@ -681,7 +684,9 @@ async function openTutorial(exId) {
     const exerciseDbId = DB_IDS[exId]
     const warning = DB_WARNINGS[exId]
     if (warning) {
-      document.getElementById('tutMuscle').textContent = ex.muscle + '  ' + warning
+      document.getElementById('tutMuscle').textContent = ex.muscle
+  document.getElementById('tutWarning').style.display = 'none'
+  document.getElementById('tutWarning').textContent = '' + '  ' + warning
     }
     if (exerciseDbId) {
       const gifUrl = `/api/gif?id=${exerciseDbId}`
