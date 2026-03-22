@@ -109,6 +109,13 @@
   .empty-state p { font-size: 14px; line-height: 1.6; }
 
   canvas { max-width: 100%; }
+
+  .backup-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .backup-btn { display: block; text-align: center; padding: 13px 8px; border-radius: var(--radius); font-size: 13px; font-weight: 700; cursor: pointer; border: none; }
+  .export-btn { background: var(--green); color: #fff; }
+  .export-btn:active { background: #1e8449; }
+  .import-btn { background: var(--blue); color: #fff; cursor: pointer; }
+  .import-btn:active { background: #2d6a9f; }
 </style>
 </head>
 <body>
@@ -158,6 +165,13 @@
 </div>
 
 <div id="page-history" class="page">
+  <div class="backup-row">
+    <button class="backup-btn export-btn" onclick="exportData()">Backup exportieren</button>
+    <label class="backup-btn import-btn">
+      Backup importieren
+      <input type="file" accept=".json" onchange="importData(event)" style="display:none;">
+    </label>
+  </div>
   <div class="section-header">Gespeicherte Sessions</div>
   <div id="historyList"></div>
 </div>
@@ -535,6 +549,42 @@ function deleteSession(id) {
   saveDB(db);
   renderHistory();
   showToast('Session gelöscht');
+}
+
+function exportData() {
+  const db = getDB();
+  if (db.length === 0) return showToast('Keine Daten zum Exportieren!');
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'animebuild_backup_' + today() + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Backup exportiert!');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error('Ungültiges Format');
+      const existing = getDB();
+      const existingIds = new Set(existing.map(s => s.id));
+      const newSessions = data.filter(s => !existingIds.has(s.id));
+      const merged = [...existing, ...newSessions].sort((a, b) => new Date(b.date) - new Date(a.date));
+      saveDB(merged);
+      renderHistory();
+      showToast(newSessions.length + ' neue Sessions importiert!');
+    } catch {
+      showToast('Fehler beim Importieren!');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
 }
 
 document.getElementById('trainDate').value = today();
