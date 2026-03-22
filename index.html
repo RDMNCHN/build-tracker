@@ -974,7 +974,7 @@ function buildExerciseList() {
   const list = document.getElementById('exerciseList')
   list.innerHTML = selectedDay.exercises.map((exId, ei) => {
     const ex = EXERCISES.find(e => e.id === exId) || {id:exId, name:exId, muscle:''}
-    return `<div class="ex-block">
+    return `<div class="ex-block" style="animation-delay:${ei * 0.05}s">
       <div class="ex-header" onclick="toggleEx(${ei})">
         <div style="flex:1;min-width:0">
           <div style="font-size:14px;font-weight:600">${ex.name}</div>
@@ -998,7 +998,10 @@ function buildExerciseList() {
   selectedDay.exercises.forEach((_,ei) => { addSetRow(ei); addSetRow(ei); addSetRow(ei) })
 }
 
-function toggleEx(ei) { document.getElementById('exbody_'+ei).classList.toggle('open') }
+function toggleEx(ei) {
+  const body = document.getElementById('exbody_'+ei)
+  body.classList.toggle('open')
+}
 
 function addSetRow(ei) {
   const tbody = document.getElementById('setrows_'+ei)
