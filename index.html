@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Build Tracker</title>
+<title>Anime Build Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -101,6 +101,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
 
   <div id="page-analyse" class="page">
     <div class="stat-grid" id="statsGrid"></div>
+    <div id="apiUsageBox"></div>
     <div class="section-header">Übung analysieren</div>
     <select id="analyseSelect" onchange="renderCharts()" style="margin-bottom:14px"><option value="">Übung wählen...</option></select>
     <div class="chart-box"><h3>Max. Gewicht pro Session</h3><canvas id="weightChart" height="180"></canvas></div>
@@ -412,15 +413,55 @@ async function saveSession() {
   renderTrainPage()
 }
 
-function openTutorial(exId) {
+const RAPIDAPI_KEY = '97f87cf90amsh539c733e15b2ba7p176d29jsn4b747e8f34a6'
+const gifMemCache = {}
+
+async function openTutorial(exId) {
   const ex = EXERCISES.find(e => e.id === exId)
   if (!ex) return
   document.getElementById('tutTitle').textContent = ex.name
   document.getElementById('tutMuscle').textContent = ex.muscle
   document.getElementById('tutTips').innerHTML = (ex.tips||[]).map((t,i) => `<li style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg3);font-size:13px;line-height:1.6"><div style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div><span>${t}</span></li>`).join('')
-  const vid = document.getElementById('tutVideo')
-  vid.innerHTML = ex.gif ? `<img src="${ex.gif}" alt="Übung" style="width:100%;max-width:340px;display:block;margin:0 auto 16px;border-radius:var(--radius)" onerror="this.parentElement.innerHTML=''">` : ''
   document.getElementById('tutorialModal').classList.add('open')
+  const vid = document.getElementById('tutVideo')
+  vid.innerHTML = `<div style="width:100%;height:180px;background:var(--bg3);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;margin-bottom:16px">Bild wird geladen...</div>`
+
+  // 1. Check memory cache
+  if (gifMemCache[exId]) { showGif(gifMemCache[exId]); return }
+
+  // 2. Check Supabase cache
+  const { data: cached } = await sb.from('exercise_gifs').select('gif_url').eq('exercise_id', exId).single()
+  if (cached?.gif_url) { gifMemCache[exId] = cached.gif_url; showGif(cached.gif_url); return }
+
+  // 3. Fetch from RapidAPI
+  try {
+    const today = new Date().toISOString().slice(0,10)
+    const { data: usage } = await sb.from('api_usage').select('count').eq('date', today).single()
+    const usedToday = usage?.count || 0
+    if (usedToday >= 690) { vid.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Tageslimit erreicht (690/690)</p>'; return }
+
+    const res = await fetch(`https://exercisedb.p.rapidapi.com/exercises/name/${encodeURIComponent(ex.search||ex.name)}?limit=1&offset=0`, {
+      headers: { 'x-rapidapi-key': RAPIDAPI_KEY, 'x-rapidapi-host': 'exercisedb.p.rapidapi.com' }
+    })
+    const data = await res.json()
+    const gifUrl = data?.[0]?.gifUrl
+    if (gifUrl) {
+      gifMemCache[exId] = gifUrl
+      await sb.from('exercise_gifs').upsert({ exercise_id: exId, gif_url: gifUrl })
+      await sb.from('api_usage').upsert({ date: today, count: usedToday + 1 }, { onConflict: 'date' })
+      showGif(gifUrl)
+    } else {
+      showGif(ex.gif || null)
+    }
+  } catch(e) {
+    showGif(ex.gif || null)
+  }
+}
+
+function showGif(url) {
+  const vid = document.getElementById('tutVideo')
+  if (!url) { vid.innerHTML = ''; return }
+  vid.innerHTML = `<img src="${url}" alt="Übung" style="width:100%;max-width:340px;display:block;margin:0 auto 16px;border-radius:var(--radius)" onerror="this.parentElement.innerHTML=''">`
 }
 
 function renderHistory() {
@@ -470,6 +511,23 @@ function renderAnalyse() {
     <div class="stat-card"><div class="val">${thisMonth}</div><div class="lbl">Diesen Monat</div></div>
     <div class="stat-card"><div class="val">${totalSets}</div><div class="lbl">Sätze gesamt</div></div>
     <div class="stat-card"><div class="val">${last7}</div><div class="lbl">Tage letzte Woche</div></div>`
+  const today = new Date().toISOString().slice(0,10)
+  sb.from('api_usage').select('count').eq('date', today).single().then(({data}) => {
+    const used = data?.count || 0
+    const left = 690 - used
+    document.getElementById('apiUsageBox').innerHTML = `
+      <div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:12px;border:1px solid var(--border)">
+        <div style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">GIF API — Heute</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:13px;color:var(--text)">Verbraucht</span>
+          <span style="font-size:15px;font-weight:700;color:${used>600?'var(--accent)':'var(--gold)'}">${used} / 690</span>
+        </div>
+        <div style="background:var(--bg3);border-radius:4px;height:8px;overflow:hidden">
+          <div style="background:${used>600?'var(--accent)':'var(--green)'};height:100%;width:${Math.min(100,(used/690)*100).toFixed(1)}%;transition:width .3s"></div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px">${left} Anfragen heute noch verfügbar · Reset um Mitternacht</div>
+      </div>`
+  })
   const allExIds = [...new Set(sessions.flatMap(s => (s.exercises||[]).map(e=>e.id)))]
   const sel = document.getElementById('analyseSelect')
   const cur = sel.value
