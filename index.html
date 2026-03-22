@@ -69,6 +69,19 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
 </head>
 <body>
 
+<div id="resetPage" style="display:none;min-height:100vh;align-items:center;justify-content:center;padding:24px">
+  <div style="width:100%;max-width:380px">
+    <div style="font-size:48px;text-align:center;margin-bottom:8px">🔐</div>
+    <h1 style="font-size:24px;font-weight:700;text-align:center;margin-bottom:6px">Neues Passwort</h1>
+    <p style="color:var(--muted);text-align:center;font-size:13px;margin-bottom:32px">Gib dein neues Passwort ein</p>
+    <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Neues Passwort</label>
+    <input type="password" id="newPassword" placeholder="Mindestens 6 Zeichen" style="margin-bottom:10px">
+    <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Passwort wiederholen</label>
+    <input type="password" id="newPasswordConfirm" placeholder="Passwort wiederholen" style="margin-bottom:10px">
+    <button class="btn btn-accent" style="margin-top:8px" onclick="submitNewPassword()">Passwort speichern</button>
+  </div>
+</div>
+
 <div id="loginPage" style="display:none">
   <div class="login-box">
     <div style="font-size:48px;text-align:center;margin-bottom:8px">🔥</div>
@@ -691,7 +704,29 @@ async function saveStatus() {
 const ADMIN_ID = '483041e9-c0a5-4cfa-8855-ce569daa7f5b'
 function isAdmin() { return currentUser?.id === ADMIN_ID }
 
+async function submitNewPassword() {
+  const pw = document.getElementById('newPassword').value
+  const pw2 = document.getElementById('newPasswordConfirm').value
+  if (pw.length < 6) return toast('Mindestens 6 Zeichen', true)
+  if (pw !== pw2) return toast('Passwörter stimmen nicht überein', true)
+  const { error } = await sb.auth.updateUser({ password: pw })
+  if (error) return toast('Fehler: ' + error.message, true)
+  toast('Passwort geändert! Bitte einloggen.')
+  document.getElementById('resetPage').style.display = 'none'
+  showLogin()
+}
+
 async function init() {
+  // Check for password recovery in URL hash
+  const hash = window.location.hash
+  if (hash.includes('type=recovery') || hash.includes('type=email_change')) {
+    const { data: { session } } = await sb.auth.getSession()
+    if (session) {
+      document.getElementById('resetPage').style.display = 'flex'
+      return
+    }
+  }
+
   const { data: { session } } = await sb.auth.getSession()
   if (session?.user) {
     currentUser = session.user
@@ -700,8 +735,18 @@ async function init() {
     showLogin()
   }
   sb.auth.onAuthStateChange((_e, session) => {
-    if (session?.user && !currentUser) { currentUser = session.user; showApp() }
-    else if (!session?.user) { currentUser = null; showLogin() }
+    if (session?.user && !currentUser) {
+      // Check if this is a recovery session
+      if (window.location.hash.includes('type=recovery')) {
+        document.getElementById('resetPage').style.display = 'flex'
+        return
+      }
+      currentUser = session.user
+      showApp()
+    } else if (!session?.user) {
+      currentUser = null
+      showLogin()
+    }
   })
 }
 
