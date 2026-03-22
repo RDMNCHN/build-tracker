@@ -447,12 +447,20 @@ async function openTutorial(exId) {
     const searchData = await searchRes.json()
     const exerciseDbId = searchData?.[0]?.id
     if (exerciseDbId) {
-      // Step 2: build GIF URL using image service (no extra request needed - direct URL)
-      const gifUrl = `https://exercisedb.p.rapidapi.com/image?exerciseId=${exerciseDbId}&resolution=360&rapidapi-key=${RAPIDAPI_KEY}`
-      gifMemCache[exId] = gifUrl
-      await sb.from('exercise_gifs').upsert({ exercise_id: exId, gif_url: gifUrl })
+      // Step 2: fetch GIF as blob and convert to data URL for display
+      const gifRes = await fetch(`https://exercisedb.p.rapidapi.com/image?exerciseId=${exerciseDbId}&resolution=360`, {
+        headers: { 'x-rapidapi-key': RAPIDAPI_KEY, 'x-rapidapi-host': 'exercisedb.p.rapidapi.com' }
+      })
+      const blob = await gifRes.blob()
+      const dataUrl = await new Promise(resolve => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result)
+        reader.readAsDataURL(blob)
+      })
+      gifMemCache[exId] = dataUrl
+      await sb.from('exercise_gifs').upsert({ exercise_id: exId, gif_url: dataUrl })
       await sb.from('api_usage').upsert({ date: today, count: usedToday + 1 }, { onConflict: 'date' })
-      showGif(gifUrl)
+      showGif(dataUrl)
     } else {
       showGif(ex.gif || null)
     }
