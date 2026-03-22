@@ -120,12 +120,54 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
     <div id="plansList"></div>
   </div>
 
+  <div id="page-profile" class="page">
+    <div class="hero" style="background:linear-gradient(135deg,#2a2f50 0%,#1a1d2e 100%)">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div id="profileAvatar" style="width:60px;height:60px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;flex-shrink:0;border:3px solid var(--accent)">?</div>
+        <div>
+          <div id="profileName" style="font-size:18px;font-weight:700">...</div>
+          <div id="profileEmail" style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px"></div>
+          <div id="profileRank" style="font-size:12px;margin-top:4px;color:var(--gold)">🩶 Rookie · 0 XP</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-header">Einstellungen</div>
+
+    <div class="card" style="margin-bottom:10px">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Benutzername</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="usernameInput" placeholder="Dein Name..." style="margin-bottom:0;flex:1">
+        <button class="btn btn-accent btn-sm" onclick="saveUsername()">Speichern</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:14px;font-weight:600">Sprache / Language</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Deutsch / English</div>
+        </div>
+        <button onclick="toggleLang()" id="langBtn" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer">🌐 EN</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Badges</div>
+      <div id="badgesList" style="display:flex;flex-wrap:wrap;gap:8px">
+        <div style="color:var(--muted);font-size:13px">Noch keine Badges verdient 💪</div>
+      </div>
+    </div>
+
+    <button class="btn btn-danger" style="margin-top:8px" onclick="handleLogout()">Ausloggen</button>
+  </div>
+
   <nav class="tab-bar">
     <button class="tab-btn active" onclick="showTab('train',this)"><span class="tab-icon">💪</span><span data-t="training">Training</span></button>
     <button class="tab-btn" onclick="showTab('analyse',this)"><span class="tab-icon">📊</span><span data-t="analyse">Analyse</span></button>
     <button class="tab-btn" onclick="showTab('history',this)"><span class="tab-icon">📋</span><span data-t="history">Verlauf</span></button>
     <button class="tab-btn" onclick="showTab('plans',this)"><span class="tab-icon">⚙️</span><span data-t="plans">Pläne</span></button>
-    <button class="tab-btn" onclick="toggleLang()" id="langBtn" style="flex:0.7;font-size:10px">🌐 EN</button>
+    <button class="tab-btn" onclick="showTab('profile',this)"><span class="tab-icon">👤</span><span data-t="profile">Profil</span></button>
   </nav>
 </div>
 
@@ -326,6 +368,35 @@ function fmt(d) {
 
 function today() { return new Date().toISOString().slice(0,10) }
 
+async function saveUsername() {
+  const username = document.getElementById('usernameInput').value.trim()
+  if (!username) return toast(lang==='en'?'Please enter a username':'Bitte Namen eingeben', true)
+  await sb.from('profiles').upsert({ user_id: currentUser.id, username }, { onConflict: 'user_id' })
+  renderProfile()
+  toast(lang==='en'?'Username saved!':'Name gespeichert!')
+}
+
+async function handleLogout() {
+  await sb.auth.signOut()
+  currentUser = null
+  plans = []
+  sessions = []
+  showLogin()
+}
+
+function renderProfile() {
+  if (!currentUser) return
+  const username = currentUser.username || ''
+  const email = currentUser.email || ''
+  const initial = (username || email || '?')[0].toUpperCase()
+  document.getElementById('profileAvatar').textContent = initial
+  document.getElementById('profileName').textContent = username || (lang==='en'?'No username set':'Kein Benutzername')
+  document.getElementById('profileEmail').textContent = email
+  if (document.getElementById('usernameInput') && !document.getElementById('usernameInput').value) {
+    document.getElementById('usernameInput').value = username
+  }
+}
+
 async function init() {
   const { data: { session } } = await sb.auth.getSession()
   if (session?.user) {
@@ -350,10 +421,6 @@ async function showApp() {
   document.getElementById('loginPage').style.display = 'none'
   document.getElementById('appShell').style.display = 'block'
   document.getElementById('trainDate').value = today()
-  // Load user lang preference
-  const { data: profile } = await sb.from('profiles').select('lang').eq('user_id', currentUser.id).single()
-  if (profile?.lang) { lang = profile.lang; localStorage.setItem('lang', lang) }
-  applyLang()
   await loadPlans()
   await loadSessions()
 }
@@ -870,6 +937,7 @@ function showTab(tab, btn) {
   if (tab==='analyse') renderAnalyse()
   if (tab==='history') renderHistory()
   if (tab==='plans') renderPlansList()
+  if (tab==='profile') renderProfile()
 }
 
 init()
