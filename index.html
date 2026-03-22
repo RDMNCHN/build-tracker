@@ -595,10 +595,37 @@ async function openTutorial(exId) {
   if (!ex) return
   document.getElementById('tutTitle').textContent = exName(ex)
   document.getElementById('tutMuscle').textContent = ex.muscle
-  document.getElementById('tutWarning').style.display = 'none'
-  document.getElementById('tutWarning').textContent = ''
   document.getElementById('tutTips').innerHTML = (ex.tips||[]).map((t,i) => `<li style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg3);font-size:13px;line-height:1.6"><div style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div><span>${t}</span></li>`).join('')
   document.getElementById('tutorialModal').classList.add('open')
+
+  // Show warning immediately if this exercise has an alternative GIF
+  const DB_WARNINGS = {
+    cable_fly:'⚠️ GIF zeigt ähnliche Übung (Cable Decline Fly)',
+    lat_pulldown:'⚠️ GIF zeigt ähnliche Übung (Reverse Grip Lat Pulldown)',
+    lat_neutral:'⚠️ GIF zeigt ähnliche Übung (Neutral Grip Pull Up)',
+    shoulder_press:'⚠️ GIF zeigt ähnliche Übung (Barbell Seated Overhead Press)',
+    rear_delt:'⚠️ GIF zeigt ähnliche Übung (Cable Reverse Fly)',
+    face_pull:'⚠️ GIF zeigt ähnliche Übung (Overhead Tricep Extension)',
+    bicep_curl:'⚠️ GIF zeigt ähnliche Übung (Bicep Curl Lunge)',
+    hammer_curl:'⚠️ GIF zeigt ähnliche Übung (Cable Hammer Curl)',
+    bulgarian:'⚠️ GIF zeigt ähnliche Übung (Barbell Split Squat)',
+    leg_curl:'⚠️ GIF zeigt ähnliche Übung (Inverse Leg Curl)',
+    hip_thrust:'⚠️ GIF zeigt ähnliche Übung (Barbell Glute Bridge)',
+    plank:'⚠️ GIF zeigt ähnliche Übung (Plank with Twist)',
+    cable_crunch:'⚠️ GIF zeigt ähnliche Übung (Wheel Rollout)',
+    ab_wheel:'⚠️ GIF zeigt ähnliche Übung (Wheel Rollout)',
+    cable_pullover:'⚠️ GIF zeigt ähnliche Übung (Straight Arm Pulldown)',
+    plate_shoulder_press:'⚠️ GIF zeigt ähnliche Übung (Lever Chest Press)',
+    cable_crunches:'⚠️ GIF zeigt ähnliche Übung (Kneeling Cable Crunch)',
+    plate_back_row:'⚠️ GIF zeigt ähnliche Übung (T-Bar Row)',
+    kneeling_pulldown:'⚠️ GIF zeigt ähnliche Übung (Reverse Grip Lat Pulldown)',
+    cable_flyes:'⚠️ GIF zeigt ähnliche Übung (Cable One Arm Decline Fly)',
+  }
+  const wEl = document.getElementById('tutWarning')
+  const warning = DB_WARNINGS[exId]
+  if (warning) { wEl.textContent = warning; wEl.style.display = 'block' }
+  else { wEl.textContent = ''; wEl.style.display = 'none' }
+
   const vid = document.getElementById('tutVideo')
   vid.innerHTML = `<div style="width:100%;height:180px;background:var(--bg3);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;margin-bottom:16px">Bild wird geladen...</div>`
 
@@ -617,77 +644,23 @@ async function openTutorial(exId) {
     if (usedToday >= 690) { vid.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Tageslimit erreicht (690/690)</p>'; return }
 
     const DB_IDS = {
-      incline_press: '0047',
-      bench_press: '0025',
-      cable_fly: '1262',       // ⚠️ Ähnlich: Cable One Arm Decline Chest Fly
-      pushups: '0669',
-      lat_pulldown: '0673',    // ⚠️ Ähnlich: Reverse Grip Machine Lat Pulldown
-      lat_neutral: '0651',     // ⚠️ Ähnlich: Pull Up Neutral Grip
-      cable_row: '0861',
-      pullups: '0651',
-      rdl: '0085',
-      shoulder_press: '0091',  // ⚠️ Ähnlich: Barbell Seated Overhead Press
-      lateral_raise: '0334',
-      rear_delt: '0154',       // ⚠️ Ähnlich: Cable Cross-Over Reverse Fly
-      face_pull: '1722',       // ⚠️ Ähnlich: Cable High Pulley Overhead Tricep Ext.
-      bicep_curl: '1651',      // ⚠️ Ähnlich: Dumbbell Bicep Curl Lunge
-      hammer_curl: '0165',     // ⚠️ Ähnlich: Cable Hammer Curl with Rope
-      tricep_pushdown: '0199',
-      overhead_tri: '1722',
-      leg_press: '0739',
-      hack_squat: '0046',
-      leg_extension: '0585',
-      bulgarian: '0097',       // ⚠️ Ähnlich: Barbell Side Split Squat
-      squat: '3303',
-      rdl_ham: '0085',
-      leg_curl: '0496',        // ⚠️ Ähnlich: Inverse Leg Curl
-      hip_thrust: '1409',      // ⚠️ Ähnlich: Barbell Glute Bridge
-      calf_raise: '0417',
-      plank: '0464',           // ⚠️ Ähnlich: Front Plank with Twist
-      hanging_leg_raise: '0472',
-      cable_crunch: '0857',    // ⚠️ Ähnlich: Wheel Rollout
-      ab_wheel: '0857',
-      t_bar_row: '0606',
-      barbell_shrug: '0095',
-      dumbbell_shrug: '0406',
-      cable_pullover: '0237',   // ⚠️ Ähnlich: Straight Arm Pulldown
-      dumbbell_lateral_raise2: '0334',
-      plate_shoulder_press: '0576', // ⚠️ Ähnlich: Lever Chest Press
-      incline_smith: '0757',
-      cable_crunches: '0175',   // ⚠️ Ähnlich: Cable Kneeling Crunch
-      plate_back_row: '0606',   // ⚠️ Ähnlich: T-Bar Row
-      kneeling_pulldown: '0673', // ⚠️ Ähnlich: Reverse Grip Lat Pulldown
-      cable_flyes: '1262',      // ⚠️ Ähnlich: Cable One Arm Decline Fly
-    }
-    const DB_WARNINGS = {
-      cable_fly: '⚠️ GIF zeigt ähnliche Übung (Cable Decline Fly)',
-      lat_pulldown: '⚠️ GIF zeigt ähnliche Übung (Reverse Grip Lat Pulldown)',
-      lat_neutral: '⚠️ GIF zeigt ähnliche Übung (Neutral Grip Pull Up)',
-      shoulder_press: '⚠️ GIF zeigt ähnliche Übung (Barbell Seated Overhead Press)',
-      rear_delt: '⚠️ GIF zeigt ähnliche Übung (Cable Reverse Fly)',
-      face_pull: '⚠️ GIF zeigt ähnliche Übung (Overhead Tricep Extension)',
-      bicep_curl: '⚠️ GIF zeigt ähnliche Übung (Bicep Curl Lunge)',
-      hammer_curl: '⚠️ GIF zeigt ähnliche Übung (Cable Hammer Curl)',
-      bulgarian: '⚠️ GIF zeigt ähnliche Übung (Barbell Split Squat)',
-      leg_curl: '⚠️ GIF zeigt ähnliche Übung (Inverse Leg Curl)',
-      hip_thrust: '⚠️ GIF zeigt ähnliche Übung (Barbell Glute Bridge)',
-      plank: '⚠️ GIF zeigt ähnliche Übung (Plank with Twist)',
-      cable_crunch: '⚠️ GIF zeigt ähnliche Übung (Wheel Rollout)',
-      ab_wheel: '⚠️ GIF zeigt ähnliche Übung (Wheel Rollout)',
-      cable_pullover: '⚠️ GIF zeigt ähnliche Übung (Straight Arm Pulldown)',
-      plate_shoulder_press: '⚠️ GIF zeigt ähnliche Übung (Lever Chest Press)',
-      cable_crunches: '⚠️ GIF zeigt ähnliche Übung (Kneeling Cable Crunch)',
-      plate_back_row: '⚠️ GIF zeigt ähnliche Übung (T-Bar Row)',
-      kneeling_pulldown: '⚠️ GIF zeigt ähnliche Übung (Reverse Grip Lat Pulldown)',
-      cable_flyes: '⚠️ GIF zeigt ähnliche Übung (Cable One Arm Decline Fly)',
+      incline_press:'0047', bench_press:'0025', cable_fly:'1262',
+      pushups:'0669', lat_pulldown:'0673', lat_neutral:'0651',
+      cable_row:'0861', pullups:'0651', rdl:'0085',
+      shoulder_press:'0091', lateral_raise:'0334', rear_delt:'0154',
+      face_pull:'1722', bicep_curl:'1651', hammer_curl:'0165',
+      tricep_pushdown:'0199', overhead_tri:'1722',
+      leg_press:'0739', hack_squat:'0046', leg_extension:'0585',
+      bulgarian:'0097', squat:'3303', rdl_ham:'0085',
+      leg_curl:'0496', hip_thrust:'1409', calf_raise:'0417',
+      plank:'0464', hanging_leg_raise:'0472', cable_crunch:'0857',
+      ab_wheel:'0857', t_bar_row:'0606', barbell_shrug:'0095',
+      dumbbell_shrug:'0406', cable_pullover:'0237',
+      dumbbell_lateral_raise2:'0334', plate_shoulder_press:'0576',
+      incline_smith:'0757', cable_crunches:'0175',
+      plate_back_row:'0606', kneeling_pulldown:'0673', cable_flyes:'1262',
     }
     const exerciseDbId = DB_IDS[exId]
-    const warning = DB_WARNINGS[exId]
-    if (warning) {
-      document.getElementById('tutMuscle').textContent = ex.muscle
-  document.getElementById('tutWarning').style.display = 'none'
-  document.getElementById('tutWarning').textContent = '' + '  ' + warning
-    }
     if (exerciseDbId) {
       const gifUrl = `/api/gif?id=${exerciseDbId}`
       gifMemCache[exId] = gifUrl
