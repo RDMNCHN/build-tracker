@@ -1,16 +1,665 @@
 <!DOCTYPE html>
 <html lang="de">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>Anime Build Tracker</title>
-    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Anime Build Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0f1117;--bg2:#1a1d2e;--bg3:#1e2235;--card:#242840;--card2:#2a2f50;--border:#3a3f6a;--text:#f0f0f0;--muted:#8a8fa8;--accent:#e94560;--gold:#f5a623;--green:#27ae60;--blue:#3d7ebf;--purple:#9b59b6;--radius:10px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;min-height:100vh}
+input,select,textarea,button{font-family:inherit}
+.page{display:none;padding:16px;padding-bottom:90px}
+.page.active{display:block}
+.tab-bar{display:flex;background:var(--bg2);border-top:1px solid var(--border);position:fixed;bottom:0;left:0;right:0;z-index:100}
+.tab-btn{flex:1;padding:12px 4px;font-size:11px;font-weight:600;color:var(--muted);background:none;border:none;border-top:2px solid transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tab-btn.active{color:var(--accent);border-top-color:var(--accent)}
+.tab-icon{font-size:18px}
+.hero{background:linear-gradient(135deg,var(--accent) 0%,#8b1a2a 100%);border-radius:var(--radius);padding:20px 16px;margin-bottom:16px}
+.hero h1{font-size:20px;font-weight:700}
+.hero p{font-size:12px;color:rgba(255,255,255,0.75);margin-top:4px}
+.section-header{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:18px 0 10px}
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:14px;margin-bottom:10px}
+.btn{border:none;border-radius:var(--radius);padding:13px 16px;font-size:14px;font-weight:700;cursor:pointer;display:block;width:100%;text-align:center;transition:all .2s}
+.btn:active{transform:scale(.98)}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-card{background:var(--card2);color:var(--text);border:1px solid var(--border)}
+.btn-danger{background:none;color:var(--accent);border:1px solid var(--accent)}
+.btn-sm{padding:7px 12px;font-size:12px;width:auto;display:inline-block}
+input[type=text],input[type=email],input[type=password],input[type=date],select,textarea{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:11px 12px;font-size:14px;margin-bottom:10px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1)}
+select option{background:var(--card)}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:10px 20px;border-radius:30px;font-weight:600;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:40px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-sheet{background:var(--bg2);border-radius:18px 18px 0 0;width:100%;max-height:90vh;overflow-y:auto;padding:16px 16px 40px}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.day-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.day-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px 10px;cursor:pointer}
+.day-card.selected{background:var(--card2)}
+.day-card .day-title{font-size:13px;font-weight:700}
+.day-card .day-sub{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
+.ex-block{background:var(--card);border-radius:var(--radius);margin-bottom:10px;border:1px solid var(--border);overflow:hidden}
+.ex-header{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.ex-body{padding:0 14px 14px;display:none}
+.ex-body.open{display:block}
+.sets-table{width:100%;border-collapse:collapse;margin-bottom:8px}
+.sets-table th{font-size:11px;color:var(--muted);text-align:center;padding:4px;font-weight:600}
+.sets-table td{padding:5px 4px;text-align:center}
+.sets-table input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 4px;font-size:14px;text-align:center;margin-bottom:0}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.stat-card{background:var(--card);border-radius:var(--radius);padding:14px;text-align:center}
+.stat-card .val{font-size:26px;font-weight:700;color:var(--gold)}
+.stat-card .lbl{font-size:12px;color:var(--muted);margin-top:4px}
+.chart-box{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.chart-box h3{font-size:13px;color:var(--muted);margin-bottom:10px;font-weight:600}
+#loginPage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.login-box{width:100%;max-width:380px}
+.login-box h1{font-size:24px;font-weight:700;text-align:center;margin-bottom:6px}
+.login-box p{color:var(--muted);text-align:center;font-size:13px;margin-bottom:32px}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
+</style>
+</head>
+<body>
+
+<div id="loginPage" style="display:none">
+  <div class="login-box">
+    <div style="font-size:48px;text-align:center;margin-bottom:8px">🔥</div>
+    <h1>Anime Build</h1>
+    <p>Trainings-Tracker</p>
+    <label>E-Mail</label>
+    <input type="email" id="loginEmail" placeholder="deine@email.de">
+    <label>Passwort</label>
+    <input type="password" id="loginPassword" placeholder="••••••••">
+    <button class="btn btn-accent" style="margin-top:8px" onclick="handleAuth()">Einloggen</button>
+    <button onclick="toggleAuthMode()" style="width:100%;margin-top:14px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:8px" id="authToggle">Noch kein Account? Registrieren</button>
+  </div>
+</div>
+
+<div id="appShell" style="display:none">
+  <div id="page-train" class="page active">
+    <div class="hero">
+      <h1>Anime Build Tracker</h1>
+      <p id="activePlanTitle">Lade Plan...</p>
+    </div>
+    <div class="section-header">Welcher Tag?</div>
+    <div class="day-grid" id="dayGrid"></div>
+    <input type="date" id="trainDate" style="margin-bottom:16px">
+    <div id="exerciseSection" style="display:none">
+      <div class="section-header" id="exSectionTitle">Übungen</div>
+      <div id="exerciseList"></div>
+      <button class="btn btn-accent" style="margin-top:8px" onclick="saveSession()">Session speichern</button>
+    </div>
+  </div>
+
+  <div id="page-analyse" class="page">
+    <div class="stat-grid" id="statsGrid"></div>
+    <div class="section-header">Übung analysieren</div>
+    <select id="analyseSelect" onchange="renderCharts()" style="margin-bottom:14px"><option value="">Übung wählen...</option></select>
+    <div class="chart-box"><h3>Max. Gewicht pro Session</h3><canvas id="weightChart" height="180"></canvas></div>
+    <div class="chart-box"><h3>Wiederholungen gesamt</h3><canvas id="repsChart" height="180"></canvas></div>
+    <div class="chart-box"><h3>Sessions pro Tag</h3><canvas id="dayChart" height="180"></canvas></div>
+  </div>
+
+  <div id="page-history" class="page">
+    <div class="section-header">Gespeicherte Sessions</div>
+    <div id="historyList"></div>
+  </div>
+
+  <div id="page-plans" class="page">
+    <div class="hero"><h1>Meine Pläne</h1><p>Verwalte deine Trainingspläne</p></div>
+    <button class="btn btn-accent" style="margin-bottom:16px" onclick="showPlanBuilder()">+ Neuen Plan erstellen</button>
+    <div id="plansList"></div>
+  </div>
+
+  <nav class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('train',this)"><span class="tab-icon">💪</span>Training</button>
+    <button class="tab-btn" onclick="showTab('analyse',this)"><span class="tab-icon">📊</span>Analyse</button>
+    <button class="tab-btn" onclick="showTab('history',this)"><span class="tab-icon">📋</span>Verlauf</button>
+    <button class="tab-btn" onclick="showTab('plans',this)"><span class="tab-icon">⚙️</span>Pläne</button>
+  </nav>
+</div>
+
+<div id="planBuilderPage" style="display:none;padding:16px;padding-bottom:90px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+    <button onclick="hidePlanBuilder()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">←</button>
+    <h2 style="font-size:18px;font-weight:700">Neuer Trainingsplan</h2>
+  </div>
+  <div class="section-header">Plan Details</div>
+  <input type="text" id="planTitle" placeholder="Plan Name (z.B. Push Pull Legs)">
+  <input type="text" id="planDesc" placeholder="Beschreibung (optional)">
+  <div class="section-header">Trainingstage</div>
+  <div id="builderDays"></div>
+  <button class="btn btn-card" style="margin-bottom:10px;border-style:dashed" onclick="addBuilderDay()">+ Tag hinzufügen</button>
+  <button class="btn btn-accent" onclick="savePlan()">Plan speichern</button>
+</div>
+
+<div class="modal-overlay" id="exPickerModal" onclick="if(event.target===this)closeExPicker()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:12px">Übungen auswählen</div>
+    <input type="text" id="exSearch" placeholder="Suchen..." oninput="filterExercises()" style="margin-bottom:8px">
+    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:10px" id="muscleFilters"></div>
+    <div id="exPickerList" style="max-height:300px;overflow-y:auto"></div>
+    <button class="btn btn-accent" style="margin-top:12px" onclick="closeExPicker()">Fertig</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="tutorialModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="font-size:17px;font-weight:700;margin-bottom:4px" id="tutTitle"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px" id="tutMuscle"></div>
+    <div id="tutVideo"></div>
+    <ul id="tutTips" style="list-style:none"></ul>
+    <button class="btn btn-card" style="margin-top:16px" onclick="document.getElementById('tutorialModal').classList.remove('open')">Schließen</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const { createClient } = supabase
+
+const sb = createClient(
+  'https://ghwohwblgtryienupzkh.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdod29od2JsZ3RyeWllbnVwemtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNzMxMTAsImV4cCI6MjA4OTc0OTExMH0.yioE8W9L0WGIiYTZ7F1c62bRj3yzJQO8obLD66APmlI'
+)
+
+const EXERCISES = [
+  {id:'incline_press',name:'Schrägbankdrücken',muscle:'Brust',video:'male-barbell-incline-bench-press-front',tips:['Bank auf 30–45°','Ellbogen ca. 45° nach außen','Explosiv drücken, langsam runter','Obere Brust spüren']},
+  {id:'bench_press',name:'Flachbankdrücken',muscle:'Brust',video:'male-barbell-bench-press-front',tips:['Schulterblätter zusammen','Füße fest auf Boden','Stange zur unteren Brust','Explosiv drücken']},
+  {id:'cable_fly',name:'Kabel Fly',muscle:'Brust',video:'male-cable-chest-fly-front',tips:['Arme leicht gebeugt','Hände zusammenführen','Brust zusammendrücken','Langsam zurück']},
+  {id:'pushups',name:'Liegestütze',muscle:'Brust',video:'male-push-up-front',tips:['Körper gerade','Brust berührt fast Boden','Ellbogen leicht innen','Kern angespannt']},
+  {id:'lat_pulldown',name:'Latzug weit',muscle:'Rücken',video:'male-machine-pulldown-front',tips:['Breiter Griff','Brust raus, leicht zurücklehnen','Ellbogen nach unten führen','Kontrolliert strecken']},
+  {id:'lat_neutral',name:'Latzug neutral',muscle:'Rücken',video:'male-machine-pulldown-front',tips:['Neutraler Griff','Ellbogen nach unten/hinten','Untere Lats aktiv','Brust rausstrecken']},
+  {id:'cable_row',name:'Kabelrudern',muscle:'Rücken',video:'male-cable-seated-row-front',tips:['Aufrecht sitzen','Mit Ellbogen ziehen','Schulterblätter zusammen','Langsam dehnen']},
+  {id:'pullups',name:'Klimmzüge',muscle:'Rücken',video:'male-pull-up-front',tips:['Schulterbreiter Griff','Brust zur Stange','Schulterblätter runterziehen','Langsam runter']},
+  {id:'rdl',name:'Rumän. Kreuzheben',muscle:'Rücken',video:'male-barbell-romanian-deadlift-front',tips:['Leichte Kniebeugung','Hüfte nach hinten','Rücken gerade','Bis Hamstrings spüren']},
+  {id:'shoulder_press',name:'Schulterdrücken',muscle:'Schultern',video:'male-dumbbell-shoulder-press-front',tips:['Hanteln auf Ohrhöhe','Gerade nach oben','Nicht ganz durchstrecken','Langsam runter']},
+  {id:'lateral_raise',name:'Seitheben',muscle:'Schultern',video:'male-dumbbell-lateral-raise-front',tips:['Leichtes Gewicht','Arme leicht gebeugt','Pinkiefinger leicht hoch','Nur bis Schulterniveau']},
+  {id:'rear_delt',name:'Rear Delt Fly',muscle:'Schultern',video:'male-cable-reverse-fly-front',tips:['Leichtes Gewicht','Nach außen/hinten führen','Schulterblätter zusammen','Wichtig für Gesundheit']},
+  {id:'face_pull',name:'Face Pull',muscle:'Schultern',video:'male-cable-face-pull-front',tips:['Kabel auf Augenhöhe','Seil zur Stirn ziehen','Ellbogen hoch','Externe Rotation trainieren']},
+  {id:'bicep_curl',name:'Bizepscurls KH',muscle:'Bizeps',video:'male-dumbbell-bicep-curl-front',tips:['Ellbogen am Körper','Langsam runter','Oben anspannen','Kein Schwung']},
+  {id:'hammer_curl',name:'Hammer Curl',muscle:'Bizeps',video:'male-dumbbell-hammer-curl-front',tips:['Daumen nach oben','Brachialis trainieren','Ellbogen fixiert','Langsam runter']},
+  {id:'tricep_pushdown',name:'Trizeps Pushdown',muscle:'Trizeps',video:'male-cable-pushdown-front',tips:['Ellbogen fixiert','Nur Unterarm bewegt','Unten anspannen','Langsam zurück']},
+  {id:'overhead_tri',name:'Overhead Trizeps',muscle:'Trizeps',video:'male-dumbbell-tricep-overhead-extension-front',tips:['Langer Kopf trainieren','Ellbogen oben halten','Nur Unterarm bewegt','Langsam runter']},
+  {id:'leg_press',name:'Beinpresse',muscle:'Quads',video:'male-sled-leg-press-front',tips:['Füße schulterbreit','Knie nicht durchstrecken','90° Winkel unten','Langsam runter']},
+  {id:'hack_squat',name:'Hack Squat',muscle:'Quads',video:'male-sled-hack-squat-front',tips:['Füße schulterbreit','Tief runter','Rücken flach','Durch Fersen drücken']},
+  {id:'leg_extension',name:'Beinstrecker',muscle:'Quads',video:'male-machine-leg-extension-front',tips:['Aufrecht sitzen','Langsam oben','Sehr langsam runter','Kein Schwung']},
+  {id:'bulgarian',name:'Bulgarian Split Squats',muscle:'Quads',video:'male-dumbbell-bulgarian-split-squat-front',tips:['Hinterer Fuß auf Bank','Senkrecht runter','Knie über Fuß','Hüfte dehnen']},
+  {id:'squat',name:'Kniebeuge',muscle:'Quads',video:'male-barbell-squat-front',tips:['Füße schulterbreit','Knie in Richtung Zehen','Tief runter','Durch Fersen drücken']},
+  {id:'rdl_ham',name:'Rumän. KH (Hamstrings)',muscle:'Hamstrings',video:'male-barbell-romanian-deadlift-front',tips:['Hüfte nach hinten','Rücken gerade','Bis Hamstrings spüren','Dann Hüfte vor']},
+  {id:'leg_curl',name:'Beinbeuger',muscle:'Hamstrings',video:'male-machine-leg-curl-front',tips:['Hüften fest','Fersen zum Gesäß','Oben anspannen','Langsam strecken']},
+  {id:'hip_thrust',name:'Hip Thrust',muscle:'Glutes',video:'male-barbell-hip-thrust-front',tips:['Schulterblätter auf Bank','Hüfte explosiv hoch','Oben maximal anspannen','Knie nach außen']},
+  {id:'calf_raise',name:'Wadenheben',muscle:'Waden',video:'male-machine-calf-raise-front',tips:['Volle Bewegung','Langsam und bewusst','Oben halten','Hohes Volumen']},
+  {id:'plank',name:'Plank',muscle:'Core',video:'male-plank-front',tips:['Gerade Linie','Bauch anspannen','Schultern über Ellbogen','Ruhig atmen']},
+  {id:'hanging_leg_raise',name:'Hanging Leg Raise',muscle:'Core',video:'male-hanging-leg-raise-front',tips:['Fest hängen','Knie zur Brust','Kontrolliert runter','Kein Schwingen']},
+  {id:'cable_crunch',name:'Kabel Crunch',muscle:'Core',video:'male-cable-crunch-front',tips:['Kniend','Bauch zusammenrollen','Hüfte bleibt still','Langsam zurück']},
+  {id:'ab_wheel',name:'Ab Wheel',muscle:'Core',video:'male-ab-wheel-rollout-front',tips:['Knie auf Boden','Langsam rollen','Rücken nicht durchhängen','Durch Bauch zurück']},
+]
+
+const MUSCLES = ['Alle','Brust','Rücken','Schultern','Bizeps','Trizeps','Quads','Hamstrings','Glutes','Waden','Core']
+
+const DEFAULT_PLAN = {
+  title:'Anime Build',description:'V-Taper · Lean · Recomp',
+  days:[
+    {id:'upper_a',label:'Tag 1',name:'Upper A',color:'#e94560',focus:'Obere Brust · Rücken · Schultern',exercises:['incline_press','lat_pulldown','cable_row','shoulder_press','lateral_raise','cable_fly','bicep_curl','tricep_pushdown']},
+    {id:'lower_a',label:'Tag 2',name:'Lower A',color:'#f5a623',focus:'Beine · Glutes · Core',exercises:['leg_press','rdl','leg_extension','leg_curl','calf_raise','hanging_leg_raise','plank']},
+    {id:'upper_b',label:'Tag 3',name:'Upper B',color:'#9b59b6',focus:'Rücken · Brust · Arme',exercises:['bench_press','cable_row','lat_neutral','rear_delt','lateral_raise','hammer_curl','overhead_tri','pushups']},
+    {id:'lower_b',label:'Tag 4',name:'Lower B',color:'#27ae60',focus:'Beine komplett · Core',exercises:['hack_squat','bulgarian','hip_thrust','leg_curl','calf_raise','cable_crunch','ab_wheel']}
+  ]
+}
+
+let currentUser = null
+let plans = []
+let activePlanId = null
+let selectedDay = null
+let sessions = []
+let isSignup = false
+let builderDays = []
+let currentPickerDayIdx = null
+let currentPickerMuscle = 'Alle'
+let chartW = null, chartR = null, chartD = null
+
+function toast(msg, err=false) {
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.style.background = err ? 'var(--accent)' : 'var(--green)'
+  t.classList.add('show')
+  setTimeout(() => t.classList.remove('show'), 2500)
+}
+
+function fmt(d) {
+  if(!d) return ''
+  const [y,m,day] = d.split('-')
+  return `${day}.${m}.${y}`
+}
+
+function today() { return new Date().toISOString().slice(0,10) }
+
+async function init() {
+  const { data: { session } } = await sb.auth.getSession()
+  if (session?.user) {
+    currentUser = session.user
+    showApp()
+  } else {
+    showLogin()
+  }
+  sb.auth.onAuthStateChange((_e, session) => {
+    if (session?.user && !currentUser) { currentUser = session.user; showApp() }
+    else if (!session?.user) { currentUser = null; showLogin() }
+  })
+}
+
+function showLogin() {
+  document.getElementById('loginPage').style.display = 'flex'
+  document.getElementById('appShell').style.display = 'none'
+  document.getElementById('planBuilderPage').style.display = 'none'
+}
+
+async function showApp() {
+  document.getElementById('loginPage').style.display = 'none'
+  document.getElementById('appShell').style.display = 'block'
+  document.getElementById('trainDate').value = today()
+  await loadPlans()
+  await loadSessions()
+}
+
+function toggleAuthMode() {
+  isSignup = !isSignup
+  document.getElementById('authToggle').textContent = isSignup ? 'Schon einen Account? Einloggen' : 'Noch kein Account? Registrieren'
+  document.querySelector('#loginPage .btn-accent').textContent = isSignup ? 'Account erstellen' : 'Einloggen'
+}
+
+async function handleAuth() {
+  const email = document.getElementById('loginEmail').value
+  const password = document.getElementById('loginPassword').value
+  if (!email || !password) return toast('Bitte E-Mail und Passwort eingeben', true)
+  if (isSignup) {
+    const { error } = await sb.auth.signUp({ email, password })
+    if (error) toast('Fehler: ' + error.message, true)
+    else toast('Account erstellt! Bitte E-Mail bestätigen.')
+  } else {
+    const { error } = await sb.auth.signInWithPassword({ email, password })
+    if (error) toast('Fehler: Falsche E-Mail oder Passwort', true)
+  }
+}
+
+async function loadPlans() {
+  const { data } = await sb.from('plans').select('*').eq('user_id', currentUser.id).order('created_at', {ascending:true})
+  if (data && data.length > 0) {
+    plans = data
+    const saved = localStorage.getItem('activePlan_' + currentUser.id)
+    activePlanId = saved && plans.find(p => p.id === saved) ? saved : plans[0].id
+  } else {
+    const { data: created } = await sb.from('plans').insert({user_id:currentUser.id, title:DEFAULT_PLAN.title, description:DEFAULT_PLAN.description, days:DEFAULT_PLAN.days}).select().single()
+    if (created) { plans = [created]; activePlanId = created.id }
+  }
+  renderTrainPage()
+  renderPlansList()
+}
+
+async function loadSessions() {
+  const { data } = await sb.from('sessions').select('*').eq('user_id', currentUser.id).order('date', {ascending:true})
+  sessions = data || []
+  renderHistory()
+  renderAnalyse()
+}
+
+function getActivePlan() { return plans.find(p => p.id === activePlanId) || plans[0] }
+
+function renderTrainPage() {
+  const plan = getActivePlan()
+  if (!plan) return
+  document.getElementById('activePlanTitle').textContent = plan.title
+  const grid = document.getElementById('dayGrid')
+  grid.innerHTML = (plan.days||[]).map(day => `
+    <div class="day-card" id="daycard_${day.id}" onclick="selectDay('${day.id}')" style="border-color:${selectedDay?.id===day.id?day.color:'var(--border)'}">
+      <div class="day-title"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${day.color};margin-right:6px"></span>${day.label} – ${day.name}</div>
+      <div class="day-sub">${day.focus||''}</div>
+    </div>`).join('')
+}
+
+function selectDay(id) {
+  const plan = getActivePlan()
+  selectedDay = plan.days.find(d => d.id === id)
+  renderTrainPage()
+  buildExerciseList()
+  document.getElementById('exerciseSection').style.display = 'block'
+  document.getElementById('exSectionTitle').textContent = 'Übungen — ' + selectedDay.name
+  setTimeout(() => document.getElementById('exerciseSection').scrollIntoView({behavior:'smooth'}), 100)
+}
+
+function buildExerciseList() {
+  const list = document.getElementById('exerciseList')
+  list.innerHTML = selectedDay.exercises.map((exId, ei) => {
+    const ex = EXERCISES.find(e => e.id === exId) || {id:exId, name:exId, muscle:''}
+    return `<div class="ex-block">
+      <div class="ex-header" onclick="toggleEx(${ei})">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:600">${ex.name}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${ex.muscle}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <button onclick="event.stopPropagation();openTutorial('${exId}')" style="font-size:11px;color:var(--gold);background:none;border:1px solid var(--gold);border-radius:20px;padding:3px 9px;cursor:pointer">Tutorial</button>
+          <div id="badge_${ei}" style="font-size:11px;background:var(--bg3);color:var(--muted);padding:3px 8px;border-radius:20px;white-space:nowrap">Eintragen</div>
+        </div>
+      </div>
+      <div class="ex-body" id="exbody_${ei}">
+        <table class="sets-table">
+          <thead><tr><th>#</th><th>kg</th><th>Wdh</th><th></th></tr></thead>
+          <tbody id="setrows_${ei}"></tbody>
+        </table>
+        <button onclick="addSetRow(${ei})" style="font-size:12px;color:var(--blue);background:none;border:1px dashed var(--blue);border-radius:6px;padding:6px 12px;cursor:pointer;width:100%;margin-top:4px">+ Satz</button>
+        <textarea id="note_${ei}" placeholder="Notiz..." style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;resize:none;margin-top:8px;height:56px;margin-bottom:0"></textarea>
+      </div>
+    </div>`
+  }).join('')
+  selectedDay.exercises.forEach((_,ei) => { addSetRow(ei); addSetRow(ei); addSetRow(ei) })
+}
+
+function toggleEx(ei) { document.getElementById('exbody_'+ei).classList.toggle('open') }
+
+function addSetRow(ei) {
+  const tbody = document.getElementById('setrows_'+ei)
+  const n = tbody.rows.length + 1
+  const tr = document.createElement('tr')
+  tr.innerHTML = `<td style="color:var(--muted);font-size:13px;font-weight:600;padding:5px 4px;text-align:center">${n}</td>
+    <td style="padding:5px 4px"><input type="number" inputmode="decimal" placeholder="0" min="0" step="0.5" onchange="updateBadge(${ei})"></td>
+    <td style="padding:5px 4px"><input type="number" inputmode="numeric" placeholder="0" min="0" step="1" onchange="updateBadge(${ei})"></td>
+    <td style="padding:5px 4px;text-align:center"><button onclick="this.closest('tr').remove();renumberRows(${ei})" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer">×</button></td>`
+  tbody.appendChild(tr)
+}
+
+function renumberRows(ei) {
+  document.querySelectorAll(`#setrows_${ei} tr`).forEach((r,i) => { r.cells[0].textContent = i+1 })
+}
+
+function updateBadge(ei) {
+  const rows = document.querySelectorAll(`#setrows_${ei} tr`)
+  let filled = 0
+  rows.forEach(r => { const ins = r.querySelectorAll('input'); if(ins[0]?.value && ins[1]?.value) filled++ })
+  const badge = document.getElementById('badge_'+ei)
+  badge.textContent = filled > 0 ? `${filled}/${rows.length} Sätze` : 'Eintragen'
+  badge.style.color = filled > 0 ? 'var(--green)' : 'var(--muted)'
+}
+
+async function saveSession() {
+  if (!selectedDay) return
+  const date = document.getElementById('trainDate').value
+  if (!date) return toast('Datum fehlt', true)
+  const exercisesData = selectedDay.exercises.map((exId, ei) => {
+    const ex = EXERCISES.find(e => e.id === exId) || {name:exId}
+    const rows = document.querySelectorAll(`#setrows_${ei} tr`)
+    const sets = []
+    rows.forEach(r => { const ins = r.querySelectorAll('input'); sets.push({kg:parseFloat(ins[0]?.value)||0, reps:parseInt(ins[1]?.value)||0}) })
+    return {id:exId, name:ex.name, sets, note:document.getElementById('note_'+ei)?.value||''}
+  })
+  const { error } = await sb.from('sessions').insert({user_id:currentUser.id, plan_id:activePlanId, date, day_id:selectedDay.id, day_name:selectedDay.name, exercises:exercisesData})
+  if (error) return toast('Fehler beim Speichern', true)
+  toast('Session gespeichert!')
+  await loadSessions()
+  selectedDay = null
+  document.getElementById('exerciseSection').style.display = 'none'
+  renderTrainPage()
+}
+
+function openTutorial(exId) {
+  const ex = EXERCISES.find(e => e.id === exId)
+  if (!ex) return
+  document.getElementById('tutTitle').textContent = ex.name
+  document.getElementById('tutMuscle').textContent = ex.muscle
+  const vid = document.getElementById('tutVideo')
+  vid.innerHTML = ex.video ? `<video autoplay loop muted playsinline style="width:100%;max-width:340px;display:block;margin:0 auto 16px;border-radius:var(--radius);background:var(--bg3);min-height:180px" onerror="this.style.display='none'"><source src="https://media.musclewiki.com/media/uploads/videos/branded/${ex.video}.mp4" type="video/mp4"></video>` : ''
+  document.getElementById('tutTips').innerHTML = (ex.tips||[]).map((t,i) => `<li style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg3);font-size:13px;line-height:1.6"><div style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div><span>${t}</span></li>`).join('')
+  document.getElementById('tutorialModal').classList.add('open')
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList')
+  const planColors = {}
+  plans.forEach(p => (p.days||[]).forEach(d => planColors[d.id] = d.color))
+  if (!sessions.length) { list.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--muted)"><div style="font-size:40px;margin-bottom:12px">📋</div><p>Noch keine Sessions.</p></div>'; return }
+  const sorted = [...sessions].reverse()
+  list.innerHTML = sorted.map((s,idx) => {
+    const color = planColors[s.day_id] || '#888'
+    return `<div class="card" style="padding:0;overflow:hidden">
+      <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'" style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+        <div><div style="font-size:14px;font-weight:700">${fmt(s.date)}</div><div style="font-size:12px;color:var(--muted);margin-top:2px"><span style="color:${color};font-weight:700">${s.day_name||''}</span></div></div>
+        <span style="color:var(--muted);font-size:20px">›</span>
+      </div>
+      <div style="display:none;padding:0 14px 14px">
+        ${(s.exercises||[]).map(ex => {
+          const v = (ex.sets||[]).filter(s=>s.kg>0||s.reps>0)
+          if(!v.length) return ''
+          const maxKg = Math.max(...v.map(s=>s.kg))
+          const totalReps = v.reduce((a,s)=>a+s.reps,0)
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bg3);font-size:13px"><span>${ex.name}</span><span style="color:var(--muted);font-size:12px">${v.length}x · ${maxKg>0?maxKg+'kg':'–'} · ${totalReps} Wdh</span></div>`
+        }).join('')}
+        <button class="btn btn-danger btn-sm" style="margin-top:12px" onclick="deleteSession('${s.id}')">Löschen</button>
+      </div>
+    </div>`
+  }).join('')
+}
+
+async function deleteSession(id) {
+  if (!confirm('Löschen?')) return
+  await sb.from('sessions').delete().eq('id', id)
+  sessions = sessions.filter(s => s.id !== id)
+  renderHistory()
+  renderAnalyse()
+  toast('Gelöscht')
+}
+
+function renderAnalyse() {
+  const totalSessions = sessions.length
+  const thisMonth = sessions.filter(s => s.date?.startsWith(new Date().toISOString().slice(0,7))).length
+  const totalSets = sessions.reduce((a,s) => a + (s.exercises||[]).reduce((b,e) => b + (e.sets||[]).length, 0), 0)
+  const now = new Date()
+  const last7 = new Set(sessions.filter(s => (now-new Date(s.date))/86400000 <= 7).map(s=>s.date)).size
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="val">${totalSessions}</div><div class="lbl">Sessions gesamt</div></div>
+    <div class="stat-card"><div class="val">${thisMonth}</div><div class="lbl">Diesen Monat</div></div>
+    <div class="stat-card"><div class="val">${totalSets}</div><div class="lbl">Sätze gesamt</div></div>
+    <div class="stat-card"><div class="val">${last7}</div><div class="lbl">Tage letzte Woche</div></div>`
+  const allExIds = [...new Set(sessions.flatMap(s => (s.exercises||[]).map(e=>e.id)))]
+  const sel = document.getElementById('analyseSelect')
+  const cur = sel.value
+  sel.innerHTML = '<option value="">Übung wählen...</option>' + allExIds.map(id => {
+    const ex = EXERCISES.find(e=>e.id===id)||{name:id}
+    return `<option value="${id}">${ex.name}</option>`
+  }).join('')
+  if (cur) sel.value = cur
+  renderCharts()
+  renderDayChart()
+}
+
+function renderCharts() {
+  const exId = document.getElementById('analyseSelect').value
+  if (!exId) return
+  const points = sessions.map(s => {
+    const ex = (s.exercises||[]).find(e=>e.id===exId)
+    if (!ex) return null
+    const v = (ex.sets||[]).filter(s=>s.kg>0||s.reps>0)
+    if (!v.length) return null
+    return {date:s.date, maxKg:Math.max(...v.map(s=>s.kg)), totalReps:v.reduce((a,s)=>a+s.reps,0)}
+  }).filter(Boolean)
+  const labels = points.map(p=>fmt(p.date))
+  const opts = {responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8a8fa8',font:{size:11},maxRotation:45},grid:{color:'#2a2f50'}},y:{ticks:{color:'#8a8fa8',font:{size:11}},grid:{color:'#2a2f50'}}}}
+  if(chartW) chartW.destroy()
+  chartW = new Chart(document.getElementById('weightChart'),{type:'line',data:{labels,datasets:[{data:points.map(p=>p.maxKg),borderColor:'#e94560',backgroundColor:'rgba(233,69,96,.12)',tension:.3,fill:true,pointRadius:5,pointBackgroundColor:'#e94560'}]},options:opts})
+  if(chartR) chartR.destroy()
+  chartR = new Chart(document.getElementById('repsChart'),{type:'bar',data:{labels,datasets:[{data:points.map(p=>p.totalReps),backgroundColor:'rgba(245,166,35,.7)',borderColor:'#f5a623',borderWidth:1,borderRadius:4}]},options:opts})
+}
+
+function renderDayChart() {
+  const counts = {}
+  const colors = {}
+  plans.forEach(p => (p.days||[]).forEach(d => { colors[d.name]=d.color }))
+  sessions.forEach(s => { counts[s.day_name]=(counts[s.day_name]||0)+1 })
+  if(chartD) chartD.destroy()
+  const labels = Object.keys(counts)
+  chartD = new Chart(document.getElementById('dayChart'),{type:'bar',data:{labels,datasets:[{data:Object.values(counts),backgroundColor:labels.map(n=>(colors[n]||'#3d7ebf')+'bb'),borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8a8fa8',font:{size:11}},grid:{color:'#2a2f50'}},y:{ticks:{color:'#8a8fa8',font:{size:11},stepSize:1},grid:{color:'#2a2f50'}}}}})
+}
+
+function renderPlansList() {
+  const list = document.getElementById('plansList')
+  list.innerHTML = plans.map(plan => `
+    <div class="card" style="border-color:${plan.id===activePlanId?'var(--accent)':'var(--border)'}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+        <div><div style="font-size:15px;font-weight:700">${plan.title}</div>${plan.description?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${plan.description}</div>`:''}</div>
+        ${plan.id===activePlanId?'<span style="font-size:11px;background:var(--accent);color:#fff;padding:3px 8px;border-radius:20px;margin-left:8px;flex-shrink:0">Aktiv</span>':''}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+        ${(plan.days||[]).map(d=>`<div style="font-size:11px;padding:3px 10px;border-radius:20px;background:${d.color}25;color:${d.color};border:1px solid ${d.color}55">${d.name}</div>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px">
+        ${plan.id!==activePlanId?`<button class="btn btn-green btn-sm" onclick="activatePlan('${plan.id}')">Aktivieren</button>`:''}
+        <button class="btn btn-danger btn-sm" onclick="deletePlan('${plan.id}')">Löschen</button>
+      </div>
+    </div>`).join('')
+}
+
+function activatePlan(id) {
+  activePlanId = id
+  localStorage.setItem('activePlan_'+currentUser.id, id)
+  renderTrainPage()
+  renderPlansList()
+  toast('Plan aktiviert!')
+}
+
+async function deletePlan(id) {
+  if (!confirm('Plan löschen?')) return
+  await sb.from('plans').delete().eq('id', id)
+  plans = plans.filter(p => p.id !== id)
+  if (activePlanId === id) activePlanId = plans[0]?.id
+  renderPlansList()
+  renderTrainPage()
+  toast('Plan gelöscht')
+}
+
+function showPlanBuilder() {
+  builderDays = [{id:Date.now(),name:'',focus:'',color:'#e94560',exercises:[]}]
+  document.getElementById('planTitle').value = ''
+  document.getElementById('planDesc').value = ''
+  renderBuilderDays()
+  document.getElementById('appShell').style.display = 'none'
+  document.getElementById('planBuilderPage').style.display = 'block'
+}
+
+function hidePlanBuilder() {
+  document.getElementById('planBuilderPage').style.display = 'none'
+  document.getElementById('appShell').style.display = 'block'
+}
+
+const COLORS = ['#e94560','#f5a623','#9b59b6','#27ae60','#3d7ebf','#e67e22','#1abc9c','#e91e8c']
+
+function addBuilderDay() {
+  if (builderDays.length >= 7) return toast('Max 7 Tage', true)
+  builderDays.push({id:Date.now(),name:'',focus:'',color:COLORS[builderDays.length%COLORS.length],exercises:[]})
+  renderBuilderDays()
+}
+
+function renderBuilderDays() {
+  document.getElementById('builderDays').innerHTML = builderDays.map((day,idx) => `
+    <div class="card" style="border-color:${day.color}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="width:12px;height:12px;border-radius:50%;background:${day.color};flex-shrink:0"></div>
+        <input type="text" value="${day.name}" oninput="builderDays[${idx}].name=this.value" placeholder="Tag Name (z.B. Upper A)" style="flex:1;margin-bottom:0;font-size:13px;padding:7px 10px">
+        <button onclick="builderDays.splice(${idx},1);renderBuilderDays()" style="background:none;border:none;color:var(--accent);font-size:18px;cursor:pointer;padding:0 4px">×</button>
+      </div>
+      <input type="text" value="${day.focus}" oninput="builderDays[${idx}].focus=this.value" placeholder="Fokus (z.B. Brust · Rücken)" style="margin-bottom:8px;font-size:12px;padding:7px 10px">
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
+        ${day.exercises.map(exId => {
+          const ex = EXERCISES.find(e=>e.id===exId)||{name:exId}
+          return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;display:flex;align-items:center;gap:5px">${ex.name}<span onclick="builderDays[${idx}].exercises=builderDays[${idx}].exercises.filter(id=>id!=='${exId}');renderBuilderDays()" style="cursor:pointer;color:var(--muted)">×</span></div>`
+        }).join('')}
+      </div>
+      <button class="btn btn-card btn-sm" onclick="openExPicker(${idx})">+ Übungen (${day.exercises.length})</button>
+    </div>`).join('')
+}
+
+function openExPicker(idx) {
+  currentPickerDayIdx = idx
+  currentPickerMuscle = 'Alle'
+  renderMuscleFilters()
+  filterExercises()
+  document.getElementById('exSearch').value = ''
+  document.getElementById('exPickerModal').classList.add('open')
+}
+
+function closeExPicker() {
+  document.getElementById('exPickerModal').classList.remove('open')
+  renderBuilderDays()
+}
+
+function renderMuscleFilters() {
+  document.getElementById('muscleFilters').innerHTML = MUSCLES.map(m => `
+    <button onclick="currentPickerMuscle='${m}';renderMuscleFilters();filterExercises()" style="white-space:nowrap;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:${currentPickerMuscle===m?'var(--accent)':'var(--card)'};color:${currentPickerMuscle===m?'#fff':'var(--muted)'};font-size:12px;cursor:pointer;flex-shrink:0">${m}</button>`).join('')
+}
+
+function filterExercises() {
+  const search = document.getElementById('exSearch').value.toLowerCase()
+  const day = builderDays[currentPickerDayIdx]
+  const filtered = EXERCISES.filter(ex => {
+    const matchM = currentPickerMuscle==='Alle' || ex.muscle===currentPickerMuscle
+    const matchS = ex.name.toLowerCase().includes(search)
+    return matchM && matchS
+  })
+  document.getElementById('exPickerList').innerHTML = filtered.map(ex => {
+    const sel = day.exercises.includes(ex.id)
+    return `<div onclick="togglePickerEx('${ex.id}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;margin-bottom:4px;background:${sel?'var(--card2)':'var(--bg3)'};border:1px solid ${sel?'var(--accent)':'var(--border)'};cursor:pointer">
+      <div><div style="font-size:13px;font-weight:600">${ex.name}</div><div style="font-size:11px;color:var(--muted)">${ex.muscle}</div></div>
+      <div style="width:22px;height:22px;border-radius:50%;background:${sel?'var(--accent)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;flex-shrink:0">${sel?'✓':'+'}</div>
+    </div>`
+  }).join('')
+}
+
+function togglePickerEx(exId) {
+  const day = builderDays[currentPickerDayIdx]
+  if (day.exercises.includes(exId)) day.exercises = day.exercises.filter(id=>id!==exId)
+  else day.exercises.push(exId)
+  filterExercises()
+}
+
+async function savePlan() {
+  const title = document.getElementById('planTitle').value.trim()
+  if (!title) return toast('Plan braucht einen Namen', true)
+  if (!builderDays.length) return toast('Mindestens 1 Tag nötig', true)
+  if (builderDays.some(d=>!d.exercises.length)) return toast('Jeder Tag braucht Übungen', true)
+  const plan = {
+    user_id: currentUser.id,
+    title,
+    description: document.getElementById('planDesc').value.trim(),
+    days: builderDays.map((d,i) => ({id:'day_'+i,label:'Tag '+(i+1),name:d.name||'Tag '+(i+1),focus:d.focus,color:d.color,exercises:d.exercises}))
+  }
+  const { data, error } = await sb.from('plans').insert(plan).select().single()
+  if (error) return toast('Fehler beim Speichern', true)
+  plans.push(data)
+  toast('Plan gespeichert!')
+  hidePlanBuilder()
+  renderPlansList()
+}
+
+function showTab(tab, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'))
+  document.getElementById('page-'+tab).classList.add('active')
+  btn.classList.add('active')
+  if (tab==='analyse') renderAnalyse()
+  if (tab==='history') renderHistory()
+  if (tab==='plans') renderPlansList()
+}
+
+init()
+</script>
+</body>
 </html>
