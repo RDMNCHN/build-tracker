@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Build Tracker</title>
+<title>Anime Build Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -174,36 +174,36 @@ const sb = createClient(
 )
 
 const EXERCISES = [
-  {id:'incline_press',name:'Schrägbankdrücken',muscle:'Brust',video:'male-barbell-incline-bench-press-front',tips:['Bank auf 30–45°','Ellbogen ca. 45° nach außen','Explosiv drücken, langsam runter','Obere Brust spüren']},
-  {id:'bench_press',name:'Flachbankdrücken',muscle:'Brust',video:'male-barbell-bench-press-front',tips:['Schulterblätter zusammen','Füße fest auf Boden','Stange zur unteren Brust','Explosiv drücken']},
-  {id:'cable_fly',name:'Kabel Fly',muscle:'Brust',video:'male-cable-chest-fly-front',tips:['Arme leicht gebeugt','Hände zusammenführen','Brust zusammendrücken','Langsam zurück']},
-  {id:'pushups',name:'Liegestütze',muscle:'Brust',video:'male-push-up-front',tips:['Körper gerade','Brust berührt fast Boden','Ellbogen leicht innen','Kern angespannt']},
-  {id:'lat_pulldown',name:'Latzug weit',muscle:'Rücken',video:'male-machine-pulldown-front',tips:['Breiter Griff','Brust raus, leicht zurücklehnen','Ellbogen nach unten führen','Kontrolliert strecken']},
-  {id:'lat_neutral',name:'Latzug neutral',muscle:'Rücken',video:'male-machine-pulldown-front',tips:['Neutraler Griff','Ellbogen nach unten/hinten','Untere Lats aktiv','Brust rausstrecken']},
-  {id:'cable_row',name:'Kabelrudern',muscle:'Rücken',video:'male-cable-seated-row-front',tips:['Aufrecht sitzen','Mit Ellbogen ziehen','Schulterblätter zusammen','Langsam dehnen']},
-  {id:'pullups',name:'Klimmzüge',muscle:'Rücken',video:'male-pull-up-front',tips:['Schulterbreiter Griff','Brust zur Stange','Schulterblätter runterziehen','Langsam runter']},
-  {id:'rdl',name:'Rumän. Kreuzheben',muscle:'Rücken',video:'male-barbell-romanian-deadlift-front',tips:['Leichte Kniebeugung','Hüfte nach hinten','Rücken gerade','Bis Hamstrings spüren']},
-  {id:'shoulder_press',name:'Schulterdrücken',muscle:'Schultern',video:'male-dumbbell-shoulder-press-front',tips:['Hanteln auf Ohrhöhe','Gerade nach oben','Nicht ganz durchstrecken','Langsam runter']},
-  {id:'lateral_raise',name:'Seitheben',muscle:'Schultern',video:'male-dumbbell-lateral-raise-front',tips:['Leichtes Gewicht','Arme leicht gebeugt','Pinkiefinger leicht hoch','Nur bis Schulterniveau']},
-  {id:'rear_delt',name:'Rear Delt Fly',muscle:'Schultern',video:'male-cable-reverse-fly-front',tips:['Leichtes Gewicht','Nach außen/hinten führen','Schulterblätter zusammen','Wichtig für Gesundheit']},
-  {id:'face_pull',name:'Face Pull',muscle:'Schultern',video:'male-cable-face-pull-front',tips:['Kabel auf Augenhöhe','Seil zur Stirn ziehen','Ellbogen hoch','Externe Rotation trainieren']},
-  {id:'bicep_curl',name:'Bizepscurls KH',muscle:'Bizeps',video:'male-dumbbell-bicep-curl-front',tips:['Ellbogen am Körper','Langsam runter','Oben anspannen','Kein Schwung']},
-  {id:'hammer_curl',name:'Hammer Curl',muscle:'Bizeps',video:'male-dumbbell-hammer-curl-front',tips:['Daumen nach oben','Brachialis trainieren','Ellbogen fixiert','Langsam runter']},
-  {id:'tricep_pushdown',name:'Trizeps Pushdown',muscle:'Trizeps',video:'male-cable-pushdown-front',tips:['Ellbogen fixiert','Nur Unterarm bewegt','Unten anspannen','Langsam zurück']},
-  {id:'overhead_tri',name:'Overhead Trizeps',muscle:'Trizeps',video:'male-dumbbell-tricep-overhead-extension-front',tips:['Langer Kopf trainieren','Ellbogen oben halten','Nur Unterarm bewegt','Langsam runter']},
-  {id:'leg_press',name:'Beinpresse',muscle:'Quads',video:'male-sled-leg-press-front',tips:['Füße schulterbreit','Knie nicht durchstrecken','90° Winkel unten','Langsam runter']},
-  {id:'hack_squat',name:'Hack Squat',muscle:'Quads',video:'male-sled-hack-squat-front',tips:['Füße schulterbreit','Tief runter','Rücken flach','Durch Fersen drücken']},
-  {id:'leg_extension',name:'Beinstrecker',muscle:'Quads',video:'male-machine-leg-extension-front',tips:['Aufrecht sitzen','Langsam oben','Sehr langsam runter','Kein Schwung']},
-  {id:'bulgarian',name:'Bulgarian Split Squats',muscle:'Quads',video:'male-dumbbell-bulgarian-split-squat-front',tips:['Hinterer Fuß auf Bank','Senkrecht runter','Knie über Fuß','Hüfte dehnen']},
-  {id:'squat',name:'Kniebeuge',muscle:'Quads',video:'male-barbell-squat-front',tips:['Füße schulterbreit','Knie in Richtung Zehen','Tief runter','Durch Fersen drücken']},
-  {id:'rdl_ham',name:'Rumän. KH (Hamstrings)',muscle:'Hamstrings',video:'male-barbell-romanian-deadlift-front',tips:['Hüfte nach hinten','Rücken gerade','Bis Hamstrings spüren','Dann Hüfte vor']},
-  {id:'leg_curl',name:'Beinbeuger',muscle:'Hamstrings',video:'male-machine-leg-curl-front',tips:['Hüften fest','Fersen zum Gesäß','Oben anspannen','Langsam strecken']},
-  {id:'hip_thrust',name:'Hip Thrust',muscle:'Glutes',video:'male-barbell-hip-thrust-front',tips:['Schulterblätter auf Bank','Hüfte explosiv hoch','Oben maximal anspannen','Knie nach außen']},
-  {id:'calf_raise',name:'Wadenheben',muscle:'Waden',video:'male-machine-calf-raise-front',tips:['Volle Bewegung','Langsam und bewusst','Oben halten','Hohes Volumen']},
-  {id:'plank',name:'Plank',muscle:'Core',video:'male-plank-front',tips:['Gerade Linie','Bauch anspannen','Schultern über Ellbogen','Ruhig atmen']},
-  {id:'hanging_leg_raise',name:'Hanging Leg Raise',muscle:'Core',video:'male-hanging-leg-raise-front',tips:['Fest hängen','Knie zur Brust','Kontrolliert runter','Kein Schwingen']},
-  {id:'cable_crunch',name:'Kabel Crunch',muscle:'Core',video:'male-cable-crunch-front',tips:['Kniend','Bauch zusammenrollen','Hüfte bleibt still','Langsam zurück']},
-  {id:'ab_wheel',name:'Ab Wheel',muscle:'Core',video:'male-ab-wheel-rollout-front',tips:['Knie auf Boden','Langsam rollen','Rücken nicht durchhängen','Durch Bauch zurück']},
+  {id:'incline_press',name:'Schrägbankdrücken',search:'incline bench press',muscle:'Brust',video:'male-barbell-incline-bench-press-front',tips:['Bank auf 30–45°','Ellbogen ca. 45° nach außen','Explosiv drücken, langsam runter','Obere Brust spüren']},
+  {id:'bench_press',name:'Flachbankdrücken',search:'barbell bench press',muscle:'Brust',video:'male-barbell-bench-press-front',tips:['Schulterblätter zusammen','Füße fest auf Boden','Stange zur unteren Brust','Explosiv drücken']},
+  {id:'cable_fly',name:'Kabel Fly',search:'cable chest fly',muscle:'Brust',video:'male-cable-chest-fly-front',tips:['Arme leicht gebeugt','Hände zusammenführen','Brust zusammendrücken','Langsam zurück']},
+  {id:'pushups',name:'Liegestütze',search:'push up',muscle:'Brust',video:'male-push-up-front',tips:['Körper gerade','Brust berührt fast Boden','Ellbogen leicht innen','Kern angespannt']},
+  {id:'lat_pulldown',name:'Latzug weit',search:'lat pulldown',muscle:'Rücken',video:'male-machine-pulldown-front',tips:['Breiter Griff','Brust raus, leicht zurücklehnen','Ellbogen nach unten führen','Kontrolliert strecken']},
+  {id:'lat_neutral',name:'Latzug neutral',search:'lat pulldown',muscle:'Rücken',video:'male-machine-pulldown-front',tips:['Neutraler Griff','Ellbogen nach unten/hinten','Untere Lats aktiv','Brust rausstrecken']},
+  {id:'cable_row',name:'Kabelrudern',search:'seated cable row',muscle:'Rücken',video:'male-cable-seated-row-front',tips:['Aufrecht sitzen','Mit Ellbogen ziehen','Schulterblätter zusammen','Langsam dehnen']},
+  {id:'pullups',name:'Klimmzüge',search:'pull up',muscle:'Rücken',video:'male-pull-up-front',tips:['Schulterbreiter Griff','Brust zur Stange','Schulterblätter runterziehen','Langsam runter']},
+  {id:'rdl',name:'Rumän. Kreuzheben',search:'romanian deadlift',muscle:'Rücken',video:'male-barbell-romanian-deadlift-front',tips:['Leichte Kniebeugung','Hüfte nach hinten','Rücken gerade','Bis Hamstrings spüren']},
+  {id:'shoulder_press',name:'Schulterdrücken',search:'dumbbell shoulder press',muscle:'Schultern',video:'male-dumbbell-shoulder-press-front',tips:['Hanteln auf Ohrhöhe','Gerade nach oben','Nicht ganz durchstrecken','Langsam runter']},
+  {id:'lateral_raise',name:'Seitheben',search:'dumbbell lateral raise',muscle:'Schultern',video:'male-dumbbell-lateral-raise-front',tips:['Leichtes Gewicht','Arme leicht gebeugt','Pinkiefinger leicht hoch','Nur bis Schulterniveau']},
+  {id:'rear_delt',name:'Rear Delt Fly',search:'reverse cable fly',muscle:'Schultern',video:'male-cable-reverse-fly-front',tips:['Leichtes Gewicht','Nach außen/hinten führen','Schulterblätter zusammen','Wichtig für Gesundheit']},
+  {id:'face_pull',name:'Face Pull',search:'cable face pull',muscle:'Schultern',video:'male-cable-face-pull-front',tips:['Kabel auf Augenhöhe','Seil zur Stirn ziehen','Ellbogen hoch','Externe Rotation trainieren']},
+  {id:'bicep_curl',name:'Bizepscurls KH',search:'dumbbell bicep curl',muscle:'Bizeps',video:'male-dumbbell-bicep-curl-front',tips:['Ellbogen am Körper','Langsam runter','Oben anspannen','Kein Schwung']},
+  {id:'hammer_curl',name:'Hammer Curl',search:'hammer curl',muscle:'Bizeps',video:'male-dumbbell-hammer-curl-front',tips:['Daumen nach oben','Brachialis trainieren','Ellbogen fixiert','Langsam runter']},
+  {id:'tricep_pushdown',name:'Trizeps Pushdown',search:'cable pushdown',muscle:'Trizeps',video:'male-cable-pushdown-front',tips:['Ellbogen fixiert','Nur Unterarm bewegt','Unten anspannen','Langsam zurück']},
+  {id:'overhead_tri',name:'Overhead Trizeps',search:'overhead tricep extension',muscle:'Trizeps',video:'male-dumbbell-tricep-overhead-extension-front',tips:['Langer Kopf trainieren','Ellbogen oben halten','Nur Unterarm bewegt','Langsam runter']},
+  {id:'leg_press',name:'Beinpresse',search:'leg press',muscle:'Quads',video:'male-sled-leg-press-front',tips:['Füße schulterbreit','Knie nicht durchstrecken','90° Winkel unten','Langsam runter']},
+  {id:'hack_squat',name:'Hack Squat',search:'hack squat',muscle:'Quads',video:'male-sled-hack-squat-front',tips:['Füße schulterbreit','Tief runter','Rücken flach','Durch Fersen drücken']},
+  {id:'leg_extension',name:'Beinstrecker',search:'leg extension',muscle:'Quads',video:'male-machine-leg-extension-front',tips:['Aufrecht sitzen','Langsam oben','Sehr langsam runter','Kein Schwung']},
+  {id:'bulgarian',name:'Bulgarian Split Squats',search:'bulgarian split squat',muscle:'Quads',video:'male-dumbbell-bulgarian-split-squat-front',tips:['Hinterer Fuß auf Bank','Senkrecht runter','Knie über Fuß','Hüfte dehnen']},
+  {id:'squat',name:'Kniebeuge',search:'barbell squat',muscle:'Quads',video:'male-barbell-squat-front',tips:['Füße schulterbreit','Knie in Richtung Zehen','Tief runter','Durch Fersen drücken']},
+  {id:'rdl_ham',name:'Rumän. KH (Hamstrings)',search:'romanian deadlift',muscle:'Hamstrings',video:'male-barbell-romanian-deadlift-front',tips:['Hüfte nach hinten','Rücken gerade','Bis Hamstrings spüren','Dann Hüfte vor']},
+  {id:'leg_curl',name:'Beinbeuger',search:'leg curl',muscle:'Hamstrings',video:'male-machine-leg-curl-front',tips:['Hüften fest','Fersen zum Gesäß','Oben anspannen','Langsam strecken']},
+  {id:'hip_thrust',name:'Hip Thrust',search:'barbell hip thrust',muscle:'Glutes',video:'male-barbell-hip-thrust-front',tips:['Schulterblätter auf Bank','Hüfte explosiv hoch','Oben maximal anspannen','Knie nach außen']},
+  {id:'calf_raise',name:'Wadenheben',search:'calf raise',muscle:'Waden',video:'male-machine-calf-raise-front',tips:['Volle Bewegung','Langsam und bewusst','Oben halten','Hohes Volumen']},
+  {id:'plank',name:'Plank',search:'plank',muscle:'Core',video:'male-plank-front',tips:['Gerade Linie','Bauch anspannen','Schultern über Ellbogen','Ruhig atmen']},
+  {id:'hanging_leg_raise',name:'Hanging Leg Raise',search:'hanging leg raise',muscle:'Core',video:'male-hanging-leg-raise-front',tips:['Fest hängen','Knie zur Brust','Kontrolliert runter','Kein Schwingen']},
+  {id:'cable_crunch',name:'Kabel Crunch',search:'cable crunch',muscle:'Core',video:'male-cable-crunch-front',tips:['Kniend','Bauch zusammenrollen','Hüfte bleibt still','Langsam zurück']},
+  {id:'ab_wheel',name:'Ab Wheel',search:'ab wheel rollout',muscle:'Core',video:'male-ab-wheel-rollout-front',tips:['Knie auf Boden','Langsam rollen','Rücken nicht durchhängen','Durch Bauch zurück']},
 ]
 
 const MUSCLES = ['Alle','Brust','Rücken','Schultern','Bizeps','Trizeps','Quads','Hamstrings','Glutes','Waden','Core']
@@ -425,7 +425,7 @@ async function openTutorial(exId) {
   vid.innerHTML = `<div style="width:100%;height:180px;background:var(--bg3);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;margin-bottom:16px">GIF wird geladen...</div>`
   if (gifCache[exId]) { renderGif(gifCache[exId]); return }
   try {
-    const res = await fetch(`https://exercisedb.dev/api/v1/exercises/search?query=${encodeURIComponent(ex.name)}&limit=1`)
+    const res = await fetch(`https://exercisedb.dev/api/v1/exercises/search?query=${encodeURIComponent(ex.search||ex.name)}&limit=1`)
     const data = await res.json()
     const found = data?.exercises?.[0] || data?.[0]
     if (found?.gifUrl) {
