@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Anime Build Tracker</title>
+<title>Build Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -95,28 +95,28 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
     <div id="exerciseSection" style="display:none">
       <div class="section-header" id="exSectionTitle">Übungen</div>
       <div id="exerciseList"></div>
-      <button class="btn btn-accent" style="margin-top:8px" onclick="saveSession()">Session speichern</button>
+      <button class="btn btn-accent" style="margin-top:8px" onclick="saveSession()" id="saveSessionBtn">Session speichern</button>
     </div>
   </div>
 
   <div id="page-analyse" class="page">
     <div class="stat-grid" id="statsGrid"></div>
     <div id="apiUsageBox"></div>
-    <div class="section-header">Übung analysieren</div>
+    <div class="section-header" id="analyseHeader">Übung analysieren</div>
     <select id="analyseSelect" onchange="renderCharts()" style="margin-bottom:14px"><option value="">Übung wählen...</option></select>
-    <div class="chart-box"><h3>Max. Gewicht pro Session</h3><canvas id="weightChart" height="180"></canvas></div>
-    <div class="chart-box"><h3>Wiederholungen gesamt</h3><canvas id="repsChart" height="180"></canvas></div>
-    <div class="chart-box"><h3>Sessions pro Tag</h3><canvas id="dayChart" height="180"></canvas></div>
+    <div class="chart-box"><h3 id="chartTitle1">Max. Gewicht pro Session</h3><canvas id="weightChart" height="180"></canvas></div>
+    <div class="chart-box"><h3 id="chartTitle2">Wiederholungen gesamt</h3><canvas id="repsChart" height="180"></canvas></div>
+    <div class="chart-box"><h3 id="chartTitle3">Sessions pro Day</h3><canvas id="dayChart" height="180"></canvas></div>
   </div>
 
   <div id="page-history" class="page">
-    <div class="section-header">Gespeicherte Sessions</div>
+    <div class="section-header" id="historyHeader">Gespeicherte Sessions</div>
     <div id="historyList"></div>
   </div>
 
   <div id="page-plans" class="page">
-    <div class="hero"><h1>Meine Pläne</h1><p>Verwalte deine Trainingspläne</p></div>
-    <button class="btn btn-accent" style="margin-bottom:16px" onclick="showPlanBuilder()">+ Neuen Plan erstellen</button>
+    <div class="hero"><h1 id="plansH1">Meine Pläne</h1><p id="plansP">Verwalte deine Trainingspläne</p></div>
+    <button class="btn btn-accent" style="margin-bottom:16px" id="newPlanBtn" onclick="showPlanBuilder()">+ Neuen Plan erstellen</button>
     <div id="plansList"></div>
   </div>
 
@@ -283,6 +283,7 @@ const T = {
     addExercises:'+ Übungen', searchEx:'Suchen...', done:'Fertig',
     login:'Einloggen', register:'Account erstellen', email:'E-Mail', password:'Passwort',
     noAccount:'Noch kein Account? Registrieren', hasAccount:'Schon einen Account? Einloggen',
+    whichDay:'Welcher Tag?', analyseEx:'Übung analysieren', maxWeight2:'Max. Gewicht pro Session', totalReps2:'Wiederholungen gesamt', sessionsDay:'Sessions pro Tag', savedSessions:'Gespeicherte Sessions', settingsH:'Einstellungen', usernameL:'Benutzername', badgesL:'Badges', logoutL:'Ausloggen', noBadgesL:'Noch keine Badges verdient 💪', noUsernameL:'Kein Benutzername gesetzt',
     apiMonth:'GIF API — Diesen Monat', apiLeft:'Anfragen diesen Monat noch verfügbar',
     gifLoading:'Bild wird geladen...', gifLimit:'Monatslimit erreicht',
     muscles: ['Alle','Brust','Rücken','Schultern','Bizeps','Trizeps','Quads','Hamstrings','Glutes','Waden','Core'],
@@ -304,6 +305,7 @@ const T = {
     addExercises:'+ Exercises', searchEx:'Search...', done:'Done',
     login:'Log in', register:'Create account', email:'Email', password:'Password',
     noAccount:"Don't have an account? Register", hasAccount:'Already have an account? Log in',
+    whichDay:'Which day?', analyseEx:'Analyze exercise', maxWeight2:'Max weight per session', totalReps2:'Total reps', sessionsDay:'Sessions per day', savedSessions:'Saved sessions', settingsH:'Settings', usernameL:'Username', badgesL:'Badges', logoutL:'Log out', noBadgesL:'No badges earned yet 💪', noUsernameL:'No username set',
     apiMonth:'GIF API — This month', apiLeft:'requests remaining this month',
     gifLoading:'Loading image...', gifLimit:'Monthly limit reached',
     muscles: ['All','Chest','Back','Shoulders','Biceps','Triceps','Quads','Hamstrings','Glutes','Calves','Core'],
@@ -329,6 +331,24 @@ function applyLang() {
   document.querySelectorAll('[data-t]').forEach(el => {
     el.textContent = t(el.dataset.t)
   })
+  const ids = {
+    'whichDayHeader': t('whichDay'),
+    'saveSessionBtn': t('saveSession'),
+    'analyseHeader': t('analyseEx'),
+    'chartTitle1': t('maxWeight2'),
+    'chartTitle2': t('totalReps2'),
+    'chartTitle3': t('sessionsDay'),
+    'historyHeader': t('savedSessions') + ' (' + (sessions?.length||0) + ')',
+    'plansH1': t('myPlans'),
+    'plansP': t('managePlans'),
+    'newPlanBtn': t('newPlan'),
+  }
+  Object.entries(ids).forEach(([id, text]) => {
+    const el = document.getElementById(id)
+    if (el) el.textContent = text
+  })
+  const exTitle = document.getElementById('exSectionTitle')
+  if (exTitle && selectedDay) exTitle.textContent = t('exercises') + ' — ' + selectedDay.name
 }
 
 const DEFAULT_PLAN = {
@@ -384,17 +404,19 @@ async function handleLogout() {
   showLogin()
 }
 
-function renderProfile() {
+async function renderProfile() {
   if (!currentUser) return
-  const username = currentUser.username || ''
+  const { data: prof } = await sb.from('profiles').select('username,lang').eq('user_id', currentUser.id).single()
+  const username = prof?.username || ''
+  if (prof?.lang && prof.lang !== lang) { lang = prof.lang; localStorage.setItem('lang', lang); applyLang() }
   const email = currentUser.email || ''
   const initial = (username || email || '?')[0].toUpperCase()
   document.getElementById('profileAvatar').textContent = initial
-  document.getElementById('profileName').textContent = username || (lang==='en'?'No username set':'Kein Benutzername')
+  document.getElementById('profileName').textContent = username || (lang==='en'?'No username set':'Kein Benutzername gesetzt')
   document.getElementById('profileEmail').textContent = email
-  if (document.getElementById('usernameInput') && !document.getElementById('usernameInput').value) {
-    document.getElementById('usernameInput').value = username
-  }
+  const input = document.getElementById('usernameInput')
+  if (input) input.value = username
+  applyLang()
 }
 
 async function init() {
