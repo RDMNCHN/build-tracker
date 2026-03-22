@@ -239,17 +239,17 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
     <button class="tab-btn" onclick="showTab('profile',this)"><span class="tab-icon">👤</span><span data-t="profile">Profil</span></button>
     <button class="tab-btn" id="adminTab" style="display:none" onclick="showTab('admin',this)"><span class="tab-icon">🔐</span>Admin</button>
   </nav>
-</div>
 
-<div id="page-admin" class="page" style="display:none">
-  <div class="hero" style="background:linear-gradient(135deg,#1a0000 0%,#3a0000 100%)">
-    <h1>🔐 Admin Panel</h1>
-    <p>Grindset — Nur für dich sichtbar</p>
+  <div id="page-admin" class="page" style="display:none">
+    <div class="hero" style="background:linear-gradient(135deg,#1a0000 0%,#3a0000 100%)">
+      <h1>🔐 Admin Panel</h1>
+      <p>Grindset — Nur für dich sichtbar</p>
+    </div>
+    <div class="section-header">User Verwaltung</div>
+    <div id="adminUserList"></div>
+    <div class="section-header" style="margin-top:20px">Audit Log</div>
+    <div id="adminAuditLog"></div>
   </div>
-  <div class="section-header">User Verwaltung</div>
-  <div id="adminUserList"></div>
-  <div class="section-header" style="margin-top:20px">Audit Log</div>
-  <div id="adminAuditLog"></div>
 </div>
 
 <div id="planBuilderPage" style="display:none;padding:16px;padding-bottom:90px">
@@ -692,6 +692,17 @@ async function showApp() {
   document.getElementById('loginPage').style.display = 'none'
   document.getElementById('appShell').style.display = 'block'
   document.getElementById('trainDate').value = today()
+  // Ensure profile row exists
+  const { data: prof, error: profErr } = await sb.from('profiles').select('*').eq('user_id', currentUser.id).single()
+  if (profErr || !prof) {
+    await sb.from('profiles').insert({ user_id: currentUser.id, lang: localStorage.getItem('lang')||'de', xp: 0 })
+  } else {
+    if (prof.username) currentUser.username = prof.username
+    if (prof.lang) { lang = prof.lang; localStorage.setItem('lang', lang) }
+  }
+  applyLang()
+  renderProfile()
+  if (isAdmin()) document.getElementById('adminTab').style.display = 'flex'
   await loadPlans()
   await loadSessions()
 }
