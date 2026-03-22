@@ -116,6 +116,24 @@
   .export-btn:active { background: #1e8449; }
   .import-btn { background: var(--blue); color: #fff; cursor: pointer; }
   .import-btn:active { background: #2d6a9f; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 500; align-items: flex-end; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal-sheet { background: var(--bg2); border-radius: 18px 18px 0 0; width: 100%; max-height: 88vh; overflow-y: auto; padding: 20px 16px 32px; }
+  .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .modal-muscle { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .modal-gif { width: 100%; max-width: 320px; display: block; margin: 0 auto 16px; border-radius: var(--radius); background: var(--bg3); min-height: 180px; }
+  .modal-gif-loading { width: 100%; height: 180px; background: var(--bg3); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  .modal-steps { list-style: none; }
+  .modal-steps li { font-size: 13px; line-height: 1.6; padding: 8px 0; border-bottom: 1px solid var(--bg3); color: var(--text); display: flex; gap: 10px; }
+  .modal-steps li:last-child { border-bottom: none; }
+  .modal-step-num { background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; min-width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-top: 1px; flex-shrink: 0; }
+  .modal-close { width: 100%; background: var(--card); color: var(--text); border: none; border-radius: var(--radius); padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 16px; }
+  .info-btn { font-size: 11px; color: var(--gold); background: none; border: 1px solid var(--gold); border-radius: 20px; padding: 3px 9px; cursor: pointer; white-space: nowrap; flex-shrink: 0; margin-left: 8px; }
+  .ex-header-inner { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 8px; }
+  .ex-header-left { flex: 1; min-width: 0; }
+  .ex-header-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -174,6 +192,17 @@
   </div>
   <div class="section-header">Gespeicherte Sessions</div>
   <div id="historyList"></div>
+</div>
+
+<div class="modal-overlay" id="tutorialModal" onclick="closeModal(event)">
+  <div class="modal-sheet" id="modalSheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-muscle" id="modalMuscle"></div>
+    <div id="modalGifArea"></div>
+    <ul class="modal-steps" id="modalSteps"></ul>
+    <button class="modal-close" onclick="document.getElementById('tutorialModal').classList.remove('open')">Schließen</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -236,8 +265,61 @@ const DAYS = [
   }
 ];
 
-let selectedDay = null;
-let chartW = null, chartR = null, chartD = null;
+const TUTORIALS = {
+  incline_press: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-barbell-incline-bench-press-front.mp4', tips: ['Bank auf 30–45° — höher trifft mehr Schultern, weniger Brust','Hanteln auf Schulterhöhe, Ellbogen ca. 45° nach außen','Explosiv drücken, langsam runter in 2–3 Sek','Obere Brust bewusst anspannen, nicht die Schultern arbeiten lassen'] },
+  lat_pulldown: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-machine-pulldown-front.mp4', tips: ['Breiter Griff, etwas breiter als Schultern','Brust rausstrecken, leicht zurücklehnen (ca. 15°)','Stange zur Brust ziehen indem du Ellbogen nach unten/hinten führst','Oben kontrolliert strecken — nicht reißen oder Schwung holen'] },
+  cable_row: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-cable-seated-row-front.mp4', tips: ['Aufrecht sitzen, Brust leicht raus, kein Rundrücken','Zieh mit den Ellbogen, nicht mit den Händen','Schulterblätter am Ende fest zusammendrücken, kurz halten','Langsam nach vorne strecken für volle Dehnung'] },
+  shoulder_press: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-dumbbell-shoulder-press-front.mp4', tips: ['Hanteln auf Ohrhöhe starten, Ellbogen 90°','Gerade nach oben drücken, nicht vor den Körper','Nicht ganz durchstrecken — Spannung im Muskel halten','Langsam und kontrolliert runter'] },
+  lateral_raise_a: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-dumbbell-lateral-raise-front.mp4', tips: ['Leichtes Gewicht — saubere Form schlägt schweres immer','Arme leicht gebeugt, seitlich nach außen heben','Pinkiefinger-Seite leicht nach oben drehen (wie Wasser einschenken)','Nur bis Schulterniveau — nicht höher'] },
+  lateral_raise_b: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-dumbbell-lateral-raise-front.mp4', tips: ['Leichtes Gewicht — saubere Form schlägt schweres immer','Arme leicht gebeugt, seitlich nach außen heben','Pinkiefinger-Seite leicht nach oben drehen (wie Wasser einschenken)','Nur bis Schulterniveau — nicht höher'] },
+  cable_fly: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-cable-chest-fly-front.mp4', tips: ['Kabel auf Brusthöhe, Arme leicht gebeugt halten','Hände zusammenführen als würdest du einen Baum umarmen','Brust in der Mitte zusammendrücken, kurz halten','Langsam zurück für volle Dehnung'] },
+  bicep_curl_a: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-dumbbell-bicep-curl-front.mp4', tips: ['Ellbogen bleiben am Körper — nicht schwingen','Langsam runter (2–3 Sek Exzentrik) für mehr Wachstum','Oben kurz anspannen und leicht drehen (Supination)','Nicht mit dem Rücken Schwung holen'] },
+  tricep_push: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-cable-pushdown-front.mp4', tips: ['Ellbogen fest an den Seiten fixieren — sie bewegen sich nicht','Nur der Unterarm bewegt sich nach unten','Unten Trizeps fest anspannen, kurz halten','Langsam kontrolliert zurück'] },
+  leg_press_a: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-sled-leg-press-front.mp4', tips: ['Füße schulterbreit, mittig auf der Platte','Knie nie vollständig durchstrecken — Spannung halten','90° Winkel am tiefsten Punkt anpeilen','Langsam runter (3 Sek), explosiv drücken'] },
+  rdl: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-barbell-romanian-deadlift-front.mp4', tips: ['Leichte Kniebeugung — keine steifen Beine','Hüfte nach hinten schieben, nicht nach unten beugen','Rücken die ganze Zeit gerade halten','Bis du Hamstrings spürst, dann Hüfte nach vorne drücken'] },
+  leg_ext_a: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-machine-leg-extension-front.mp4', tips: ['Rücken an die Polster lehnen, aufrecht sitzen','Langsam nach oben strecken, oben anspannen und halten','Sehr langsam runter — Exzentrik macht den Unterschied','Kein Schwung — saubere Kontrolle'] },
+  leg_curl_a: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-machine-leg-curl-front.mp4', tips: ['Hüften fest auf der Polsterung halten','Fersen Richtung Gesäß ziehen','Oben anspannen, kurz halten','Langsam strecken — nicht fallen lassen'] },
+  leg_curl_b: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-machine-leg-curl-front.mp4', tips: ['Hüften fest auf der Polsterung halten','Fersen Richtung Gesäß ziehen','Oben anspannen, kurz halten','Langsam strecken — nicht fallen lassen'] },
+  calf_raise_a: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-machine-calf-raise-front.mp4', tips: ['Volle Bewegung: ganz unten dehnen, ganz oben anspannen','Langsam und bewusst — kein Hüpfen','Oben 1–2 Sek halten für maximale Kontraktion','Hohes Volumen (15–20 Wdh) funktioniert gut für Waden'] },
+  calf_raise_b: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-machine-calf-raise-front.mp4', tips: ['Volle Bewegung: ganz unten dehnen, ganz oben anspannen','Langsam und bewusst — kein Hüpfen','Oben 1–2 Sek halten für maximale Kontraktion','Hohes Volumen (15–20 Wdh) funktioniert gut für Waden'] },
+  hanging_knee: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-hanging-leg-raise-front.mp4', tips: ['Fest an der Stange hängen, kein Schwingen','Knie zur Brust ziehen, nicht nur anheben','Unten kontrolliert strecken — nicht fallen lassen','Für mehr Intensität: Beine gestreckt halten'] },
+  plank_a: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-plank-front.mp4', tips: ['Körper bildet eine gerade Linie — Hüfte nicht heben oder senken','Bauch aktiv anspannen die ganze Zeit','Schultern über den Ellbogen','Atmen — ruhig und gleichmäßig'] },
+  bench_press: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-barbell-bench-press-front.mp4', tips: ['Schulterblätter zusammendrücken und in die Bank drücken','Füße fest auf Boden, leichter natürlicher Bogen im Rücken','Stange zur unteren Brust senken, Ellbogen ca. 45–75°','Explosiv drücken, kontrolliert runter (2–3 Sek)'] },
+  close_row: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-cable-seated-row-front.mp4', tips: ['Enger Griff — Ellbogen nah am Körper führen','Schulterblätter fest zusammendrücken am Ende','Rücken aufrecht — kein Rundrücken','Langsam nach vorne dehnen für volle Range'] },
+  lat_neutral: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-machine-pulldown-front.mp4', tips: ['Neutraler Griff (Handflächen zueinander) — gelenkschonender','Ellbogen nach unten/hinten führen','Untere Lats stärker aktiviert als beim weiten Griff','Brust nach oben strecken beim Runterziehen'] },
+  rear_delt: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-cable-reverse-fly-front.mp4', tips: ['Leichtes Gewicht — hintere Schulter ist oft schwach','Arme leicht gebeugt, nach außen/hinten führen','Schulterblätter zusammendrücken, nicht nur die Arme bewegen','Wichtig für Schulter-Gesundheit und breite Optik'] },
+  incline_curl: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-dumbbell-hammer-curl-front.mp4', tips: ['Daumen zeigt nach oben (neutraler Griff)','Trainiert auch Brachialis — macht den Arm voller','Ellbogen bleiben fixiert, kein Schwingen','Langsam runter für volle Dehnung'] },
+  overhead_tri: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-dumbbell-tricep-overhead-extension-front.mp4', tips: ['Langen Trizepskopf — macht den Arm groß','Ellbogen zeigen nach oben, nicht nach außen wandern lassen','Nur der Unterarm bewegt sich — Oberarm fixiert','Langsam runter, explosiv strecken'] },
+  pushups: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-push-up-front.mp4', tips: ['Körper gerade wie ein Brett — Kern anspannen','Hände etwas breiter als Schulterbreite','Brust berührt fast den Boden','Ellbogen leicht nach innen — nicht ausflippen'] },
+  hack_squat: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-sled-hack-squat-front.mp4', tips: ['Füße schulterbreit oder enger für mehr Quad-Fokus','Tief runter — unter 90° für maximalen Reiz','Rücken flach an der Polsterung halten','Durch die Fersen drücken, Knie nicht einbrechen'] },
+  bulgarian: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-dumbbell-bulgarian-split-squat-front.mp4', tips: ['Hinterer Fuß auf Bank, vorderer Fuß weit genug vorne','Senkrecht nach unten sinken — nicht nach vorne fallen','Vorderes Knie bleibt über dem Fuß','Hintere Hüfte dehnen — das ist das Ziel oben'] },
+  hip_thrust: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-barbell-hip-thrust-front.mp4', tips: ['Schulterblätter auf der Bank, Füße flach auf dem Boden','Hüfte explosiv nach oben drücken','Oben: Gesäß maximal anspannen, 1–2 Sek halten','Knie nach außen drücken — nicht einbrechen lassen'] },
+  cable_crunch: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-cable-crunch-front.mp4', tips: ['Kniend, Seil hinter dem Kopf halten','Bauch zusammenrollen — Hüfte bleibt still','Unten anspannen, 1 Sek halten','Langsam zurück — nicht schnell hochschnellen'] },
+  ab_wheel: { video: 'https://media.musclewiki.com/media/uploads/videos/branded/male-ab-wheel-rollout-front.mp4', tips: ['Knie auf dem Boden starten','Langsam nach vorne rollen — Bauch kontrolliert dehnen','Rücken nicht durchhängen lassen','Zurückrollen durch Bauch anspannen, nicht durch Hüfte drücken'] },
+};
+
+function openTutorial(exId, exName, muscle) {
+  const modal = document.getElementById('tutorialModal');
+  document.getElementById('modalTitle').textContent = exName;
+  document.getElementById('modalMuscle').textContent = muscle;
+  const t = TUTORIALS[exId];
+  const gifArea = document.getElementById('modalGifArea');
+  const steps = document.getElementById('modalSteps');
+  if (t && t.video) {
+    gifArea.innerHTML = `<video class="modal-gif" autoplay loop muted playsinline src="${t.video}" onerror="this.style.display='none'"></video>`;
+  } else {
+    gifArea.innerHTML = '';
+  }
+  const tips = t ? t.tips : ['Saubere Form vor Gewicht','Ziel-Muskel bewusst spüren','Kontrollierte Bewegung','1–2 Wdh im Tank lassen'];
+  steps.innerHTML = tips.map((s,i) => `<li><div class="modal-step-num">${i+1}</div><span>${s}</span></li>`).join('');
+  modal.classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('tutorialModal')) {
+    document.getElementById('tutorialModal').classList.remove('open');
+  }
+}
 
 function getDB() {
   try { return JSON.parse(localStorage.getItem('animebuild_sessions') || '[]'); } catch { return []; }
@@ -295,11 +377,16 @@ function buildExerciseList() {
   list.innerHTML = selectedDay.exercises.map((ex, ei) => `
     <div class="exercise-block">
       <div class="ex-header" onclick="toggleEx(${ei})">
-        <div>
-          <div class="ex-name">${ex.name}</div>
-          <div class="ex-meta">${ex.sets} Sätze · ${ex.reps} Wdh</div>
+        <div class="ex-header-inner">
+          <div class="ex-header-left">
+            <div class="ex-name">${ex.name}</div>
+            <div class="ex-meta">${ex.sets} Sätze · ${ex.reps} Wdh</div>
+          </div>
+          <div class="ex-header-right">
+            <button class="info-btn" onclick="event.stopPropagation(); openTutorial('${ex.id}', '${ex.name}', '${ex.muscle||''}')">Tutorial</button>
+            <div class="ex-badge" id="badge_${ei}">Eintragen</div>
+          </div>
         </div>
-        <div class="ex-badge" id="badge_${ei}">Tippen zum Eintragen</div>
       </div>
       <div class="ex-body" id="exbody_${ei}">
         <table class="sets-table">
