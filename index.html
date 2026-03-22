@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Anime Build Tracker</title>
+<title>Grindset</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -72,7 +72,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
 <div id="loginPage" style="display:none">
   <div class="login-box">
     <div style="font-size:48px;text-align:center;margin-bottom:8px">🔥</div>
-    <h1>Anime Build</h1>
+    <h1>Grindset</h1>
     <p>Trainings-Tracker</p>
     <label>E-Mail</label>
     <input type="email" id="loginEmail" placeholder="deine@email.de">
@@ -86,7 +86,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
 <div id="appShell" style="display:none">
   <div id="page-train" class="page active">
     <div class="hero">
-      <h1>Anime Build Tracker</h1>
+      <h1>Grindset</h1>
       <p id="activePlanTitle">Lade Plan...</p>
     </div>
     <div class="section-header">Welcher Tag?</div>
@@ -102,6 +102,22 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
   <div id="page-analyse" class="page">
     <div class="stat-grid" id="statsGrid"></div>
     <div id="apiUsageBox"></div>
+
+    <div class="section-header">Letzte 4 Wochen</div>
+    <div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:16px">
+      <div id="heatmap" style="display:grid;grid-template-columns:repeat(28,1fr);gap:3px"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px">
+        <span style="font-size:10px;color:var(--muted)" id="heatmap4w">4 Wochen</span>
+        <div style="display:flex;align-items:center;gap:4px">
+          <span style="font-size:10px;color:var(--muted)">wenig</span>
+          <div style="width:10px;height:10px;border-radius:2px;background:var(--bg3)"></div>
+          <div style="width:10px;height:10px;border-radius:2px;background:#1a4a2a"></div>
+          <div style="width:10px;height:10px;border-radius:2px;background:#27ae60"></div>
+          <span style="font-size:10px;color:var(--muted)">viel</span>
+        </div>
+      </div>
+    </div>
+
     <div class="section-header" id="analyseHeader">Übung analysieren</div>
     <select id="analyseSelect" onchange="renderCharts()" style="margin-bottom:14px"><option value="">Übung wählen...</option></select>
     <div class="chart-box"><h3 id="chartTitle1">Max. Gewicht pro Session</h3><canvas id="weightChart" height="180"></canvas></div>
@@ -121,14 +137,38 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
   </div>
 
   <div id="page-profile" class="page">
-    <div class="hero" style="background:linear-gradient(135deg,#2a2f50 0%,#1a1d2e 100%)">
-      <div style="display:flex;align-items:center;gap:16px">
-        <div id="profileAvatar" style="width:60px;height:60px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;flex-shrink:0;border:3px solid var(--accent)">?</div>
-        <div>
+    <!-- Hero with avatar -->
+    <div id="profileHero" style="background:linear-gradient(135deg,#2a2f50 0%,#1a1d2e 100%);border-radius:var(--radius);padding:20px 16px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">
+        <div id="profileAvatar" style="width:64px;height:64px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;flex-shrink:0;border:3px solid rgba(255,255,255,0.2);cursor:pointer" onclick="toggleColorPicker()">?</div>
+        <div style="flex:1;min-width:0">
           <div id="profileName" style="font-size:18px;font-weight:700">...</div>
-          <div id="profileEmail" style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px"></div>
-          <div id="profileRank" style="font-size:12px;margin-top:4px;color:var(--gold)">🩶 Rookie · 0 XP</div>
+          <div id="profileEmail" style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+          <div id="profileJoined" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px"></div>
         </div>
+      </div>
+      <!-- Rank badge -->
+      <div id="profileRankBadge" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.1);border-radius:20px;padding:6px 12px;margin-bottom:10px">
+        <span id="profileRankIcon" style="font-size:16px">🩶</span>
+        <span id="profileRankName" style="font-size:13px;font-weight:700">Rookie</span>
+        <span id="profileXP" style="font-size:11px;color:rgba(255,255,255,0.6)">0 XP</span>
+      </div>
+      <!-- XP progress bar -->
+      <div style="margin-bottom:4px">
+        <div style="background:rgba(255,255,255,0.15);border-radius:4px;height:8px;overflow:hidden">
+          <div id="xpBar" style="background:var(--gold);height:100%;width:0%;transition:width .5s;border-radius:4px"></div>
+        </div>
+        <div id="xpNext" style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:4px;text-align:right">500 XP zum nächsten Rang</div>
+      </div>
+      <!-- Status -->
+      <div id="profileStatusDisplay" style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:8px;font-style:italic"></div>
+    </div>
+
+    <!-- Color picker (hidden by default) -->
+    <div id="colorPicker" style="display:none;margin-bottom:12px">
+      <div class="card">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Avatar Farbe wählen</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px" id="colorOptsRow"></div>
       </div>
     </div>
 
@@ -139,6 +179,14 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
       <div style="display:flex;gap:8px">
         <input type="text" id="usernameInput" placeholder="Dein Name..." style="margin-bottom:0;flex:1">
         <button class="btn btn-accent btn-sm" onclick="saveUsername()">Speichern</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Status</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="statusInput" placeholder="z.B. 'On my grind 💪'" maxlength="60" style="margin-bottom:0;flex:1">
+        <button class="btn btn-card btn-sm" onclick="saveStatus()">Speichern</button>
       </div>
     </div>
 
@@ -162,11 +210,20 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
     <button class="btn btn-danger" style="margin-top:8px" onclick="handleLogout()">Ausloggen</button>
   </div>
 
+  <div id="page-pit" class="page">
+    <div class="hero" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)">
+      <h1>⚔️ The Pit</h1>
+      <p id="pitDesc">Die Community — alle Grindset Nutzer</p>
+    </div>
+    <div id="pitList"></div>
+  </div>
+
   <nav class="tab-bar">
     <button class="tab-btn active" onclick="showTab('train',this)"><span class="tab-icon">💪</span><span data-t="training">Training</span></button>
     <button class="tab-btn" onclick="showTab('analyse',this)"><span class="tab-icon">📊</span><span data-t="analyse">Analyse</span></button>
     <button class="tab-btn" onclick="showTab('history',this)"><span class="tab-icon">📋</span><span data-t="history">Verlauf</span></button>
     <button class="tab-btn" onclick="showTab('plans',this)"><span class="tab-icon">⚙️</span><span data-t="plans">Pläne</span></button>
+    <button class="tab-btn" onclick="showTab('pit',this)"><span class="tab-icon">⚔️</span>The Pit</button>
     <button class="tab-btn" onclick="showTab('profile',this)"><span class="tab-icon">👤</span><span data-t="profile">Profil</span></button>
   </nav>
 </div>
@@ -353,7 +410,7 @@ function applyLang() {
 }
 
 const DEFAULT_PLAN = {
-  title:'Anime Build',description:'V-Taper · Lean · Recomp',
+  title:'Grindset',description:'V-Taper · Lean · Recomp',
   days:[
     {id:'upper_a',label:'Tag 1',name:'Upper A',color:'#e94560',focus:'Obere Brust · Rücken · Schultern',exercises:['incline_press','lat_pulldown','cable_row','shoulder_press','lateral_raise','cable_fly','bicep_curl','tricep_pushdown']},
     {id:'lower_a',label:'Tag 2',name:'Lower A',color:'#f5a623',focus:'Beine · Glutes · Core',exercises:['leg_press','rdl','leg_extension','leg_curl','calf_raise','hanging_leg_raise','plank']},
@@ -405,19 +462,97 @@ async function handleLogout() {
   showLogin()
 }
 
+const RANKS = [{"icon": "🩶", "name": "Rookie", "xp": 0, "color": "#8a8fa8"}, {"icon": "🤍", "name": "Trained", "xp": 500, "color": "#c0c0c0"}, {"icon": "💙", "name": "Skilled", "xp": 1500, "color": "#3d7ebf"}, {"icon": "💚", "name": "Pro", "xp": 3500, "color": "#27ae60"}, {"icon": "🧡", "name": "Master", "xp": 7000, "color": "#e67e22"}, {"icon": "💜", "name": "Disciple", "xp": 13000, "color": "#9b59b6"}, {"icon": "❤️", "name": "Champion", "xp": 22000, "color": "#e94560"}, {"icon": "💛", "name": "Sovereign", "xp": 35000, "color": "#f5a623"}, {"icon": "🖤", "name": "Eternal", "xp": 55000, "color": "#1a1a2e"}, {"icon": "🔴", "name": "The Unchained", "xp": 80000, "color": "#ff0000"}];
+function getRank(xp) {
+  let rank = RANKS[0]
+  for (const r of RANKS) { if (xp >= r.xp) rank = r }
+  return rank
+}
+function getNextRank(xp) {
+  for (const r of RANKS) { if (r.xp > xp) return r }
+  return null
+}
+function getXpProgress(xp) {
+  const rank = getRank(xp)
+  const next = getNextRank(xp)
+  if (!next) return 100
+  const range = next.xp - rank.xp
+  const progress = xp - rank.xp
+  return Math.min(100, Math.round((progress / range) * 100))
+}
+
 async function renderProfile() {
   if (!currentUser) return
-  const { data: prof } = await sb.from('profiles').select('username,lang').eq('user_id', currentUser.id).single()
+  const { data: prof } = await sb.from('profiles').select('*').eq('user_id', currentUser.id).single()
   const username = prof?.username || ''
+  const xp = prof?.xp || 0
+  const color = prof?.avatar_color || '#e94560'
+  const status = prof?.status || ''
+  const joined = prof?.created_at ? new Date(prof.created_at).toLocaleDateString('de-DE', {month:'long', year:'numeric'}) : ''
   if (prof?.lang && prof.lang !== lang) { lang = prof.lang; localStorage.setItem('lang', lang); applyLang() }
+
   const email = currentUser.email || ''
   const initial = (username || email || '?')[0].toUpperCase()
-  document.getElementById('profileAvatar').textContent = initial
+
+  // Avatar
+  const av = document.getElementById('profileAvatar')
+  av.textContent = initial
+  av.style.background = color
+  av.style.borderColor = color
+
   document.getElementById('profileName').textContent = username || (lang==='en'?'No username set':'Kein Benutzername gesetzt')
   document.getElementById('profileEmail').textContent = email
-  const input = document.getElementById('usernameInput')
-  if (input) input.value = username
+  document.getElementById('profileJoined').textContent = joined ? (lang==='en'?'Member since ':'Dabei seit ') + joined : ''
+  document.getElementById('profileStatusDisplay').textContent = status ? '"' + status + '"' : ''
+
+  // Rank
+  const rank = getRank(xp)
+  const next = getNextRank(xp)
+  const progress = getXpProgress(xp)
+  document.getElementById('profileRankIcon').textContent = rank.icon
+  document.getElementById('profileRankName').textContent = rank.name
+  document.getElementById('profileRankName').style.color = rank.color
+  document.getElementById('profileXP').textContent = xp + ' XP'
+  document.getElementById('xpBar').style.width = progress + '%'
+  document.getElementById('xpBar').style.background = rank.color
+  document.getElementById('xpNext').textContent = next ? (next.xp - xp) + ' XP → ' + next.name : '👑 Max Rang erreicht!'
+
+  // Inputs
+  const usInput = document.getElementById('usernameInput')
+  if (usInput && !usInput.value) usInput.value = username
+  const stInput = document.getElementById('statusInput')
+  if (stInput && !stInput.value) stInput.value = status
+
+  // Color picker
+  const row = document.getElementById('colorOptsRow')
+  if (row && !row.children.length) {
+    const colors = ['#e94560','#f5a623','#27ae60','#3d7ebf','#9b59b6','#e67e22','#1abc9c','#e91e8c','#e74c3c','#2ecc71']
+    row.innerHTML = colors.map(c => `<div onclick="setAvatarColor('${c}')" style="width:36px;height:36px;border-radius:50%;background:${c};cursor:pointer;border:${c===color?'3px solid #fff':'2px solid transparent'}" class="color-opt"></div>`).join('')
+  } else {
+    document.querySelectorAll('.color-opt').forEach(el => {
+      el.style.border = el.style.background === color ? '3px solid #fff' : '2px solid transparent'
+    })
+  }
+
   applyLang()
+}
+
+function toggleColorPicker() {
+  const cp = document.getElementById('colorPicker')
+  cp.style.display = cp.style.display === 'none' ? 'block' : 'none'
+}
+
+async function setAvatarColor(color) {
+  await sb.from('profiles').upsert({ user_id: currentUser.id, avatar_color: color }, { onConflict: 'user_id' })
+  renderProfile()
+  toast(lang==='en'?'Color saved!':'Farbe gespeichert!')
+}
+
+async function saveStatus() {
+  const status = document.getElementById('statusInput').value.trim()
+  await sb.from('profiles').upsert({ user_id: currentUser.id, status }, { onConflict: 'user_id' })
+  renderProfile()
+  toast(lang==='en'?'Status saved!':'Status gespeichert!')
 }
 
 async function init() {
@@ -728,6 +863,22 @@ function renderAnalyse() {
     <div class="stat-card"><div class="val">${thisMonth}</div><div class="lbl">Diesen Monat</div></div>
     <div class="stat-card"><div class="val">${totalSets}</div><div class="lbl">Sätze gesamt</div></div>
     <div class="stat-card"><div class="val">${last7}</div><div class="lbl">Tage letzte Woche</div></div>`
+  // Render 4-week heatmap
+  const heatmap = document.getElementById('heatmap')
+  if (heatmap) {
+    const today2 = new Date()
+    const cells = []
+    for (let i = 27; i >= 0; i--) {
+      const d = new Date(today2)
+      d.setDate(d.getDate() - i)
+      const dateStr = d.toISOString().slice(0,10)
+      const count = sessions.filter(s => s.date === dateStr).length
+      const bg = count === 0 ? 'var(--bg3)' : count === 1 ? '#1a4a2a' : '#27ae60'
+      cells.push(`<div title="${dateStr}: ${count} Session(s)" style="aspect-ratio:1;border-radius:2px;background:${bg}"></div>`)
+    }
+    heatmap.innerHTML = cells.join('')
+  }
+
   const today = new Date().toISOString().slice(0,10)
   sb.from('api_usage').select('count').eq('date', today).single().then(({data}) => {
     const used = data?.count || 0
@@ -929,6 +1080,35 @@ async function savePlan() {
   renderPlansList()
 }
 
+async function renderPit() {
+  const list = document.getElementById('pitList')
+  list.innerHTML = '<div class="spinner"></div>'
+  const { data: profiles } = await sb.from('profiles').select('*').order('xp', { ascending: false })
+  if (!profiles?.length) { list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Noch keine anderen Nutzer</div>'; return }
+  list.innerHTML = profiles.map((p, idx) => {
+    const rank = getRank(p.xp || 0)
+    const initial = (p.username || p.user_id || '?')[0].toUpperCase()
+    const color = p.avatar_color || '#e94560'
+    const isMe = p.user_id === currentUser?.id
+    return `<div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:10px;border:1px solid ${isMe?'var(--accent)':'var(--border)'};display:flex;align-items:center;gap:14px">
+      <div style="font-size:16px;font-weight:700;color:var(--muted);min-width:24px;text-align:center">#${idx+1}</div>
+      <div style="width:46px;height:46px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0;border:2px solid rgba(255,255,255,0.2)">${initial}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:14px;font-weight:700">${p.username || 'Anonym'}</span>
+          ${isMe?'<span style="font-size:10px;background:var(--accent);color:#fff;padding:2px 7px;border-radius:20px">Du</span>':''}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+          <span style="font-size:13px">${rank.icon}</span>
+          <span style="font-size:12px;font-weight:600;color:${rank.color}">${rank.name}</span>
+          <span style="font-size:11px;color:var(--muted)">· ${p.xp||0} XP</span>
+        </div>
+        ${p.status?`<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">"${p.status}"</div>`:''}
+      </div>
+    </div>`
+  }).join('')
+}
+
 function showTab(tab, btn) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'))
@@ -938,6 +1118,7 @@ function showTab(tab, btn) {
   if (tab==='history') renderHistory()
   if (tab==='plans') renderPlansList()
   if (tab==='profile') renderProfile()
+  if (tab==='pit') renderPit()
 }
 
 init()
