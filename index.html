@@ -145,8 +145,26 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
 
   <div id="page-plans" class="page">
     <div class="hero"><h1 id="plansH1">Meine Pläne</h1><p id="plansP">Verwalte deine Trainingspläne</p></div>
-    <button class="btn btn-accent" style="margin-bottom:16px" id="newPlanBtn" onclick="showPlanBuilder()">+ Neuen Plan erstellen</button>
-    <div id="plansList"></div>
+
+    <!-- Tab switcher -->
+    <div style="display:flex;gap:0;margin-bottom:16px;background:var(--card);border-radius:var(--radius);padding:4px;border:1px solid var(--border)">
+      <button id="plansTabMyBtn" onclick="switchPlansTab('my')" style="flex:1;padding:10px;font-size:13px;font-weight:700;border:none;border-radius:8px;cursor:pointer;background:var(--accent);color:#fff;transition:all .2s" id="plansTabMy">Meine Pläne</button>
+      <button id="plansTabMarketBtn" onclick="switchPlansTab('market')" style="flex:1;padding:10px;font-size:13px;font-weight:700;border:none;border-radius:8px;cursor:pointer;background:none;color:var(--muted);transition:all .2s">🛒 Plan Market</button>
+    </div>
+
+    <!-- My Plans -->
+    <div id="plansTabMy">
+      <button class="btn btn-accent" style="margin-bottom:16px" id="newPlanBtn" onclick="showPlanBuilder()">+ Neuen Plan erstellen</button>
+      <div id="plansList"></div>
+    </div>
+
+    <!-- Plan Market -->
+    <div id="plansTabMarket" style="display:none">
+      <div style="background:var(--card2);border-radius:var(--radius);padding:12px;margin-bottom:14px;border:1px solid var(--border)">
+        <div style="font-size:13px;color:var(--muted)">Öffentliche Pläne der Community — importiere sie direkt in deine Sammlung.</div>
+      </div>
+      <div id="marketList"></div>
+    </div>
   </div>
 
   <div id="page-profile" class="page">
@@ -1205,12 +1223,105 @@ function renderPlansList() {
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
         ${(plan.days||[]).map(d=>`<div style="font-size:11px;padding:3px 10px;border-radius:20px;background:${d.color}25;color:${d.color};border:1px solid ${d.color}55">${d.name}</div>`).join('')}
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         ${plan.id!==activePlanId?`<button class="btn btn-green btn-sm" onclick="activatePlan('${plan.id}')">Aktivieren</button>`:''}
         <button class="btn btn-card btn-sm" onclick="editPlan('${plan.id}')">✏️ Bearbeiten</button>
         <button class="btn btn-danger btn-sm" onclick="deletePlan('${plan.id}')">Löschen</button>
+        <div onclick="togglePlanPublic('${plan.id}',${!!plan.is_public})" style="display:flex;align-items:center;gap:6px;margin-left:auto;cursor:pointer;padding:4px 0">
+          <div style="width:36px;height:20px;border-radius:10px;background:${plan.is_public?'var(--green)':'var(--border)'};position:relative;transition:background .2s">
+            <div style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:${plan.is_public?'18px':'2px'};transition:left .2s"></div>
+          </div>
+          <span style="font-size:11px;color:${plan.is_public?'var(--green)':'var(--muted)'}">${plan.is_public?'Öffentlich':'Privat'}</span>
+        </div>
       </div>
     </div>`).join('')
+}
+
+let currentPlansTab = 'my'
+
+function switchPlansTab(tab) {
+  currentPlansTab = tab
+  document.getElementById('plansTabMy').style.display = tab === 'my' ? 'block' : 'none'
+  document.getElementById('plansTabMarket').style.display = tab === 'market' ? 'block' : 'none'
+  document.getElementById('plansTabMyBtn').style.background = tab === 'my' ? 'var(--accent)' : 'none'
+  document.getElementById('plansTabMyBtn').style.color = tab === 'my' ? '#fff' : 'var(--muted)'
+  document.getElementById('plansTabMarketBtn').style.background = tab === 'market' ? 'var(--accent)' : 'none'
+  document.getElementById('plansTabMarketBtn').style.color = tab === 'market' ? '#fff' : 'var(--muted)'
+  if (tab === 'market') renderMarket()
+}
+
+async function togglePlanPublic(planId, currentlyPublic) {
+  const newVal = !currentlyPublic
+  await sb.from('plans').update({ is_public: newVal }).eq('id', planId)
+  plans = plans.map(p => p.id === planId ? { ...p, is_public: newVal } : p)
+  renderPlansList()
+  toast(newVal ? (lang==='en'?'Plan published to Market!':'Plan im Market veröffentlicht!') : (lang==='en'?'Plan set to private':'Plan auf privat gesetzt'))
+}
+
+async function renderMarket() {
+  const list = document.getElementById('marketList')
+  list.innerHTML = '<div class="spinner"></div>'
+
+  // Get all public plans with creator info
+  const { data: publicPlans } = await sb.from('plans').select('*').eq('is_public', true).order('created_at', {ascending:false})
+  if (!publicPlans?.length) {
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:40px;margin-bottom:12px">🛒</div><p>Noch keine öffentlichen Pläne</p></div>'
+    return
+  }
+
+  // Get creator profiles
+  const creatorIds = [...new Set(publicPlans.map(p => p.user_id))]
+  const { data: creators } = await sb.from('profiles').select('user_id,username,xp,avatar_color').in('user_id', creatorIds)
+  const creatorMap = {}
+  ;(creators||[]).forEach(c => creatorMap[c.user_id] = c)
+
+  const myPlanOrigIds = plans.filter(p => p.imported_from).map(p => p.imported_from)
+
+  list.innerHTML = publicPlans.map(plan => {
+    const creator = creatorMap[plan.user_id] || {}
+    const rank = getRank(creator.xp || 0)
+    const isOwn = plan.user_id === currentUser?.id
+    const alreadyImported = myPlanOrigIds.includes(plan.id)
+    const color = creator.avatar_color || '#e94560'
+    const initial = (creator.username || '?')[0].toUpperCase()
+
+    return `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:36px;height:36px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0">${initial}</div>
+        <div>
+          <div style="font-size:12px;font-weight:600">${creator.username || 'Anonym'}</div>
+          <div style="font-size:11px;color:var(--muted)">${rank.icon} ${rank.name}</div>
+        </div>
+      </div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">${plan.title}</div>
+      ${plan.description ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px">${plan.description}</div>` : ''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+        ${(plan.days||[]).map(d=>`<div style="font-size:11px;padding:3px 10px;border-radius:20px;background:${d.color}25;color:${d.color};border:1px solid ${d.color}55">${d.name}</div>`).join('')}
+      </div>
+      ${isOwn ? '<div style="font-size:12px;color:var(--muted);font-style:italic">Dein Plan</div>' :
+        alreadyImported ? '<div style="font-size:12px;color:var(--green)">✓ Bereits importiert</div>' :
+        `<button class="btn btn-accent btn-sm" onclick="importPlan('${plan.id}')">⬇️ Importieren</button>`
+      }
+    </div>`
+  }).join('')
+}
+
+async function importPlan(planId) {
+  const { data: original } = await sb.from('plans').select('*').eq('id', planId).single()
+  if (!original) return toast(lang==='en'?'Plan not found':'Plan nicht gefunden', true)
+  const { data: newPlan } = await sb.from('plans').insert({
+    user_id: currentUser.id,
+    title: original.title,
+    description: original.description,
+    days: original.days,
+    is_public: false,
+    imported_from: planId
+  }).select().single()
+  if (newPlan) {
+    plans.push(newPlan)
+    toast(lang==='en'?'Plan imported!':'Plan importiert!')
+    renderMarket()
+  }
 }
 
 function activatePlan(id) {
