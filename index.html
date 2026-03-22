@@ -210,7 +210,17 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
       </div>
     </div>
 
-    <button class="btn btn-danger" style="margin-top:8px" onclick="handleLogout()">Ausloggen</button>
+    <div class="card" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:14px;font-weight:600" id="resetPwLabel">Passwort zurücksetzen</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px" id="resetPwSub">Link wird an deine E-Mail gesendet</div>
+        </div>
+        <button onclick="sendPasswordReset()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer" id="resetPwBtn">Senden</button>
+      </div>
+    </div>
+
+    <button class="btn btn-danger" style="margin-top:8px" onclick="handleLogout()" id="logoutBtn">Ausloggen</button>
   </div>
 
   <div class="modal-overlay" id="adminModal" onclick="if(event.target===this)this.classList.remove('open')">
@@ -482,6 +492,9 @@ function applyLang() {
     'doneBtn': t('done'),
     'saveSessionBtn': t('saveSession'),
     'logoutBtn': t('logoutL'),
+    'resetPwLabel': t('resetPw'),
+    'resetPwSub': t('resetPwSub'),
+    'resetPwBtn': t('resetPwBtn'),
     'xpInfoBtn': t('xpInfo'),
     'xpModalTitle': t('xpSystem'),
     'xpEarnTitle': t('xpEarn'),
@@ -562,6 +575,16 @@ async function openXpModal() {
       <span style="font-size:13px;font-weight:700;color:var(--gold);flex-shrink:0;margin-left:12px">+${entry.amount} XP</span>
     </div>`
   }).join('')
+}
+
+async function sendPasswordReset() {
+  const email = currentUser?.email
+  if (!email) return toast(t('saveError'), true)
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin
+  })
+  if (error) return toast(t('saveError'), true)
+  toast(lang==='en'?'Reset email sent! Check your inbox.':'Reset-Link gesendet! Prüfe deine E-Mails.')
 }
 
 async function handleLogout() {
@@ -1137,8 +1160,9 @@ function renderPlansList() {
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
         ${(plan.days||[]).map(d=>`<div style="font-size:11px;padding:3px 10px;border-radius:20px;background:${d.color}25;color:${d.color};border:1px solid ${d.color}55">${d.name}</div>`).join('')}
       </div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${plan.id!==activePlanId?`<button class="btn btn-green btn-sm" onclick="activatePlan('${plan.id}')">Aktivieren</button>`:''}
+        <button class="btn btn-card btn-sm" onclick="editPlan('${plan.id}')">✏️ Bearbeiten</button>
         <button class="btn btn-danger btn-sm" onclick="deletePlan('${plan.id}')">Löschen</button>
       </div>
     </div>`).join('')
@@ -1160,6 +1184,61 @@ async function deletePlan(id) {
   renderPlansList()
   renderTrainPage()
   toast('Plan gelöscht')
+}
+
+function editPlan(planId) {
+  const plan = plans.find(p => p.id === planId)
+  if (!plan) return
+  // Prefill builder with existing plan data
+  document.getElementById('planTitle').value = plan.title || ''
+  document.getElementById('planDesc').value = plan.description || ''
+  document.getElementById('planTitle').placeholder = t('planName')
+  document.getElementById('planDesc').placeholder = t('planDesc')
+  builderDays = (plan.days||[]).map(d => ({
+    id: d.id || Date.now() + Math.random(),
+    name: d.name || '',
+    focus: d.focus || '',
+    color: d.color || '#e94560',
+    exercises: d.exercises || []
+  }))
+  renderBuilderDays()
+  applyLang()
+  // Store editing plan ID
+  window._editingPlanId = planId
+  document.getElementById('planBuilderTitle').textContent = t('editPlan')
+  document.getElementById('savePlanBtn').onclick = () => saveEditedPlan(planId)
+  document.getElementById('appShell').style.display = 'none'
+  document.getElementById('planBuilderPage').style.display = 'block'
+}
+
+async function saveEditedPlan(planId) {
+  const title = document.getElementById('planTitle').value.trim()
+  if (!title) return toast(t('planNeedsName'), true)
+  if (!builderDays.length) return toast(t('planNeedsDay'), true)
+  if (builderDays.some(d => !d.exercises.length)) return toast(t('dayNeedsEx'), true)
+  const updatedDays = builderDays.map((d,i) => ({
+    id: d.id || 'day_'+i,
+    label: 'Tag '+(i+1),
+    name: d.name || 'Tag '+(i+1),
+    focus: d.focus,
+    color: d.color,
+    exercises: d.exercises
+  }))
+  const { error } = await sb.from('plans').update({
+    title,
+    description: document.getElementById('planDesc').value.trim(),
+    days: updatedDays
+  }).eq('id', planId)
+  if (error) return toast(t('saveError'), true)
+  // Update local plans array
+  plans = plans.map(p => p.id === planId ? { ...p, title, description: document.getElementById('planDesc').value.trim(), days: updatedDays } : p)
+  toast(t('planSaved'))
+  hidePlanBuilder()
+  // Reset save button to default
+  document.getElementById('savePlanBtn').onclick = savePlan
+  document.getElementById('planBuilderTitle').textContent = t('newPlanTitle')
+  renderPlansList()
+  renderTrainPage()
 }
 
 function showPlanBuilder() {
