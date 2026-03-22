@@ -346,6 +346,8 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
 
     <div class="section-header">User Verwaltung</div>
     <div id="adminUserList"></div>
+    <div class="section-header" style="margin-top:20px">Genehmigte Übungen</div>
+    <div id="approvedExercisesList" style="margin-bottom:20px"></div>
     <div class="section-header" style="margin-top:20px">Audit Log</div>
     <div id="adminAuditLog"></div>
   </div>
@@ -1712,7 +1714,8 @@ async function voteRequest(requestId, vote) {
 
 async function deleteExerciseRequest(requestId) {
   if (!confirm(lang==='en'?'Delete request?':'Anfrage löschen?')) return
-  await sb.from('exercise_requests').delete().eq('id', requestId)
+  const { error } = await sb.from('exercise_requests').delete().eq('id', requestId)
+  if (error) { toast('Fehler: ' + error.message, true); console.error(error); return }
   renderExerciseRequests()
 }
 
@@ -1748,6 +1751,7 @@ async function renderPit() {
 async function renderAdmin() {
   if (!isAdmin()) return
   loadInviteCodes()
+  loadApprovedExercises()
   const { data: profiles } = await sb.from('profiles').select('*').order('xp', {ascending:false})
   const adminList = document.getElementById('adminUserList')
   adminList.innerHTML = (profiles||[]).map(p => {
@@ -1870,6 +1874,25 @@ async function adminResetXP(userId, username) {
   renderAdmin()
 }
 
+async function loadApprovedExercises() {
+  const list = document.getElementById('approvedExercisesList')
+  if (!list) return
+  const { data: approved } = await sb.from('exercise_requests').select('*').eq('status','approved').order('votes',{ascending:false})
+  if (!approved?.length) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:13px">Noch keine genehmigten Übungen</p>'
+    return
+  }
+  list.innerHTML = approved.map(ex => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg3);border-radius:8px;margin-bottom:6px">
+      <div>
+        <div style="font-size:13px;font-weight:700">${ex.name}${ex.name_en?' / '+ex.name_en:''}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${ex.muscle} · 👍 ${ex.votes} Votes</div>
+        ${ex.description?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${ex.description}</div>`:''}
+      </div>
+      <span style="font-size:11px;color:var(--green);background:rgba(39,174,96,0.15);padding:3px 8px;border-radius:20px;flex-shrink:0;margin-left:8px">✅ Genehmigt</span>
+    </div>`).join('')
+}
+
 async function generateInviteCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   let code = ''
@@ -1907,7 +1930,8 @@ async function loadInviteCodes() {
 }
 
 async function deleteInviteCode(id) {
-  await sb.from('invite_codes').delete().eq('id', id)
+  const { error } = await sb.from('invite_codes').delete().eq('id', id)
+  if (error) { toast('Fehler: ' + error.message, true); console.error(error); return }
   loadInviteCodes()
   toast('Code gelöscht')
 }
