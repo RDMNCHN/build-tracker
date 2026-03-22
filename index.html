@@ -97,6 +97,17 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
     </div>
     <button class="btn btn-accent" style="margin-top:8px" id="authSubmitBtn" onclick="handleAuth()">Einloggen</button>
     <button onclick="toggleAuthMode()" style="width:100%;margin-top:14px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:8px" id="authToggle">Noch kein Account? Registrieren</button>
+    <button onclick="showForgotPassword()" style="width:100%;margin-top:4px;background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:6px;opacity:0.7" id="forgotPwBtn">Passwort vergessen?</button>
+
+    <!-- Forgot password form -->
+    <div id="forgotPwForm" style="display:none;margin-top:16px;padding:16px;background:var(--card);border-radius:var(--radius);border:1px solid var(--border)">
+      <div style="font-size:14px;font-weight:600;margin-bottom:10px">Passwort zurücksetzen</div>
+      <input type="email" id="forgotEmail" placeholder="deine@email.de" style="margin-bottom:8px">
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-accent btn-sm" onclick="sendForgotPassword()">Link senden</button>
+        <button class="btn btn-card btn-sm" onclick="document.getElementById('forgotPwForm').style.display='none'">Abbrechen</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -845,6 +856,24 @@ function toggleAuthMode() {
   document.getElementById('authToggle').textContent = isSignup ? 'Schon einen Account? Einloggen' : 'Noch kein Account? Registrieren'
   document.getElementById('authSubmitBtn').textContent = isSignup ? 'Account erstellen' : 'Einloggen'
   document.getElementById('inviteCodeField').style.display = isSignup ? 'block' : 'none'
+}
+
+function showForgotPassword() {
+  const form = document.getElementById('forgotPwForm')
+  form.style.display = form.style.display === 'none' ? 'block' : 'none'
+  const email = document.getElementById('loginEmail').value
+  if (email) document.getElementById('forgotEmail').value = email
+}
+
+async function sendForgotPassword() {
+  const email = document.getElementById('forgotEmail').value.trim()
+  if (!email) return toast('Bitte E-Mail eingeben', true)
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin
+  })
+  if (error) return toast('Fehler: ' + error.message, true)
+  toast('Reset-Link gesendet! Prüfe deine E-Mails.')
+  document.getElementById('forgotPwForm').style.display = 'none'
 }
 
 async function handleAuth() {
