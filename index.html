@@ -1509,6 +1509,124 @@ async function savePlan() {
   renderPlansList()
 }
 
+let currentPitTab = 'leaderboard'
+
+function switchPitTab(tab) {
+  currentPitTab = tab
+  const tabs = ['leaderboard','exercises','challenges']
+  tabs.forEach(t => {
+    const el = document.getElementById('pitTab' + t.charAt(0).toUpperCase() + t.slice(1))
+    const btn = document.getElementById('pitTab' + t.charAt(0).toUpperCase() + t.slice(1) + 'Btn')
+    if (el) el.style.display = t === tab ? 'block' : 'none'
+    if (btn) {
+      btn.style.background = t === tab ? 'var(--accent)' : 'none'
+      btn.style.color = t === tab ? '#fff' : 'var(--muted)'
+    }
+  })
+  if (tab === 'exercises') renderExerciseRequests()
+}
+
+function showExerciseRequestForm() {
+  const form = document.getElementById('exerciseRequestForm')
+  form.style.display = form.style.display === 'none' ? 'block' : 'none'
+  // Populate muscle select
+  const sel = document.getElementById('reqMuscle')
+  if (sel && sel.options.length <= 1) {
+    MUSCLES_DE.filter(m => m !== 'Alle').forEach(m => {
+      const opt = document.createElement('option')
+      opt.value = m
+      opt.textContent = m
+      sel.appendChild(opt)
+    })
+  }
+}
+
+async function submitExerciseRequest() {
+  const name = document.getElementById('reqName').value.trim()
+  const name_en = document.getElementById('reqNameEn').value.trim()
+  const muscle = document.getElementById('reqMuscle').value
+  const description = document.getElementById('reqDesc').value.trim()
+  if (!name) return toast(lang==='en'?'Please enter a name':'Bitte Namen eingeben', true)
+  if (!muscle) return toast(lang==='en'?'Please select a muscle group':'Bitte Muskelgruppe wählen', true)
+  const { error } = await sb.from('exercise_requests').insert({ user_id: currentUser.id, name, name_en, muscle, description })
+  if (error) return toast(t('saveError'), true)
+  toast(lang==='en'?'Exercise requested!':'Übung angefragt!')
+  document.getElementById('reqName').value = ''
+  document.getElementById('reqNameEn').value = ''
+  document.getElementById('reqMuscle').value = ''
+  document.getElementById('reqDesc').value = ''
+  document.getElementById('exerciseRequestForm').style.display = 'none'
+  renderExerciseRequests()
+}
+
+async function renderExerciseRequests() {
+  const list = document.getElementById('exerciseRequestList')
+  list.innerHTML = '<div class="spinner"></div>'
+  const { data: requests } = await sb.from('exercise_requests').select('*').order('votes', {ascending:false})
+  const { data: myVotes } = await sb.from('exercise_votes').select('request_id,vote').eq('user_id', currentUser.id)
+  const myVoteMap = {}
+  ;(myVotes||[]).forEach(v => myVoteMap[v.request_id] = v.vote)
+
+  // Get creator names
+  const creatorIds = [...new Set((requests||[]).map(r => r.user_id))]
+  const { data: creators } = await sb.from('profiles').select('user_id,username').in('user_id', creatorIds)
+  const creatorMap = {}
+  ;(creators||[]).forEach(c => creatorMap[c.user_id] = c.username || 'Anonym')
+
+  if (!requests?.length) {
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:36px;margin-bottom:12px">💪</div><p>Noch keine Übungsanfragen</p></div>'
+    return
+  }
+
+  list.innerHTML = requests.map(req => {
+    const myVote = myVoteMap[req.id] || 0
+    const statusColor = req.status === 'approved' ? 'var(--green)' : req.status === 'rejected' ? 'var(--accent)' : 'var(--gold)'
+    const statusLabel = req.status === 'approved' ? '✅ Hinzugefügt' : req.status === 'rejected' ? '❌ Abgelehnt' : '⏳ Ausstehend'
+    const isOwn = req.user_id === currentUser.id
+    return `<div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:10px;border:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:700">${req.name}${req.name_en ? ` <span style="color:var(--muted);font-size:12px;font-weight:400">/ ${req.name_en}</span>` : ''}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${req.muscle} · von ${creatorMap[req.user_id]}</div>
+        </div>
+        <span style="font-size:11px;color:${statusColor};background:${statusColor}20;padding:3px 8px;border-radius:20px;flex-shrink:0;margin-left:8px">${statusLabel}</span>
+      </div>
+      ${req.description ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px">${req.description}</div>` : ''}
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="voteRequest('${req.id}',1)" style="display:flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;border:1px solid ${myVote===1?'var(--green)':'var(--border)'};background:${myVote===1?'rgba(39,174,96,0.15)':'none'};color:${myVote===1?'var(--green)':'var(--muted)'};cursor:pointer;font-size:13px;font-weight:600">👍 ${req.votes > 0 ? req.votes : 0}</button>
+        <button onclick="voteRequest('${req.id}',-1)" style="display:flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;border:1px solid ${myVote===-1?'var(--accent)':'var(--border)'};background:${myVote===-1?'rgba(233,69,96,0.15)':'none'};color:${myVote===-1?'var(--accent)':'var(--muted)'};cursor:pointer;font-size:13px">👎</button>
+        ${isOwn ? `<button onclick="deleteExerciseRequest('${req.id}')" style="margin-left:auto;font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer">Löschen</button>` : ''}
+      </div>
+    </div>`
+  }).join('')
+}
+
+async function voteRequest(requestId, vote) {
+  const { data: existing } = await sb.from('exercise_votes').select('vote').eq('user_id', currentUser.id).eq('request_id', requestId).single()
+  const oldVote = existing?.vote || 0
+  if (oldVote === vote) {
+    // Remove vote
+    await sb.from('exercise_votes').delete().eq('user_id', currentUser.id).eq('request_id', requestId)
+    await sb.from('exercise_requests').update({ votes: sb.rpc ? undefined : undefined }).eq('id', requestId)
+    // Recalculate votes
+    const { data: allVotes } = await sb.from('exercise_votes').select('vote').eq('request_id', requestId)
+    const total = (allVotes||[]).reduce((a,v) => a + v.vote, 0)
+    await sb.from('exercise_requests').update({ votes: total }).eq('id', requestId)
+  } else {
+    await sb.from('exercise_votes').upsert({ user_id: currentUser.id, request_id: requestId, vote }, { onConflict: 'user_id,request_id' })
+    const { data: allVotes } = await sb.from('exercise_votes').select('vote').eq('request_id', requestId)
+    const total = (allVotes||[]).reduce((a,v) => a + v.vote, 0)
+    await sb.from('exercise_requests').update({ votes: total }).eq('id', requestId)
+  }
+  renderExerciseRequests()
+}
+
+async function deleteExerciseRequest(requestId) {
+  if (!confirm(lang==='en'?'Delete request?':'Anfrage löschen?')) return
+  await sb.from('exercise_requests').delete().eq('id', requestId)
+  renderExerciseRequests()
+}
+
 async function renderPit() {
   const list = document.getElementById('pitList')
   list.innerHTML = '<div class="spinner"></div>'
@@ -1562,6 +1680,22 @@ async function renderAdmin() {
       </div>
     </div>`
   }).join('')
+  // Exercise requests section
+  const { data: pendingReqs } = await sb.from('exercise_requests').select('*').eq('status','pending').order('votes',{ascending:false})
+  if (pendingReqs?.length) {
+    const reqHtml = `<div class="section-header" style="margin-top:20px">Übungsanfragen (${pendingReqs.length} ausstehend)</div>` +
+      pendingReqs.map(req => `<div style="background:var(--card);border-radius:var(--radius);padding:12px;margin-bottom:8px;border:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:700">${req.name}${req.name_en?' / '+req.name_en:''}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${req.muscle} · 👍 ${req.votes}</div>
+        ${req.description?`<div style="font-size:11px;color:var(--muted);margin-top:4px">${req.description}</div>`:''}
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-green btn-sm" onclick="adminApproveExercise('${req.id}','${req.name}','${req.name_en||''}','${req.muscle}')">✅ Genehmigen</button>
+          <button class="btn btn-danger btn-sm" onclick="adminRejectExercise('${req.id}')">❌ Ablehnen</button>
+        </div>
+      </div>`).join('')
+    document.getElementById('adminUserList').insertAdjacentHTML('beforebegin', reqHtml)
+  }
+
   const { data: logs } = await sb.from('audit_log').select('*').order('created_at', {ascending:false}).limit(30)
   const auditEl = document.getElementById('adminAuditLog')
   const userMap = {}
@@ -1646,6 +1780,20 @@ async function adminResetXP(userId, username) {
   renderAdmin()
 }
 
+async function adminApproveExercise(reqId, name, nameEn, muscle) {
+  await sb.from('exercise_requests').update({ status: 'approved' }).eq('id', reqId)
+  await sb.from('audit_log').insert({ user_id: ADMIN_ID, action: `Übung genehmigt: ${name}`, details: { request_id: reqId } })
+  toast(`✅ "${name}" genehmigt! Vergiss nicht sie manuell zum Code hinzuzufügen.`)
+  renderAdmin()
+}
+
+async function adminRejectExercise(reqId) {
+  await sb.from('exercise_requests').update({ status: 'rejected' }).eq('id', reqId)
+  await sb.from('audit_log').insert({ user_id: ADMIN_ID, action: `Übung abgelehnt: ${reqId}`, details: { request_id: reqId } })
+  toast('Anfrage abgelehnt')
+  renderAdmin()
+}
+
 function showTab(tab, btn) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'))
@@ -1655,7 +1803,10 @@ function showTab(tab, btn) {
   if (tab==='history') renderHistory()
   if (tab==='plans') renderPlansList()
   if (tab==='profile') renderProfile()
-  if (tab==='pit') renderPit()
+  if (tab==='pit') {
+    renderPit()
+    if (currentPitTab === 'exercises') renderExerciseRequests()
+  }
   if (tab==='admin') renderAdmin()
 }
 
