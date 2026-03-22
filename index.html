@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Anime Build Tracker</title>
+<title>Build Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -447,20 +447,12 @@ async function openTutorial(exId) {
     const searchData = await searchRes.json()
     const exerciseDbId = searchData?.[0]?.id
     if (exerciseDbId) {
-      // Step 2: fetch GIF as blob and convert to data URL for display
-      const gifRes = await fetch(`https://exercisedb.p.rapidapi.com/image?exerciseId=${exerciseDbId}&resolution=360`, {
-        headers: { 'x-rapidapi-key': RAPIDAPI_KEY, 'x-rapidapi-host': 'exercisedb.p.rapidapi.com' }
-      })
-      const blob = await gifRes.blob()
-      const dataUrl = await new Promise(resolve => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(reader.result)
-        reader.readAsDataURL(blob)
-      })
-      gifMemCache[exId] = dataUrl
-      await sb.from('exercise_gifs').upsert({ exercise_id: exId, gif_url: dataUrl })
+      // Step 2: fetch GIF via our Vercel proxy (avoids CORS)
+      const gifUrl = `/api/gif?id=${exerciseDbId}`
+      gifMemCache[exId] = gifUrl
+      await sb.from('exercise_gifs').upsert({ exercise_id: exId, gif_url: gifUrl })
       await sb.from('api_usage').upsert({ date: today, count: usedToday + 1 }, { onConflict: 'date' })
-      showGif(dataUrl)
+      showGif(gifUrl)
     } else {
       showGif(ex.gif || null)
     }
