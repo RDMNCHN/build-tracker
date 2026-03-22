@@ -237,7 +237,19 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
     <button class="tab-btn" onclick="showTab('plans',this)"><span class="tab-icon">⚙️</span><span data-t="plans">Pläne</span></button>
     <button class="tab-btn" onclick="showTab('pit',this)"><span class="tab-icon">⚔️</span>The Pit</button>
     <button class="tab-btn" onclick="showTab('profile',this)"><span class="tab-icon">👤</span><span data-t="profile">Profil</span></button>
+    <button class="tab-btn" id="adminTab" style="display:none" onclick="showTab('admin',this)"><span class="tab-icon">🔐</span>Admin</button>
   </nav>
+</div>
+
+<div id="page-admin" class="page" style="display:none">
+  <div class="hero" style="background:linear-gradient(135deg,#1a0000 0%,#3a0000 100%)">
+    <h1>🔐 Admin Panel</h1>
+    <p>Grindset — Nur für dich sichtbar</p>
+  </div>
+  <div class="section-header">User Verwaltung</div>
+  <div id="adminUserList"></div>
+  <div class="section-header" style="margin-top:20px">Audit Log</div>
+  <div id="adminAuditLog"></div>
 </div>
 
 <div id="planBuilderPage" style="display:none;padding:16px;padding-bottom:90px">
