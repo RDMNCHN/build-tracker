@@ -121,10 +121,11 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
   </div>
 
   <nav class="tab-bar">
-    <button class="tab-btn active" onclick="showTab('train',this)"><span class="tab-icon">💪</span>Training</button>
-    <button class="tab-btn" onclick="showTab('analyse',this)"><span class="tab-icon">📊</span>Analyse</button>
-    <button class="tab-btn" onclick="showTab('history',this)"><span class="tab-icon">📋</span>Verlauf</button>
-    <button class="tab-btn" onclick="showTab('plans',this)"><span class="tab-icon">⚙️</span>Pläne</button>
+    <button class="tab-btn active" onclick="showTab('train',this)"><span class="tab-icon">💪</span><span data-t="training">Training</span></button>
+    <button class="tab-btn" onclick="showTab('analyse',this)"><span class="tab-icon">📊</span><span data-t="analyse">Analyse</span></button>
+    <button class="tab-btn" onclick="showTab('history',this)"><span class="tab-icon">📋</span><span data-t="history">Verlauf</span></button>
+    <button class="tab-btn" onclick="showTab('plans',this)"><span class="tab-icon">⚙️</span><span data-t="plans">Pläne</span></button>
+    <button class="tab-btn" onclick="toggleLang()" id="langBtn" style="flex:0.7;font-size:10px">🌐 EN</button>
   </nav>
 </div>
 
@@ -175,49 +176,118 @@ const sb = createClient(
 )
 
 const EXERCISES = [
-  {id:'incline_press',name:'Schrägbankdrücken',search:'incline bench press',muscle:'Brust',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Bench_Press_Medium-Grip/0.jpg',video:'male-barbell-incline-bench-press-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Bench_Press/0.jpg',tips:['Bank auf 30–45°','Ellbogen ca. 45° nach außen','Explosiv drücken, langsam runter','Obere Brust spüren']},
-  {id:'bench_press',name:'Flachbankdrücken',search:'barbell bench press',muscle:'Brust',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg',video:'male-barbell-bench-press-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press/0.jpg',tips:['Schulterblätter zusammen','Füße fest auf Boden','Stange zur unteren Brust','Explosiv drücken']},
-  {id:'cable_fly',name:'Kabel Fly',search:'chest fly',muscle:'Brust',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Cross-Over/0.jpg',video:'male-cable-chest-fly-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Cross-Over/0.jpg',tips:['Arme leicht gebeugt','Hände zusammenführen','Brust zusammendrücken','Langsam zurück']},
-  {id:'pushups',name:'Liegestütze',search:'push up',muscle:'Brust',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Ups/0.jpg',video:'male-push-up-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-up/0.jpg',tips:['Körper gerade','Brust berührt fast Boden','Ellbogen leicht innen','Kern angespannt']},
-  {id:'lat_pulldown',name:'Latzug weit',search:'lat pulldown',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg',video:'male-machine-pulldown-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg',tips:['Breiter Griff','Brust raus, leicht zurücklehnen','Ellbogen nach unten führen','Kontrolliert strecken']},
-  {id:'lat_neutral',name:'Latzug neutral',search:'lat pulldown',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Neutral_Grip_Pull-Up/0.jpg',video:'male-machine-pulldown-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Front_Lat_Pulldown/0.jpg',tips:['Neutraler Griff','Ellbogen nach unten/hinten','Untere Lats aktiv','Brust rausstrecken']},
-  {id:'cable_row',name:'Kabelrudern',search:'cable seated row',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/0.jpg',video:'male-cable-seated-row-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Seated_Row/0.jpg',tips:['Aufrecht sitzen','Mit Ellbogen ziehen','Schulterblätter zusammen','Langsam dehnen']},
-  {id:'pullups',name:'Klimmzüge',search:'pull up',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pull-ups/0.jpg',video:'male-pull-up-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pull-up/0.jpg',tips:['Schulterbreiter Griff','Brust zur Stange','Schulterblätter runterziehen','Langsam runter']},
-  {id:'rdl',name:'Rumän. Kreuzheben',search:'romanian deadlift',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg',video:'male-barbell-romanian-deadlift-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg',tips:['Leichte Kniebeugung','Hüfte nach hinten','Rücken gerade','Bis Hamstrings spüren']},
-  {id:'shoulder_press',name:'Schulterdrücken',search:'overhead press',muscle:'Schultern',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shoulder_Press/0.jpg',video:'male-dumbbell-shoulder-press-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shoulder_Press/0.jpg',tips:['Hanteln auf Ohrhöhe','Gerade nach oben','Nicht ganz durchstrecken','Langsam runter']},
-  {id:'lateral_raise',name:'Seitheben',search:'dumbbell lateral raise',muscle:'Schultern',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lateral_Raise/0.jpg',video:'male-dumbbell-lateral-raise-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lateral_Raise/0.jpg',tips:['Leichtes Gewicht','Arme leicht gebeugt','Pinkiefinger leicht hoch','Nur bis Schulterniveau']},
-  {id:'rear_delt',name:'Rear Delt Fly',search:'reverse cable fly',muscle:'Schultern',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Flyes/0.jpg',video:'male-cable-reverse-fly-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bent-Over_Lateral_Raise/0.jpg',tips:['Leichtes Gewicht','Nach außen/hinten führen','Schulterblätter zusammen','Wichtig für Gesundheit']},
-  {id:'face_pull',name:'Face Pull',search:'cable face pull',muscle:'Schultern',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/0.jpg',video:'male-cable-face-pull-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/0.jpg',tips:['Kabel auf Augenhöhe','Seil zur Stirn ziehen','Ellbogen hoch','Externe Rotation trainieren']},
-  {id:'bicep_curl',name:'Bizepscurls KH',search:'dumbbell bicep curl',muscle:'Bizeps',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bicep_Curl/0.jpg',video:'male-dumbbell-bicep-curl-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bicep_Curl/0.jpg',tips:['Ellbogen am Körper','Langsam runter','Oben anspannen','Kein Schwung']},
-  {id:'hammer_curl',name:'Hammer Curl',search:'hammer curl',muscle:'Bizeps',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hammer_Curls/0.jpg',video:'male-dumbbell-hammer-curl-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hammer_Curl/0.jpg',tips:['Daumen nach oben','Brachialis trainieren','Ellbogen fixiert','Langsam runter']},
-  {id:'tricep_pushdown',name:'Trizeps Pushdown',search:'cable pushdown',muscle:'Trizeps',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushdown/0.jpg',video:'male-cable-pushdown-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown/0.jpg',tips:['Ellbogen fixiert','Nur Unterarm bewegt','Unten anspannen','Langsam zurück']},
-  {id:'overhead_tri',name:'Overhead Trizeps',search:'overhead tricep extension',muscle:'Trizeps',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Overhead_Extension_with_Rope/0.jpg',video:'male-dumbbell-tricep-overhead-extension-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Triceps_Extension/0.jpg',tips:['Langer Kopf trainieren','Ellbogen oben halten','Nur Unterarm bewegt','Langsam runter']},
-  {id:'leg_press',name:'Beinpresse',search:'leg press',muscle:'Quads',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/0.jpg',video:'male-sled-leg-press-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/0.jpg',tips:['Füße schulterbreit','Knie nicht durchstrecken','90° Winkel unten','Langsam runter']},
-  {id:'hack_squat',name:'Hack Squat',search:'hack squat',muscle:'Quads',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hack_Squat/0.jpg',video:'male-sled-hack-squat-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hack_Squat/0.jpg',tips:['Füße schulterbreit','Tief runter','Rücken flach','Durch Fersen drücken']},
-  {id:'leg_extension',name:'Beinstrecker',search:'leg extension',muscle:'Quads',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Extensions/0.jpg',video:'male-machine-leg-extension-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Extensions/0.jpg',tips:['Aufrecht sitzen','Langsam oben','Sehr langsam runter','Kein Schwung']},
-  {id:'bulgarian',name:'Bulgarian Split Squats',search:'bulgarian split squat',muscle:'Quads',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bulgarian_Split_Squat/0.jpg',video:'male-dumbbell-bulgarian-split-squat-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bulgarian_Split_Squat/0.jpg',tips:['Hinterer Fuß auf Bank','Senkrecht runter','Knie über Fuß','Hüfte dehnen']},
-  {id:'squat',name:'Kniebeuge',search:'barbell squat',muscle:'Quads',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/0.jpg',video:'male-barbell-squat-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/0.jpg',tips:['Füße schulterbreit','Knie in Richtung Zehen','Tief runter','Durch Fersen drücken']},
-  {id:'rdl_ham',name:'Rumän. KH (Hamstrings)',search:'romanian deadlift',muscle:'Hamstrings',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg',video:'male-barbell-romanian-deadlift-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg',tips:['Hüfte nach hinten','Rücken gerade','Bis Hamstrings spüren','Dann Hüfte vor']},
-  {id:'leg_curl',name:'Beinbeuger',search:'leg curl',muscle:'Hamstrings',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Leg_Curls/0.jpg',video:'male-machine-leg-curl-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Curl/0.jpg',tips:['Hüften fest','Fersen zum Gesäß','Oben anspannen','Langsam strecken']},
-  {id:'hip_thrust',name:'Hip Thrust',search:'barbell hip thrust',muscle:'Glutes',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hip_Thrust/0.jpg',video:'male-barbell-hip-thrust-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hip_Thrust/0.jpg',tips:['Schulterblätter auf Bank','Hüfte explosiv hoch','Oben maximal anspannen','Knie nach außen']},
-  {id:'calf_raise',name:'Wadenheben',search:'calf raise',muscle:'Waden',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/0.jpg',video:'male-machine-calf-raise-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Calf_Raises/0.jpg',tips:['Volle Bewegung','Langsam und bewusst','Oben halten','Hohes Volumen']},
-  {id:'plank',name:'Plank',search:'plank',muscle:'Core',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg',video:'male-plank-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg',tips:['Gerade Linie','Bauch anspannen','Schultern über Ellbogen','Ruhig atmen']},
-  {id:'hanging_leg_raise',name:'Hanging Leg Raise',search:'hanging leg raise',muscle:'Core',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Leg_Raise/0.jpg',video:'male-hanging-leg-raise-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Leg_Raise/0.jpg',tips:['Fest hängen','Knie zur Brust','Kontrolliert runter','Kein Schwingen']},
-  {id:'cable_crunch',name:'Kabel Crunch',search:'cable crunch',muscle:'Core',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crunch/0.jpg',video:'male-cable-crunch-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crunch/0.jpg',tips:['Kniend','Bauch zusammenrollen','Hüfte bleibt still','Langsam zurück']},
-  {id:'ab_wheel',name:'Ab Wheel',search:'ab wheel rollout',muscle:'Core',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ab_Roller/0.jpg',video:'male-ab-wheel-rollout-front',tips:['Knie auf Boden','Langsam rollen','Rücken nicht durchhängen','Durch Bauch zurück']},
-  {id:'t_bar_row',name:'T-Bar Row',search:'t bar row',muscle:'Rücken',tips:['Rücken gerade, leicht vorgebeugt','Stange nah am Körper führen','Ellbogen nach hinten ziehen','Schulterblätter zusammendrücken']},
-  {id:'barbell_shrug',name:'Shrugs (LH)',search:'barbell shrug',muscle:'Schultern',tips:['Schultern gerade nach oben ziehen','Nicht kreisen — nur hoch und runter','Oben kurz halten und anspannen','Langsam runter für volle Dehnung']},
-  {id:'dumbbell_shrug',name:'Shrugs (KH)',search:'dumbbell shrug',muscle:'Schultern',tips:['Schultern gerade nach oben','Nicht kreisen','Oben kurz halten','Langsam runter']},
-  {id:'cable_pullover',name:'Cable Pullover',search:'straight arm pulldown',muscle:'Rücken',tips:['Arme leicht gebeugt halten','Von oben nach unten ziehen','Lats aktiv anspannen','Kontrolliert zurück']},
-  {id:'plate_shoulder_press',name:'Plate Loaded Shoulder Press',search:'lever chest press',muscle:'Schultern',tips:['Aufrecht sitzen','Gerade nach oben drücken','Kern anspannen','Kontrolliert runter']},
-  {id:'incline_smith',name:'Incline Smith Machine Press',search:'smith incline bench press',muscle:'Brust',tips:['Bank auf 30–45°','Smith Machine führt die Bahn','Ellbogen leicht nach außen','Obere Brust fokussieren']},
-  {id:'cable_crunches',name:'Cable Crunches',search:'cable kneeling crunch',muscle:'Core',tips:['Kniend vor dem Kabel','Bauch zusammenrollen','Hüfte bleibt still','Langsam zurück']},
-  {id:'plate_back_row',name:'Plate Loaded Upper Back Row',search:'t bar row',muscle:'Rücken',tips:['Rücken gerade','Ellbogen nach hinten','Schulterblätter zusammen','Langsam dehnen']},
-  {id:'kneeling_pulldown',name:'Kneeling Cable Pulldown',search:'reverse grip machine lat pulldown',muscle:'Rücken',tips:['Kniend vor dem Kabel','Stange zur Brust ziehen','Ellbogen nach unten','Lats anspannen']},
-  {id:'cable_flyes',name:'Cable Flyes',search:'chest fly',muscle:'Brust',tips:['Arme leicht gebeugt','Hände zusammenführen','Brust in der Mitte anspannen','Langsam zurück dehnen']},
+  {id:'incline_press',name:'Schrägbankdrücken',en:'Incline Bench Press',search:'incline bench press',muscle:'Brust',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Bench_Press_Medium-Grip/0.jpg',video:'male-barbell-incline-bench-press-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Bench_Press/0.jpg',tips:['Bank auf 30–45°','Ellbogen ca. 45° nach außen','Explosiv drücken, langsam runter','Obere Brust spüren']},
+  {id:'bench_press',name:'Flachbankdrücken',en:'Bench Press',search:'barbell bench press',muscle:'Brust',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg',video:'male-barbell-bench-press-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press/0.jpg',tips:['Schulterblätter zusammen','Füße fest auf Boden','Stange zur unteren Brust','Explosiv drücken']},
+  {id:'cable_fly',name:'Kabel Fly',en:'Cable Fly',search:'chest fly',muscle:'Brust',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Cross-Over/0.jpg',video:'male-cable-chest-fly-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Cross-Over/0.jpg',tips:['Arme leicht gebeugt','Hände zusammenführen','Brust zusammendrücken','Langsam zurück']},
+  {id:'pushups',name:'Liegestütze',en:'Push-Ups',search:'push up',muscle:'Brust',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Ups/0.jpg',video:'male-push-up-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-up/0.jpg',tips:['Körper gerade','Brust berührt fast Boden','Ellbogen leicht innen','Kern angespannt']},
+  {id:'lat_pulldown',name:'Latzug weit',en:'Lat Pulldown (Wide)',search:'lat pulldown',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg',video:'male-machine-pulldown-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg',tips:['Breiter Griff','Brust raus, leicht zurücklehnen','Ellbogen nach unten führen','Kontrolliert strecken']},
+  {id:'lat_neutral',name:'Latzug neutral',en:'Lat Pulldown (Neutral)',search:'lat pulldown',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Neutral_Grip_Pull-Up/0.jpg',video:'male-machine-pulldown-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Front_Lat_Pulldown/0.jpg',tips:['Neutraler Griff','Ellbogen nach unten/hinten','Untere Lats aktiv','Brust rausstrecken']},
+  {id:'cable_row',name:'Kabelrudern',en:'Seated Cable Row',search:'cable seated row',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/0.jpg',video:'male-cable-seated-row-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Seated_Row/0.jpg',tips:['Aufrecht sitzen','Mit Ellbogen ziehen','Schulterblätter zusammen','Langsam dehnen']},
+  {id:'pullups',name:'Klimmzüge',en:'Pull-Ups',search:'pull up',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pull-ups/0.jpg',video:'male-pull-up-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pull-up/0.jpg',tips:['Schulterbreiter Griff','Brust zur Stange','Schulterblätter runterziehen','Langsam runter']},
+  {id:'rdl',name:'Rumän. Kreuzheben',en:'Romanian Deadlift',search:'romanian deadlift',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg',video:'male-barbell-romanian-deadlift-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg',tips:['Leichte Kniebeugung','Hüfte nach hinten','Rücken gerade','Bis Hamstrings spüren']},
+  {id:'shoulder_press',name:'Schulterdrücken',en:'Shoulder Press',search:'overhead press',muscle:'Schultern',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shoulder_Press/0.jpg',video:'male-dumbbell-shoulder-press-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shoulder_Press/0.jpg',tips:['Hanteln auf Ohrhöhe','Gerade nach oben','Nicht ganz durchstrecken','Langsam runter']},
+  {id:'lateral_raise',name:'Seitheben',en:'Lateral Raise',search:'dumbbell lateral raise',muscle:'Schultern',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lateral_Raise/0.jpg',video:'male-dumbbell-lateral-raise-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lateral_Raise/0.jpg',tips:['Leichtes Gewicht','Arme leicht gebeugt','Pinkiefinger leicht hoch','Nur bis Schulterniveau']},
+  {id:'rear_delt',name:'Rear Delt Fly',en:'Rear Delt Fly',search:'reverse cable fly',muscle:'Schultern',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Flyes/0.jpg',video:'male-cable-reverse-fly-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bent-Over_Lateral_Raise/0.jpg',tips:['Leichtes Gewicht','Nach außen/hinten führen','Schulterblätter zusammen','Wichtig für Gesundheit']},
+  {id:'face_pull',name:'Face Pull',en:'Face Pull',search:'cable face pull',muscle:'Schultern',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/0.jpg',video:'male-cable-face-pull-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/0.jpg',tips:['Kabel auf Augenhöhe','Seil zur Stirn ziehen','Ellbogen hoch','Externe Rotation trainieren']},
+  {id:'bicep_curl',name:'Bizepscurls KH',en:'Dumbbell Bicep Curl',search:'dumbbell bicep curl',muscle:'Bizeps',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bicep_Curl/0.jpg',video:'male-dumbbell-bicep-curl-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bicep_Curl/0.jpg',tips:['Ellbogen am Körper','Langsam runter','Oben anspannen','Kein Schwung']},
+  {id:'hammer_curl',name:'Hammer Curl',en:'Hammer Curl',search:'hammer curl',muscle:'Bizeps',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hammer_Curls/0.jpg',video:'male-dumbbell-hammer-curl-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hammer_Curl/0.jpg',tips:['Daumen nach oben','Brachialis trainieren','Ellbogen fixiert','Langsam runter']},
+  {id:'tricep_pushdown',name:'Trizeps Pushdown',en:'Tricep Pushdown',search:'cable pushdown',muscle:'Trizeps',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushdown/0.jpg',video:'male-cable-pushdown-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown/0.jpg',tips:['Ellbogen fixiert','Nur Unterarm bewegt','Unten anspannen','Langsam zurück']},
+  {id:'overhead_tri',name:'Overhead Trizeps',en:'Overhead Tricep Extension',search:'overhead tricep extension',muscle:'Trizeps',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Overhead_Extension_with_Rope/0.jpg',video:'male-dumbbell-tricep-overhead-extension-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Triceps_Extension/0.jpg',tips:['Langer Kopf trainieren','Ellbogen oben halten','Nur Unterarm bewegt','Langsam runter']},
+  {id:'leg_press',name:'Beinpresse',en:'Leg Press',search:'leg press',muscle:'Quads',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/0.jpg',video:'male-sled-leg-press-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/0.jpg',tips:['Füße schulterbreit','Knie nicht durchstrecken','90° Winkel unten','Langsam runter']},
+  {id:'hack_squat',name:'Hack Squat',en:'Hack Squat',search:'hack squat',muscle:'Quads',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hack_Squat/0.jpg',video:'male-sled-hack-squat-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hack_Squat/0.jpg',tips:['Füße schulterbreit','Tief runter','Rücken flach','Durch Fersen drücken']},
+  {id:'leg_extension',name:'Beinstrecker',en:'Leg Extension',search:'leg extension',muscle:'Quads',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Extensions/0.jpg',video:'male-machine-leg-extension-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Extensions/0.jpg',tips:['Aufrecht sitzen','Langsam oben','Sehr langsam runter','Kein Schwung']},
+  {id:'bulgarian',name:'Bulgarian Split Squats',en:'Bulgarian Split Squat',search:'bulgarian split squat',muscle:'Quads',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bulgarian_Split_Squat/0.jpg',video:'male-dumbbell-bulgarian-split-squat-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bulgarian_Split_Squat/0.jpg',tips:['Hinterer Fuß auf Bank','Senkrecht runter','Knie über Fuß','Hüfte dehnen']},
+  {id:'squat',name:'Kniebeuge',en:'Squat',search:'barbell squat',muscle:'Quads',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/0.jpg',video:'male-barbell-squat-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/0.jpg',tips:['Füße schulterbreit','Knie in Richtung Zehen','Tief runter','Durch Fersen drücken']},
+  {id:'rdl_ham',name:'Rumän. KH (Hamstrings)',en:'Romanian Deadlift',search:'romanian deadlift',muscle:'Hamstrings',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg',video:'male-barbell-romanian-deadlift-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg',tips:['Hüfte nach hinten','Rücken gerade','Bis Hamstrings spüren','Dann Hüfte vor']},
+  {id:'leg_curl',name:'Beinbeuger',en:'Leg Curl',search:'leg curl',muscle:'Hamstrings',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Leg_Curls/0.jpg',video:'male-machine-leg-curl-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Curl/0.jpg',tips:['Hüften fest','Fersen zum Gesäß','Oben anspannen','Langsam strecken']},
+  {id:'hip_thrust',name:'Hip Thrust',en:'Hip Thrust',search:'barbell hip thrust',muscle:'Glutes',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hip_Thrust/0.jpg',video:'male-barbell-hip-thrust-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hip_Thrust/0.jpg',tips:['Schulterblätter auf Bank','Hüfte explosiv hoch','Oben maximal anspannen','Knie nach außen']},
+  {id:'calf_raise',name:'Wadenheben',en:'Calf Raise',search:'calf raise',muscle:'Waden',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/0.jpg',video:'male-machine-calf-raise-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Calf_Raises/0.jpg',tips:['Volle Bewegung','Langsam und bewusst','Oben halten','Hohes Volumen']},
+  {id:'plank',name:'Plank',en:'Plank',search:'plank',muscle:'Core',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg',video:'male-plank-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg',tips:['Gerade Linie','Bauch anspannen','Schultern über Ellbogen','Ruhig atmen']},
+  {id:'hanging_leg_raise',name:'Hanging Leg Raise',en:'Hanging Leg Raise',search:'hanging leg raise',muscle:'Core',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Leg_Raise/0.jpg',video:'male-hanging-leg-raise-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Leg_Raise/0.jpg',tips:['Fest hängen','Knie zur Brust','Kontrolliert runter','Kein Schwingen']},
+  {id:'cable_crunch',name:'Kabel Crunch',en:'Cable Crunch',search:'cable crunch',muscle:'Core',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crunch/0.jpg',video:'male-cable-crunch-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crunch/0.jpg',tips:['Kniend','Bauch zusammenrollen','Hüfte bleibt still','Langsam zurück']},
+  {id:'ab_wheel',name:'Ab Wheel',en:'Ab Wheel Rollout',search:'ab wheel rollout',muscle:'Core',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ab_Roller/0.jpg',video:'male-ab-wheel-rollout-front',tips:['Knie auf Boden','Langsam rollen','Rücken nicht durchhängen','Durch Bauch zurück']},
+  {id:'t_bar_row',name:'T-Bar Row',en:'T-Bar Row',search:'t bar row',muscle:'Rücken',tips:['Rücken gerade, leicht vorgebeugt','Stange nah am Körper führen','Ellbogen nach hinten ziehen','Schulterblätter zusammendrücken']},
+  {id:'barbell_shrug',name:'Shrugs (LH)',en:'Barbell Shrug',search:'barbell shrug',muscle:'Schultern',tips:['Schultern gerade nach oben ziehen','Nicht kreisen — nur hoch und runter','Oben kurz halten und anspannen','Langsam runter für volle Dehnung']},
+  {id:'dumbbell_shrug',name:'Shrugs (KH)',en:'Dumbbell Shrug',search:'dumbbell shrug',muscle:'Schultern',tips:['Schultern gerade nach oben','Nicht kreisen','Oben kurz halten','Langsam runter']},
+  {id:'cable_pullover',name:'Cable Pullover',en:'Cable Pullover',search:'straight arm pulldown',muscle:'Rücken',tips:['Arme leicht gebeugt halten','Von oben nach unten ziehen','Lats aktiv anspannen','Kontrolliert zurück']},
+  {id:'plate_shoulder_press',name:'Plate Loaded Shoulder Press',en:'Plate Loaded Shoulder Press',search:'lever chest press',muscle:'Schultern',tips:['Aufrecht sitzen','Gerade nach oben drücken','Kern anspannen','Kontrolliert runter']},
+  {id:'incline_smith',name:'Incline Smith Machine Press',en:'Incline Smith Machine Press',search:'smith incline bench press',muscle:'Brust',tips:['Bank auf 30–45°','Smith Machine führt die Bahn','Ellbogen leicht nach außen','Obere Brust fokussieren']},
+  {id:'cable_crunches',name:'Cable Crunches',en:'Cable Crunches',search:'cable kneeling crunch',muscle:'Core',tips:['Kniend vor dem Kabel','Bauch zusammenrollen','Hüfte bleibt still','Langsam zurück']},
+  {id:'plate_back_row',name:'Plate Loaded Upper Back Row',en:'Plate Loaded Upper Back Row',search:'t bar row',muscle:'Rücken',tips:['Rücken gerade','Ellbogen nach hinten','Schulterblätter zusammen','Langsam dehnen']},
+  {id:'kneeling_pulldown',name:'Kneeling Cable Pulldown',en:'Kneeling Cable Pulldown',search:'reverse grip machine lat pulldown',muscle:'Rücken',tips:['Kniend vor dem Kabel','Stange zur Brust ziehen','Ellbogen nach unten','Lats anspannen']},
+  {id:'cable_flyes',name:'Cable Flyes',en:'Cable Flyes',search:'chest fly',muscle:'Brust',tips:['Arme leicht gebeugt','Hände zusammenführen','Brust in der Mitte anspannen','Langsam zurück dehnen']},
 ]
 
-const MUSCLES = ['Alle','Brust','Rücken','Schultern','Bizeps','Trizeps','Quads','Hamstrings','Glutes','Waden','Core']
+const MUSCLES_DE = ['Alle','Brust','Rücken','Schultern','Bizeps','Trizeps','Quads','Hamstrings','Glutes','Waden','Core']
+const MUSCLES_EN = ['All','Chest','Back','Shoulders','Biceps','Triceps','Quads','Hamstrings','Glutes','Calves','Core']
+
+let lang = localStorage.getItem('lang') || 'de'
+
+const T = {
+  de: {
+    training:'Training', analyse:'Analyse', history:'Verlauf', plans:'Pläne',
+    whichDay:'Welcher Tag?', exercises:'Übungen', saveSession:'Session speichern',
+    tutorial:'Tutorial', enterData:'Eintragen', sets:'Sätze',
+    addSet:'+ Satz', note:'Notiz (optional)...', close:'Schließen',
+    analysisTitle:'Übung analysieren', chooseEx:'Übung wählen...',
+    maxWeight:'Max. Gewicht pro Session', totalReps:'Wiederholungen gesamt',
+    sessionsPerDay:'Sessions pro Tag', totalSessions:'Sessions gesamt',
+    thisMonth:'Diesen Monat', totalSets:'Sätze gesamt', lastWeek:'Tage letzte Woche',
+    history2:'Gespeicherte Sessions', myPlans:'Meine Pläne', managePlans:'Verwalte deine Trainingspläne',
+    newPlan:'+ Neuen Plan erstellen', active:'Aktiv', activate:'Aktivieren',
+    delete:'Löschen', planDetails:'Plan Details', planName:'Plan Name (z.B. Push Pull Legs)',
+    planDesc:'Beschreibung (optional)', trainingDays:'Trainingstage', addDay:'+ Tag hinzufügen',
+    savePlan:'Plan speichern', dayName:'Tag Name (z.B. Upper A)', focus:'Fokus (z.B. Brust · Rücken)',
+    addExercises:'+ Übungen', searchEx:'Suchen...', done:'Fertig',
+    login:'Einloggen', register:'Account erstellen', email:'E-Mail', password:'Passwort',
+    noAccount:'Noch kein Account? Registrieren', hasAccount:'Schon einen Account? Einloggen',
+    apiMonth:'GIF API — Diesen Monat', apiLeft:'Anfragen diesen Monat noch verfügbar',
+    gifLoading:'Bild wird geladen...', gifLimit:'Monatslimit erreicht',
+    muscles: ['Alle','Brust','Rücken','Schultern','Bizeps','Trizeps','Quads','Hamstrings','Glutes','Waden','Core'],
+  },
+  en: {
+    training:'Training', analyse:'Analysis', history:'History', plans:'Plans',
+    whichDay:'Which day?', exercises:'Exercises', saveSession:'Save session',
+    tutorial:'Tutorial', enterData:'Enter', sets:'Sets',
+    addSet:'+ Set', note:'Note (optional)...', close:'Close',
+    analysisTitle:'Analyze exercise', chooseEx:'Choose exercise...',
+    maxWeight:'Max weight per session', totalReps:'Total reps',
+    sessionsPerDay:'Sessions per day', totalSessions:'Total sessions',
+    thisMonth:'This month', totalSets:'Total sets', lastWeek:'Days last week',
+    history2:'Saved sessions', myPlans:'My Plans', managePlans:'Manage your training plans',
+    newPlan:'+ Create new plan', active:'Active', activate:'Activate',
+    delete:'Delete', planDetails:'Plan details', planName:'Plan name (e.g. Push Pull Legs)',
+    planDesc:'Description (optional)', trainingDays:'Training days', addDay:'+ Add day',
+    savePlan:'Save plan', dayName:'Day name (e.g. Upper A)', focus:'Focus (e.g. Chest · Back)',
+    addExercises:'+ Exercises', searchEx:'Search...', done:'Done',
+    login:'Log in', register:'Create account', email:'Email', password:'Password',
+    noAccount:"Don't have an account? Register", hasAccount:'Already have an account? Log in',
+    apiMonth:'GIF API — This month', apiLeft:'requests remaining this month',
+    gifLoading:'Loading image...', gifLimit:'Monthly limit reached',
+    muscles: ['All','Chest','Back','Shoulders','Biceps','Triceps','Quads','Hamstrings','Glutes','Calves','Core'],
+  }
+}
+
+function t(key) { return T[lang][key] || T.de[key] || key }
+function exName(ex) { return lang === 'en' && ex.en ? ex.en : ex.name }
+function getMuscles() { return T[lang].muscles }
+
+function toggleLang() {
+  lang = lang === 'de' ? 'en' : 'de'
+  localStorage.setItem('lang', lang)
+  if (currentUser) sb.from('profiles').upsert({ user_id: currentUser.id, lang }, { onConflict: 'user_id' })
+  applyLang()
+  renderTrainPage()
+  renderPlansList()
+}
+
+function applyLang() {
+  const btn = document.getElementById('langBtn')
+  if (btn) btn.textContent = lang === 'de' ? '🌐 EN' : '🌐 DE'
+  document.querySelectorAll('[data-t]').forEach(el => {
+    el.textContent = t(el.dataset.t)
+  })
+}
 
 const DEFAULT_PLAN = {
   title:'Anime Build',description:'V-Taper · Lean · Recomp',
@@ -280,6 +350,10 @@ async function showApp() {
   document.getElementById('loginPage').style.display = 'none'
   document.getElementById('appShell').style.display = 'block'
   document.getElementById('trainDate').value = today()
+  // Load user lang preference
+  const { data: profile } = await sb.from('profiles').select('lang').eq('user_id', currentUser.id).single()
+  if (profile?.lang) { lang = profile.lang; localStorage.setItem('lang', lang) }
+  applyLang()
   await loadPlans()
   await loadSessions()
 }
@@ -429,7 +503,7 @@ const gifMemCache = {}
 async function openTutorial(exId) {
   const ex = EXERCISES.find(e => e.id === exId)
   if (!ex) return
-  document.getElementById('tutTitle').textContent = ex.name
+  document.getElementById('tutTitle').textContent = exName(ex)
   document.getElementById('tutMuscle').textContent = ex.muscle
   document.getElementById('tutTips').innerHTML = (ex.tips||[]).map((t,i) => `<li style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg3);font-size:13px;line-height:1.6"><div style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div><span>${t}</span></li>`).join('')
   document.getElementById('tutorialModal').classList.add('open')
@@ -736,22 +810,27 @@ function closeExPicker() {
 }
 
 function renderMuscleFilters() {
-  document.getElementById('muscleFilters').innerHTML = MUSCLES.map(m => `
+  document.getElementById('muscleFilters').innerHTML = getMuscles().map(m => `
     <button onclick="currentPickerMuscle='${m}';renderMuscleFilters();filterExercises()" style="white-space:nowrap;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:${currentPickerMuscle===m?'var(--accent)':'var(--card)'};color:${currentPickerMuscle===m?'#fff':'var(--muted)'};font-size:12px;cursor:pointer;flex-shrink:0">${m}</button>`).join('')
 }
 
 function filterExercises() {
   const search = document.getElementById('exSearch').value.toLowerCase()
   const day = builderDays[currentPickerDayIdx]
+  const muscleAll = getMuscles()[0]
   const filtered = EXERCISES.filter(ex => {
-    const matchM = currentPickerMuscle==='Alle' || ex.muscle===currentPickerMuscle
-    const matchS = ex.name.toLowerCase().includes(search)
+    const matchM = currentPickerMuscle===muscleAll || ex.muscle===currentPickerMuscle || 
+                   (lang==='en' && getMuscles().indexOf(currentPickerMuscle) > 0 && 
+                    MUSCLES_DE[getMuscles().indexOf(currentPickerMuscle)]===ex.muscle)
+    const matchS = ex.name.toLowerCase().includes(search) || 
+                   (ex.en && ex.en.toLowerCase().includes(search)) ||
+                   (ex.search && ex.search.toLowerCase().includes(search))
     return matchM && matchS
   })
   document.getElementById('exPickerList').innerHTML = filtered.map(ex => {
     const sel = day.exercises.includes(ex.id)
     return `<div onclick="togglePickerEx('${ex.id}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;margin-bottom:4px;background:${sel?'var(--card2)':'var(--bg3)'};border:1px solid ${sel?'var(--accent)':'var(--border)'};cursor:pointer">
-      <div><div style="font-size:13px;font-weight:600">${ex.name}</div><div style="font-size:11px;color:var(--muted)">${ex.muscle}</div></div>
+      <div><div style="font-size:13px;font-weight:600">${exName(ex)}</div><div style="font-size:11px;color:var(--muted)">${ex.muscle}</div></div>
       <div style="width:22px;height:22px;border-radius:50%;background:${sel?'var(--accent)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;flex-shrink:0">${sel?'✓':'+'}</div>
     </div>`
   }).join('')
