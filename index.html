@@ -665,6 +665,9 @@ async function saveStatus() {
   toast(t('statusSaved'))
 }
 
+const ADMIN_ID = '483041e9-c0a5-4cfa-8855-ce569daa7f5b'
+function isAdmin() { return currentUser?.id === ADMIN_ID }
+
 async function init() {
   const { data: { session } } = await sb.auth.getSession()
   if (session?.user) {
@@ -1287,6 +1290,114 @@ async function renderPit() {
       </div>
     </div>`
   }).join('')
+}
+
+async function renderAdmin() {
+  if (!isAdmin()) return
+  const { data: profiles } = await sb.from('profiles').select('*').order('xp', {ascending:false})
+  const adminList = document.getElementById('adminUserList')
+  adminList.innerHTML = (profiles||[]).map(p => {
+    const rank = getRank(p.xp||0)
+    const initial = (p.username||'?')[0].toUpperCase()
+    const color = p.avatar_color || '#e94560'
+    return `<div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:10px;border:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+        <div style="width:40px;height:40px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0">${initial}</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:700">${p.username||'Anonym'}</div>
+          <div style="font-size:11px;color:var(--muted)">${rank.icon} ${rank.name} · ${p.xp||0} XP</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button class="btn btn-card btn-sm" onclick="adminViewHistory('${p.user_id}','${p.username||'Anonym'}')">📋 Verlauf</button>
+        <button class="btn btn-card btn-sm" onclick="adminViewXP('${p.user_id}','${p.username||'Anonym'}')">⚡ XP History</button>
+        <button class="btn btn-card btn-sm" onclick="adminSetXP('${p.user_id}','${p.username||'Anonym'}',${p.xp||0})">✏️ XP setzen</button>
+        <button class="btn btn-danger btn-sm" onclick="adminResetXP('${p.user_id}','${p.username||'Anonym'}')">🗑️ XP reset</button>
+      </div>
+    </div>`
+  }).join('')
+  const { data: logs } = await sb.from('audit_log').select('*').order('created_at', {ascending:false}).limit(30)
+  const auditEl = document.getElementById('adminAuditLog')
+  const userMap = {}
+  ;(profiles||[]).forEach(p => userMap[p.user_id] = p.username || 'Anonym')
+  if (!logs?.length) { auditEl.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:10px">Keine Einträge</p>'; return }
+  auditEl.innerHTML = logs.map(log => {
+    const date = new Date(log.created_at).toLocaleString('de-DE', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+    const user = userMap[log.user_id] || log.user_id?.slice(0,8)
+    return `<div style="padding:8px 12px;background:var(--bg3);border-radius:8px;margin-bottom:6px;font-size:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+        <span style="font-weight:600;color:var(--text)">${user}</span>
+        <span style="color:var(--muted)">${date}</span>
+      </div>
+      <div style="color:var(--muted)">${log.action}</div>
+    </div>`
+  }).join('')
+}
+
+async function adminViewHistory(userId, username) {
+  const { data } = await sb.from('sessions').select('*').eq('user_id', userId).order('date', {ascending:false})
+  const modal = document.getElementById('adminModal')
+  document.getElementById('adminModalTitle').textContent = '📋 Verlauf: ' + username
+  const body = document.getElementById('adminModalBody')
+  if (!data?.length) { body.innerHTML = '<p style="color:var(--muted);padding:20px;text-align:center">Keine Sessions</p>'; modal.classList.add('open'); return }
+  body.innerHTML = data.map(s => {
+    const exCount = (s.exercises||[]).filter(e => (e.sets||[]).some(set => set.kg > 0 || set.reps > 0)).length
+    return `<div style="padding:10px 12px;background:var(--bg3);border-radius:8px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:13px;font-weight:600">${s.date}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.day_name||''} · ${exCount} Übungen</div>
+      </div>
+      <button onclick="adminDeleteSession('${s.id}','${userId}','${username}')" style="font-size:11px;color:var(--accent);background:none;border:1px solid var(--accent);border-radius:6px;padding:4px 8px;cursor:pointer">Löschen</button>
+    </div>`
+  }).join('')
+  modal.classList.add('open')
+}
+
+async function adminDeleteSession(sessionId, userId, username) {
+  if (!confirm('Session wirklich löschen?')) return
+  await sb.from('sessions').delete().eq('id', sessionId)
+  await sb.from('audit_log').insert({ user_id: ADMIN_ID, action: `Admin löschte Session von ${username}`, details: { session_id: sessionId, target_user: userId } })
+  toast('Session gelöscht')
+  adminViewHistory(userId, username)
+}
+
+async function adminViewXP(userId, username) {
+  const { data } = await sb.from('xp_history').select('*').eq('user_id', userId).order('created_at', {ascending:false}).limit(50)
+  const modal = document.getElementById('adminModal')
+  document.getElementById('adminModalTitle').textContent = '⚡ XP History: ' + username
+  const body = document.getElementById('adminModalBody')
+  if (!data?.length) { body.innerHTML = '<p style="color:var(--muted);padding:20px;text-align:center">Keine XP History</p>'; modal.classList.add('open'); return }
+  body.innerHTML = data.map(e => {
+    const date = new Date(e.created_at).toLocaleString('de-DE', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:8px;margin-bottom:6px">
+      <div>
+        <div style="font-size:13px">${e.reason}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${date}</div>
+      </div>
+      <span style="font-size:13px;font-weight:700;color:var(--gold);flex-shrink:0;margin-left:12px">+${e.amount} XP</span>
+    </div>`
+  }).join('')
+  modal.classList.add('open')
+}
+
+async function adminSetXP(userId, username, currentXP) {
+  const val = prompt('XP für ' + username + ' setzen (aktuell: ' + currentXP + '):', currentXP)
+  if (val === null) return
+  const newXP = parseInt(val)
+  if (isNaN(newXP)) return toast('Ungültige Zahl', true)
+  await sb.from('profiles').update({ xp: newXP }).eq('user_id', userId)
+  await sb.from('audit_log').insert({ user_id: ADMIN_ID, action: `Admin setzte XP für ${username}: ${currentXP} → ${newXP}`, details: { target_user: userId } })
+  toast('XP aktualisiert!')
+  renderAdmin()
+}
+
+async function adminResetXP(userId, username) {
+  if (!confirm('XP von ' + username + ' auf 0 zurücksetzen?')) return
+  await sb.from('profiles').update({ xp: 0 }).eq('user_id', userId)
+  await sb.from('xp_history').delete().eq('user_id', userId)
+  await sb.from('audit_log').insert({ user_id: ADMIN_ID, action: `Admin resetete XP von ${username}`, details: { target_user: userId } })
+  toast('XP zurückgesetzt')
+  renderAdmin()
 }
 
 function showTab(tab, btn) {
