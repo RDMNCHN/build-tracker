@@ -418,7 +418,7 @@ function openTutorial(exId) {
   document.getElementById('tutTitle').textContent = ex.name
   document.getElementById('tutMuscle').textContent = ex.muscle
   const vid = document.getElementById('tutVideo')
-  vid.innerHTML = ex.video ? `<video autoplay loop muted playsinline style="width:100%;max-width:340px;display:block;margin:0 auto 16px;border-radius:var(--radius);background:var(--bg3);min-height:180px" onerror="this.style.display='none'"><source src="https://media.musclewiki.com/media/uploads/videos/branded/${ex.video}.mp4" type="video/mp4"></video>` : ''
+  vid.innerHTML = ex.video ? `<video autoplay loop muted playsinline style="width:100%;max-width:340px;display:block;margin:0 auto 16px;border-radius:var(--radius);min-height:0" onerror="this.remove()"><source src="https://media.musclewiki.com/media/uploads/videos/branded/${ex.video}.mp4" type="video/mp4"></video>` : ''
   document.getElementById('tutTips').innerHTML = (ex.tips||[]).map((t,i) => `<li style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg3);font-size:13px;line-height:1.6"><div style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div><span>${t}</span></li>`).join('')
   document.getElementById('tutorialModal').classList.add('open')
 }
