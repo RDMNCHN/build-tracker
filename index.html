@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Build Tracker</title>
+<title>Anime Build Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -204,7 +204,17 @@ const EXERCISES = [
   {id:'plank',name:'Plank',search:'plank',muscle:'Core',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg',video:'male-plank-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg',tips:['Gerade Linie','Bauch anspannen','Schultern über Ellbogen','Ruhig atmen']},
   {id:'hanging_leg_raise',name:'Hanging Leg Raise',search:'hanging leg raise',muscle:'Core',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Leg_Raise/0.jpg',video:'male-hanging-leg-raise-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Leg_Raise/0.jpg',tips:['Fest hängen','Knie zur Brust','Kontrolliert runter','Kein Schwingen']},
   {id:'cable_crunch',name:'Kabel Crunch',search:'cable crunch',muscle:'Core',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crunch/0.jpg',video:'male-cable-crunch-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crunch/0.jpg',tips:['Kniend','Bauch zusammenrollen','Hüfte bleibt still','Langsam zurück']},
-  {id:'ab_wheel',name:'Ab Wheel',search:'ab wheel rollout',muscle:'Core',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ab_Roller/0.jpg',video:'male-ab-wheel-rollout-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ab_Roller/0.jpg',tips:['Knie auf Boden','Langsam rollen','Rücken nicht durchhängen','Durch Bauch zurück']},
+  {id:'ab_wheel',name:'Ab Wheel',search:'ab wheel rollout',muscle:'Core',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ab_Roller/0.jpg',video:'male-ab-wheel-rollout-front',tips:['Knie auf Boden','Langsam rollen','Rücken nicht durchhängen','Durch Bauch zurück']},
+  {id:'t_bar_row',name:'T-Bar Row',search:'t bar row',muscle:'Rücken',tips:['Rücken gerade, leicht vorgebeugt','Stange nah am Körper führen','Ellbogen nach hinten ziehen','Schulterblätter zusammendrücken']},
+  {id:'barbell_shrug',name:'Shrugs (LH)',search:'barbell shrug',muscle:'Schultern',tips:['Schultern gerade nach oben ziehen','Nicht kreisen — nur hoch und runter','Oben kurz halten und anspannen','Langsam runter für volle Dehnung']},
+  {id:'dumbbell_shrug',name:'Shrugs (KH)',search:'dumbbell shrug',muscle:'Schultern',tips:['Schultern gerade nach oben','Nicht kreisen','Oben kurz halten','Langsam runter']},
+  {id:'cable_pullover',name:'Cable Pullover',search:'straight arm pulldown',muscle:'Rücken',tips:['Arme leicht gebeugt halten','Von oben nach unten ziehen','Lats aktiv anspannen','Kontrolliert zurück']},
+  {id:'plate_shoulder_press',name:'Plate Loaded Shoulder Press',search:'lever chest press',muscle:'Schultern',tips:['Aufrecht sitzen','Gerade nach oben drücken','Kern anspannen','Kontrolliert runter']},
+  {id:'incline_smith',name:'Incline Smith Machine Press',search:'smith incline bench press',muscle:'Brust',tips:['Bank auf 30–45°','Smith Machine führt die Bahn','Ellbogen leicht nach außen','Obere Brust fokussieren']},
+  {id:'cable_crunches',name:'Cable Crunches',search:'cable kneeling crunch',muscle:'Core',tips:['Kniend vor dem Kabel','Bauch zusammenrollen','Hüfte bleibt still','Langsam zurück']},
+  {id:'plate_back_row',name:'Plate Loaded Upper Back Row',search:'t bar row',muscle:'Rücken',tips:['Rücken gerade','Ellbogen nach hinten','Schulterblätter zusammen','Langsam dehnen']},
+  {id:'kneeling_pulldown',name:'Kneeling Cable Pulldown',search:'reverse grip machine lat pulldown',muscle:'Rücken',tips:['Kniend vor dem Kabel','Stange zur Brust ziehen','Ellbogen nach unten','Lats anspannen']},
+  {id:'cable_flyes',name:'Cable Flyes',search:'chest fly',muscle:'Brust',tips:['Arme leicht gebeugt','Hände zusammenführen','Brust in der Mitte anspannen','Langsam zurück dehnen']},
 ]
 
 const MUSCLES = ['Alle','Brust','Rücken','Schultern','Bizeps','Trizeps','Quads','Hamstrings','Glutes','Waden','Core']
@@ -471,6 +481,17 @@ async function openTutorial(exId) {
       hanging_leg_raise: '0472',
       cable_crunch: '0857',    // ⚠️ Ähnlich: Wheel Rollout
       ab_wheel: '0857',
+      t_bar_row: '0606',
+      barbell_shrug: '0095',
+      dumbbell_shrug: '0406',
+      cable_pullover: '0237',   // ⚠️ Ähnlich: Straight Arm Pulldown
+      dumbbell_lateral_raise2: '0334',
+      plate_shoulder_press: '0576', // ⚠️ Ähnlich: Lever Chest Press
+      incline_smith: '0757',
+      cable_crunches: '0175',   // ⚠️ Ähnlich: Cable Kneeling Crunch
+      plate_back_row: '0606',   // ⚠️ Ähnlich: T-Bar Row
+      kneeling_pulldown: '0673', // ⚠️ Ähnlich: Reverse Grip Lat Pulldown
+      cable_flyes: '1262',      // ⚠️ Ähnlich: Cable One Arm Decline Fly
     }
     const DB_WARNINGS = {
       cable_fly: '⚠️ GIF zeigt ähnliche Übung (Cable Decline Fly)',
@@ -487,6 +508,12 @@ async function openTutorial(exId) {
       plank: '⚠️ GIF zeigt ähnliche Übung (Plank with Twist)',
       cable_crunch: '⚠️ GIF zeigt ähnliche Übung (Wheel Rollout)',
       ab_wheel: '⚠️ GIF zeigt ähnliche Übung (Wheel Rollout)',
+      cable_pullover: '⚠️ GIF zeigt ähnliche Übung (Straight Arm Pulldown)',
+      plate_shoulder_press: '⚠️ GIF zeigt ähnliche Übung (Lever Chest Press)',
+      cable_crunches: '⚠️ GIF zeigt ähnliche Übung (Kneeling Cable Crunch)',
+      plate_back_row: '⚠️ GIF zeigt ähnliche Übung (T-Bar Row)',
+      kneeling_pulldown: '⚠️ GIF zeigt ähnliche Übung (Reverse Grip Lat Pulldown)',
+      cable_flyes: '⚠️ GIF zeigt ähnliche Übung (Cable One Arm Decline Fly)',
     }
     const exerciseDbId = DB_IDS[exId]
     const warning = DB_WARNINGS[exId]
