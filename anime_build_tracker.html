@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Anime Build Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg2: #1a1d2e;
+    --bg3: #1e2235;
+    --card: #242840;
+    --card2: #2a2f50;
+    --border: #3a3f6a;
+    --text: #f0f0f0;
+    --muted: #8a8fa8;
+    --accent: #e94560;
+    --gold: #f5a623;
+    --green: #27ae60;
+    --blue: #3d7ebf;
+    --purple: #9b59b6;
+    --orange: #e67e22;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; min-height: 100vh; }
+
+  .tab-bar { display: flex; background: var(--bg2); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+  .tab-btn { flex: 1; padding: 14px 4px; font-size: 12px; font-weight: 600; color: var(--muted); background: none; border: none; cursor: pointer; letter-spacing: 0.3px; border-bottom: 2px solid transparent; transition: all .2s; }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+
+  .hero { background: linear-gradient(135deg, var(--accent) 0%, #8b1a2a 100%); border-radius: var(--radius); padding: 20px 16px; margin-bottom: 16px; }
+  .hero h1 { font-size: 22px; font-weight: 700; }
+  .hero p { font-size: 13px; color: rgba(255,255,255,0.75); margin-top: 4px; }
+
+  .day-select-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .day-card { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px 12px; cursor: pointer; transition: all .2s; }
+  .day-card:active { transform: scale(0.97); }
+  .day-card.selected { border-color: var(--accent); background: var(--card2); }
+  .day-card .day-title { font-size: 13px; font-weight: 700; }
+  .day-card .day-sub { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+  .day-card .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+
+  .section-header { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin: 18px 0 10px; }
+
+  .date-row { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; }
+  .date-row input[type=date] { flex: 1; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 10px 12px; font-size: 15px; }
+  .date-row input[type=date]::-webkit-calendar-picker-indicator { filter: invert(1); }
+
+  .exercise-block { background: var(--card); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; border: 1px solid var(--border); }
+  .ex-header { padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .ex-name { font-size: 14px; font-weight: 600; }
+  .ex-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .ex-badge { font-size: 11px; background: var(--bg3); color: var(--muted); padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
+  .ex-body { padding: 0 14px 14px; display: none; }
+  .ex-body.open { display: block; }
+
+  .sets-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  .sets-table th { font-size: 11px; color: var(--muted); text-align: center; padding: 4px 6px; font-weight: 600; }
+  .sets-table td { padding: 5px 4px; text-align: center; }
+  .sets-table input { width: 100%; background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 7px 4px; font-size: 14px; text-align: center; }
+  .sets-table input:focus { outline: none; border-color: var(--accent); }
+
+  .add-set-btn { font-size: 12px; color: var(--blue); background: none; border: 1px dashed var(--blue); border-radius: 6px; padding: 6px 12px; cursor: pointer; width: 100%; margin-top: 4px; }
+
+  .note-input { width: 100%; background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 9px 12px; font-size: 13px; resize: none; margin-top: 8px; height: 60px; }
+  .note-input:focus { outline: none; border-color: var(--border); }
+
+  .save-btn { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); padding: 16px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 20px; transition: all .2s; }
+  .save-btn:active { transform: scale(0.98); background: #c73550; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--green); color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: 600; font-size: 14px; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+
+  /* Analysis */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .stat-card { background: var(--card); border-radius: var(--radius); padding: 14px; text-align: center; }
+  .stat-card .val { font-size: 26px; font-weight: 700; color: var(--gold); }
+  .stat-card .lbl { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .filter-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-btn { font-size: 12px; padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--card); color: var(--muted); cursor: pointer; }
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .exercise-select { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 10px 12px; font-size: 14px; margin-bottom: 14px; }
+  .exercise-select:focus { outline: none; }
+
+  .chart-box { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .chart-box h3 { font-size: 13px; color: var(--muted); margin-bottom: 12px; font-weight: 600; }
+
+  /* History */
+  .session-card { background: var(--card); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; }
+  .session-header { padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .session-date { font-size: 14px; font-weight: 700; }
+  .session-day { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .session-body { padding: 0 14px 14px; display: none; }
+  .session-body.open { display: block; }
+  .session-ex { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--bg3); font-size: 13px; }
+  .session-ex:last-child { border-bottom: none; }
+  .session-sets { color: var(--muted); font-size: 12px; text-align: right; }
+  .delete-btn { font-size: 12px; color: var(--accent); background: none; border: 1px solid var(--accent); border-radius: 6px; padding: 4px 10px; cursor: pointer; margin-top: 10px; }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; line-height: 1.6; }
+
+  canvas { max-width: 100%; }
+</style>
+</head>
+<body>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showPage('log')">Training</button>
+  <button class="tab-btn" onclick="showPage('analyse')">Analyse</button>
+  <button class="tab-btn" onclick="showPage('history')">Verlauf</button>
+</div>
+
+<div id="page-log" class="page active">
+  <div class="hero">
+    <h1>Anime Build Tracker</h1>
+    <p>Tag auswählen · Gewichte eintragen · Speichern</p>
+  </div>
+
+  <div class="section-header">Welcher Tag?</div>
+  <div class="day-select-grid" id="dayGrid"></div>
+
+  <div class="date-row">
+    <input type="date" id="trainDate">
+  </div>
+
+  <div id="exerciseSection" style="display:none;">
+    <div class="section-header">Übungen</div>
+    <div id="exerciseList"></div>
+    <button class="save-btn" onclick="saveSession()">Session speichern</button>
+  </div>
+</div>
+
+<div id="page-analyse" class="page">
+  <div class="stats-grid" id="statsGrid"></div>
+  <div class="section-header">Übung analysieren</div>
+  <select class="exercise-select" id="analyseExSelect" onchange="renderAnalysis()"></select>
+  <div class="chart-box">
+    <h3>Max. Gewicht pro Session</h3>
+    <canvas id="weightChart" height="180"></canvas>
+  </div>
+  <div class="chart-box">
+    <h3>Wiederholungen (gesamt pro Session)</h3>
+    <canvas id="repsChart" height="180"></canvas>
+  </div>
+  <div class="chart-box">
+    <h3>Sessions pro Tag</h3>
+    <canvas id="dayChart" height="180"></canvas>
+  </div>
+</div>
+
+<div id="page-history" class="page">
+  <div class="section-header">Gespeicherte Sessions</div>
+  <div id="historyList"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DAYS = [
+  {
+    id: 'upper_a', label: 'Tag 1', name: 'Upper A', color: '#e94560',
+    focus: 'Obere Brust · Rücken · Schultern',
+    exercises: [
+      { id: 'incline_press', name: 'Schrägbankdrücken', sets: 3, reps: '6–10' },
+      { id: 'lat_pulldown', name: 'Latzug weit', sets: 3, reps: '8–12' },
+      { id: 'cable_row', name: 'Brustgest. Rudern', sets: 3, reps: '8–12' },
+      { id: 'shoulder_press', name: 'Schulterdrücken', sets: 3, reps: '8–10' },
+      { id: 'lateral_raise_a', name: 'Seitheben', sets: 4, reps: '12–20' },
+      { id: 'cable_fly', name: 'Kabel Fly / Pec Deck', sets: 3, reps: '12–15' },
+      { id: 'bicep_curl_a', name: 'Bizepscurls', sets: 3, reps: '10–15' },
+      { id: 'tricep_push', name: 'Trizeps Pushdown', sets: 3, reps: '10–15' },
+    ]
+  },
+  {
+    id: 'lower_a', label: 'Tag 2', name: 'Lower A', color: '#f5a623',
+    focus: 'Beine · Arsch · Core',
+    exercises: [
+      { id: 'leg_press_a', name: 'Beinpresse', sets: 3, reps: '6–10' },
+      { id: 'rdl', name: 'Rumän. Kreuzheben', sets: 3, reps: '8–10' },
+      { id: 'leg_ext_a', name: 'Beinstrecker', sets: 3, reps: '12–15' },
+      { id: 'leg_curl_a', name: 'Beinbeuger', sets: 3, reps: '12–15' },
+      { id: 'calf_raise_a', name: 'Wadenheben', sets: 4, reps: '12–20' },
+      { id: 'hanging_knee', name: 'Hanging Knee Raises', sets: 3, reps: '12–20' },
+      { id: 'plank_a', name: 'Plank', sets: 3, reps: '30–60s' },
+    ]
+  },
+  {
+    id: 'upper_b', label: 'Tag 3', name: 'Upper B', color: '#9b59b6',
+    focus: 'Rücken · Brust · Arme',
+    exercises: [
+      { id: 'bench_press', name: 'Flachbankdrücken', sets: 3, reps: '6–10' },
+      { id: 'close_row', name: 'Rudern eng Kabel', sets: 3, reps: '8–12' },
+      { id: 'lat_neutral', name: 'Latzug neutral', sets: 3, reps: '8–12' },
+      { id: 'rear_delt', name: 'Rear Delt Fly', sets: 4, reps: '12–20' },
+      { id: 'lateral_raise_b', name: 'Seitheben', sets: 4, reps: '12–20' },
+      { id: 'incline_curl', name: 'Incline / Hammer Curl', sets: 3, reps: '10–15' },
+      { id: 'overhead_tri', name: 'Overhead Trizeps Ext.', sets: 3, reps: '10–15' },
+      { id: 'pushups', name: 'Liegestütze', sets: 2, reps: 'Max' },
+    ]
+  },
+  {
+    id: 'lower_b', label: 'Tag 4', name: 'Lower B', color: '#27ae60',
+    focus: 'Beine komplett · Core',
+    exercises: [
+      { id: 'hack_squat', name: 'Hack Squat', sets: 3, reps: '8–12' },
+      { id: 'bulgarian', name: 'Bulgarian Split Squats', sets: 3, reps: '8–12/Seite' },
+      { id: 'hip_thrust', name: 'Hip Thrust', sets: 3, reps: '8–12' },
+      { id: 'leg_curl_b', name: 'Beinbeuger', sets: 3, reps: '12–15' },
+      { id: 'calf_raise_b', name: 'Wadenheben', sets: 4, reps: '12–20' },
+      { id: 'cable_crunch', name: 'Kabel Crunch', sets: 3, reps: '12–20' },
+      { id: 'ab_wheel', name: 'Ab Wheel / Plank', sets: 3, reps: 'Max' },
+    ]
+  }
+];
+
+let selectedDay = null;
+let chartW = null, chartR = null, chartD = null;
+
+function getDB() {
+  try { return JSON.parse(localStorage.getItem('animebuild_sessions') || '[]'); } catch { return []; }
+}
+function saveDB(data) {
+  localStorage.setItem('animebuild_sessions', JSON.stringify(data));
+}
+
+function today() {
+  return new Date().toISOString().slice(0,10);
+}
+
+function formatDate(d) {
+  const [y,m,day] = d.split('-');
+  return `${day}.${m}.${y}`;
+}
+
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  event.target.classList.add('active');
+  if (p === 'analyse') renderAnalysePage();
+  if (p === 'history') renderHistory();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function buildDayGrid() {
+  const grid = document.getElementById('dayGrid');
+  grid.innerHTML = DAYS.map(d => `
+    <div class="day-card" id="daycard_${d.id}" onclick="selectDay('${d.id}')">
+      <div class="day-title"><span class="dot" style="background:${d.color}"></span>${d.label} – ${d.name}</div>
+      <div class="day-sub">${d.focus}</div>
+    </div>
+  `).join('');
+}
+
+function selectDay(id) {
+  selectedDay = DAYS.find(d => d.id === id);
+  document.querySelectorAll('.day-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('daycard_'+id).classList.add('selected');
+  buildExerciseList();
+  document.getElementById('exerciseSection').style.display = 'block';
+  setTimeout(() => document.getElementById('exerciseSection').scrollIntoView({behavior:'smooth'}), 100);
+}
+
+function buildExerciseList() {
+  const list = document.getElementById('exerciseList');
+  list.innerHTML = selectedDay.exercises.map((ex, ei) => `
+    <div class="exercise-block">
+      <div class="ex-header" onclick="toggleEx(${ei})">
+        <div>
+          <div class="ex-name">${ex.name}</div>
+          <div class="ex-meta">${ex.sets} Sätze · ${ex.reps} Wdh</div>
+        </div>
+        <div class="ex-badge" id="badge_${ei}">Tippen zum Eintragen</div>
+      </div>
+      <div class="ex-body" id="exbody_${ei}">
+        <table class="sets-table">
+          <thead><tr><th>Satz</th><th>Gewicht (kg)</th><th>Wdh</th></tr></thead>
+          <tbody id="setrows_${ei}"></tbody>
+        </table>
+        <button class="add-set-btn" onclick="addSetRow(${ei})">+ Satz hinzufügen</button>
+        <textarea class="note-input" id="note_${ei}" placeholder="Notiz (optional)..."></textarea>
+      </div>
+    </div>
+  `).join('');
+
+  selectedDay.exercises.forEach((ex, ei) => {
+    for (let s = 0; s < ex.sets; s++) addSetRow(ei);
+  });
+}
+
+function toggleEx(ei) {
+  const body = document.getElementById('exbody_'+ei);
+  body.classList.toggle('open');
+}
+
+function addSetRow(ei) {
+  const tbody = document.getElementById('setrows_'+ei);
+  const rowCount = tbody.rows.length + 1;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="color:var(--muted);font-size:13px;font-weight:600;">${rowCount}</td>
+    <td><input type="number" inputmode="decimal" placeholder="0" min="0" step="0.5" onchange="updateBadge(${ei})"></td>
+    <td><input type="number" inputmode="numeric" placeholder="0" min="0" step="1" onchange="updateBadge(${ei})"></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function updateBadge(ei) {
+  const rows = document.querySelectorAll(`#setrows_${ei} tr`);
+  let filled = 0;
+  rows.forEach(r => {
+    const [_, kgInput, repsInput] = r.querySelectorAll('input');
+    if (kgInput && kgInput.value && repsInput && repsInput.value) filled++;
+  });
+  const badge = document.getElementById('badge_'+ei);
+  if (filled > 0) {
+    badge.textContent = `${filled}/${rows.length} Sätze`;
+    badge.style.color = 'var(--green)';
+    badge.style.borderColor = 'var(--green)';
+  }
+}
+
+function saveSession() {
+  if (!selectedDay) return showToast('Bitte erst Tag auswählen!');
+  const date = document.getElementById('trainDate').value;
+  if (!date) return showToast('Bitte Datum eingeben!');
+
+  const exercisesData = selectedDay.exercises.map((ex, ei) => {
+    const rows = document.querySelectorAll(`#setrows_${ei} tr`);
+    const sets = [];
+    rows.forEach(r => {
+      const inputs = r.querySelectorAll('input');
+      if (inputs[0] && inputs[1]) {
+        sets.push({ kg: parseFloat(inputs[0].value) || 0, reps: parseInt(inputs[1].value) || 0 });
+      }
+    });
+    return {
+      id: ex.id, name: ex.name, sets,
+      note: document.getElementById('note_'+ei)?.value || ''
+    };
+  });
+
+  const session = {
+    id: Date.now(),
+    date,
+    dayId: selectedDay.id,
+    dayName: selectedDay.name,
+    exercises: exercisesData
+  };
+
+  const db = getDB();
+  db.unshift(session);
+  saveDB(db);
+  showToast('Session gespeichert!');
+
+  document.querySelectorAll('.day-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('exerciseSection').style.display = 'none';
+  selectedDay = null;
+}
+
+function renderAnalysePage() {
+  const db = getDB();
+
+  const totalSessions = db.length;
+  const thisMonth = db.filter(s => s.date.startsWith(new Date().toISOString().slice(0,7))).length;
+  const allSets = db.reduce((a, s) => a + s.exercises.reduce((b, e) => b + e.sets.length, 0), 0);
+  const days7 = new Set(db.filter(s => {
+    const d = new Date(s.date);
+    const now = new Date();
+    return (now - d) / 86400000 <= 7;
+  }).map(s => s.date)).size;
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="val">${totalSessions}</div><div class="lbl">Sessions gesamt</div></div>
+    <div class="stat-card"><div class="val">${thisMonth}</div><div class="lbl">Diesen Monat</div></div>
+    <div class="stat-card"><div class="val">${allSets}</div><div class="lbl">Sätze gesamt</div></div>
+    <div class="stat-card"><div class="val">${days7}</div><div class="lbl">Tage letzte Woche</div></div>
+  `;
+
+  const allExercises = [];
+  DAYS.forEach(d => d.exercises.forEach(e => {
+    if (!allExercises.find(x => x.id === e.id)) allExercises.push({ id: e.id, name: e.name });
+  }));
+
+  const sel = document.getElementById('analyseExSelect');
+  const cur = sel.value;
+  sel.innerHTML = allExercises.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+  if (cur) sel.value = cur;
+
+  renderAnalysis();
+  renderDayChart();
+}
+
+function renderAnalysis() {
+  const db = getDB();
+  const exId = document.getElementById('analyseExSelect').value;
+  if (!exId) return;
+
+  const points = [];
+  db.slice().reverse().forEach(session => {
+    const ex = session.exercises.find(e => e.id === exId);
+    if (!ex) return;
+    const maxKg = Math.max(...ex.sets.map(s => s.kg).filter(k => k > 0));
+    const totalReps = ex.sets.reduce((a, s) => a + s.reps, 0);
+    if (maxKg > 0 || totalReps > 0) points.push({ date: session.date, maxKg: maxKg || 0, totalReps });
+  });
+
+  const labels = points.map(p => formatDate(p.date));
+  const chartOpts = {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#8a8fa8', font: { size: 11 }, maxRotation: 45 }, grid: { color: '#2a2f50' } },
+      y: { ticks: { color: '#8a8fa8', font: { size: 11 } }, grid: { color: '#2a2f50' } }
+    }
+  };
+
+  if (chartW) chartW.destroy();
+  chartW = new Chart(document.getElementById('weightChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: points.map(p => p.maxKg),
+        borderColor: '#e94560', backgroundColor: 'rgba(233,69,96,0.12)',
+        tension: 0.3, fill: true, pointRadius: 5, pointBackgroundColor: '#e94560'
+      }]
+    },
+    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'kg', color: '#8a8fa8' } } } }
+  });
+
+  if (chartR) chartR.destroy();
+  chartR = new Chart(document.getElementById('repsChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: points.map(p => p.totalReps),
+        backgroundColor: 'rgba(245,166,35,0.7)', borderColor: '#f5a623', borderWidth: 1, borderRadius: 4
+      }]
+    },
+    options: chartOpts
+  });
+}
+
+function renderDayChart() {
+  const db = getDB();
+  const counts = { upper_a: 0, lower_a: 0, upper_b: 0, lower_b: 0 };
+  db.forEach(s => { if (counts[s.dayId] !== undefined) counts[s.dayId]++; });
+
+  if (chartD) chartD.destroy();
+  chartD = new Chart(document.getElementById('dayChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Upper A', 'Lower A', 'Upper B', 'Lower B'],
+      datasets: [{
+        data: Object.values(counts),
+        backgroundColor: ['rgba(233,69,96,0.7)','rgba(245,166,35,0.7)','rgba(155,89,182,0.7)','rgba(39,174,96,0.7)'],
+        borderColor: ['#e94560','#f5a623','#9b59b6','#27ae60'],
+        borderWidth: 1, borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#8a8fa8', font: { size: 11 } }, grid: { color: '#2a2f50' } },
+        y: { ticks: { color: '#8a8fa8', font: { size: 11 }, stepSize: 1 }, grid: { color: '#2a2f50' } }
+      }
+    }
+  });
+}
+
+function renderHistory() {
+  const db = getDB();
+  const list = document.getElementById('historyList');
+  if (db.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>Noch keine Sessions gespeichert.<br>Trag dein erstes Training ein!</p></div>`;
+    return;
+  }
+
+  list.innerHTML = db.map((session, idx) => {
+    const day = DAYS.find(d => d.id === session.dayId);
+    const color = day ? day.color : '#888';
+    const exList = session.exercises.map(ex => {
+      const validSets = ex.sets.filter(s => s.kg > 0 || s.reps > 0);
+      if (validSets.length === 0) return '';
+      const maxKg = Math.max(...validSets.map(s => s.kg));
+      const totalReps = validSets.reduce((a,s) => a + s.reps, 0);
+      return `<div class="session-ex">
+        <span>${ex.name}</span>
+        <span class="session-sets">${validSets.length}x · ${maxKg > 0 ? maxKg+'kg' : '–'} · ${totalReps} Wdh</span>
+      </div>`;
+    }).filter(Boolean).join('');
+
+    return `<div class="session-card">
+      <div class="session-header" onclick="toggleSession(${idx})">
+        <div>
+          <div class="session-date">${formatDate(session.date)}</div>
+          <div class="session-day"><span style="color:${color};font-weight:700;">${session.dayName}</span></div>
+        </div>
+        <span style="color:var(--muted);font-size:20px;">›</span>
+      </div>
+      <div class="session-body" id="sessBody_${idx}">
+        ${exList || '<p style="color:var(--muted);font-size:13px;">Keine Daten eingetragen</p>'}
+        <button class="delete-btn" onclick="deleteSession(${session.id})">Session löschen</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSession(idx) {
+  const b = document.getElementById('sessBody_'+idx);
+  b.classList.toggle('open');
+}
+
+function deleteSession(id) {
+  if (!confirm('Session wirklich löschen?')) return;
+  const db = getDB().filter(s => s.id !== id);
+  saveDB(db);
+  renderHistory();
+  showToast('Session gelöscht');
+}
+
+document.getElementById('trainDate').value = today();
+buildDayGrid();
+</script>
+</body>
+</html>
