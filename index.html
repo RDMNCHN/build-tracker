@@ -213,7 +213,16 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
     <button class="btn btn-danger" style="margin-top:8px" onclick="handleLogout()">Ausloggen</button>
   </div>
 
-  <div id="page-pit" class="page">
+  <div class="modal-overlay" id="adminModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:14px" id="adminModalTitle"></div>
+    <div id="adminModalBody" style="max-height:400px;overflow-y:auto"></div>
+    <button class="btn btn-card" style="margin-top:14px" onclick="document.getElementById('adminModal').classList.remove('open')">Schließen</button>
+  </div>
+</div>
+
+<div id="page-pit" class="page">
     <div class="hero" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)">
       <h1>⚔️ The Pit</h1>
       <p id="pitDesc">Die Community — alle Grindset Nutzer</p>
@@ -393,7 +402,7 @@ const T = {
     addExercises:'+ Übungen', searchEx:'Suchen...', done:'Fertig', newPlanTitle:'Neuer Trainingsplan', selectExercises:'Übungen auswählen',
     login:'Einloggen', register:'Account erstellen', email:'E-Mail', password:'Passwort',
     noAccount:'Noch kein Account? Registrieren', hasAccount:'Schon einen Account? Einloggen',
-    whichDay:'Welcher Tag?', analyseEx:'Übung analysieren', maxWeight2:'Max. Gewicht pro Session', totalReps2:'Wiederholungen gesamt', sessionsDay:'Sessions pro Tag', savedSessions:'Gespeicherte Sessions', settingsH:'Einstellungen', usernameL:'Benutzername', badgesL:'Badges', logoutL:'Ausloggen', noBadgesL:'Noch keine Badges verdient 💪', noUsernameL:'Kein Benutzername gesetzt',
+    whichDay:'Welcher Tag?', analyseEx:'Übung analysieren', maxWeight2:'Max. Gewicht pro Session', totalReps2:'Wiederholungen gesamt', sessionsDay:'Sessions pro Tag', savedSessions:'Gespeicherte Sessions', settingsH:'Einstellungen', usernameL:'Benutzername', badgesL:'Badges', logoutL:'Ausloggen', noBadgesL:'Noch keine Badges verdient 💪', noUsernameL:'Kein Benutzername gesetzt', statusL:'Status', langL:'Sprache', joinedL:'Dabei seit', memberSince:'Dabei seit', last4weeks:'Letzte 4 Wochen', xpInfo:'XP Info', xpSystem:'XP System', xpEarn:'XP verdienen', xpHistoryL:'Deine XP History', noXpYet:'Noch keine XP verdient', sessionSaved:'Session gespeichert! XP erhalten 🔥', dateMissing:'Datum fehlt', saveError:'Fehler beim Speichern', deleted:'Gelöscht', deleteConfirm:'Session löschen?', colorSaved:'Farbe gespeichert!', statusSaved:'Status gespeichert!', usernameSaved:'Name gespeichert!', enterUsername:'Bitte Namen eingeben', pitDesc:'Die Community — alle Grindset Nutzer',
     apiMonth:'GIF API — Diesen Monat', apiLeft:'Anfragen diesen Monat noch verfügbar',
     gifLoading:'Bild wird geladen...', gifLimit:'Monatslimit erreicht',
     muscles: ['Alle','Brust','Rücken','Schultern','Bizeps','Trizeps','Quads','Hamstrings','Glutes','Waden','Core'],
@@ -415,7 +424,7 @@ const T = {
     addExercises:'+ Exercises', searchEx:'Search...', done:'Done', newPlanTitle:'New Training Plan', selectExercises:'Select exercises',
     login:'Log in', register:'Create account', email:'Email', password:'Password',
     noAccount:"Don't have an account? Register", hasAccount:'Already have an account? Log in',
-    whichDay:'Which day?', analyseEx:'Analyze exercise', maxWeight2:'Max weight per session', totalReps2:'Total reps', sessionsDay:'Sessions per day', savedSessions:'Saved sessions', settingsH:'Settings', usernameL:'Username', badgesL:'Badges', logoutL:'Log out', noBadgesL:'No badges earned yet 💪', noUsernameL:'No username set',
+    whichDay:'Which day?', analyseEx:'Analyze exercise', maxWeight2:'Max weight per session', totalReps2:'Total reps', sessionsDay:'Sessions per day', savedSessions:'Saved sessions', settingsH:'Settings', usernameL:'Username', badgesL:'Badges', logoutL:'Log out', noBadgesL:'No badges earned yet 💪', noUsernameL:'No username set', statusL:'Status', langL:'Language', joinedL:'Member since', memberSince:'Member since', last4weeks:'Last 4 weeks', xpInfo:'XP Info', xpSystem:'XP System', xpEarn:'Earn XP', xpHistoryL:'Your XP History', noXpYet:'No XP earned yet', sessionSaved:'Session saved! XP awarded 🔥', dateMissing:'Date missing', saveError:'Error saving', deleted:'Deleted', deleteConfirm:'Delete session?', colorSaved:'Color saved!', statusSaved:'Status saved!', usernameSaved:'Username saved!', enterUsername:'Please enter a username', pitDesc:'The community — all Grindset users',
     apiMonth:'GIF API — This month', apiLeft:'requests remaining this month',
     gifLoading:'Loading image...', gifLimit:'Monthly limit reached',
     muscles: ['All','Chest','Back','Shoulders','Biceps','Triceps','Quads','Hamstrings','Glutes','Calves','Core'],
@@ -429,7 +438,7 @@ function getMuscles() { return T[lang].muscles }
 function toggleLang() {
   lang = lang === 'de' ? 'en' : 'de'
   localStorage.setItem('lang', lang)
-  if (currentUser) sb.from('profiles').upsert({ user_id: currentUser.id, lang }, { onConflict: 'user_id' }).then(() => {})
+  if (currentUser) sb.from('profiles').update({ lang }).eq('user_id', currentUser.id).then(() => {})
   applyLang()
   renderTrainPage()
   renderPlansList()
@@ -459,6 +468,15 @@ function applyLang() {
     'savePlanBtn': t('savePlan'),
     'selectExTitle': t('selectExercises'),
     'doneBtn': t('done'),
+    'saveSessionBtn': t('saveSession'),
+    'logoutBtn': t('logoutL'),
+    'xpInfoBtn': t('xpInfo'),
+    'xpModalTitle': t('xpSystem'),
+    'xpEarnTitle': t('xpEarn'),
+    'xpHistTitle': t('xpHistoryL'),
+    'xpCloseBtn': t('close'),
+    'heatmap4w': t('last4weeks'),
+    'pitDesc': t('pitDesc'),
   }
   Object.entries(ids).forEach(([id, text]) => {
     const el = document.getElementById(id)
@@ -507,10 +525,10 @@ function today() { return new Date().toISOString().slice(0,10) }
 
 async function saveUsername() {
   const username = document.getElementById('usernameInput').value.trim()
-  if (!username) return toast(lang==='en'?'Please enter a username':'Bitte Namen eingeben', true)
-  await sb.from('profiles').upsert({ user_id: currentUser.id, username }, { onConflict: 'user_id' })
+  if (!username) return toast(t('enterUsername'), true)
+  await sb.from('profiles').update({ username }).eq('user_id', currentUser.id)
   renderProfile()
-  toast(lang==='en'?'Username saved!':'Name gespeichert!')
+  toast(t('usernameSaved'))
 }
 
 async function openXpModal() {
@@ -519,7 +537,7 @@ async function openXpModal() {
   list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Wird geladen...</div>'
   const { data } = await sb.from('xp_history').select('*').eq('user_id', currentUser.id).order('created_at', {ascending:false}).limit(50)
   if (!data?.length) {
-    list.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">' + (lang==='en'?'No XP earned yet':'Noch keine XP verdient') + '</div>'
+    list.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">' + (t('noXpYet')) + '</div>'
     return
   }
   list.innerHTML = data.map(entry => {
@@ -580,9 +598,9 @@ async function renderProfile() {
   av.style.background = color
   av.style.borderColor = color
 
-  document.getElementById('profileName').textContent = username || (lang==='en'?'No username set':'Kein Benutzername gesetzt')
+  document.getElementById('profileName').textContent = username || (t('noUsernameL'))
   document.getElementById('profileEmail').textContent = email
-  document.getElementById('profileJoined').textContent = joined ? (lang==='en'?'Member since ':'Dabei seit ') + joined : ''
+  document.getElementById('profileJoined').textContent = joined ? (t('memberSince') + ' ') + joined : ''
   document.getElementById('profileStatusDisplay').textContent = status ? '"' + status + '"' : ''
 
   // Rank
@@ -623,16 +641,16 @@ function toggleColorPicker() {
 }
 
 async function setAvatarColor(color) {
-  await sb.from('profiles').upsert({ user_id: currentUser.id, avatar_color: color }, { onConflict: 'user_id' })
+  await sb.from('profiles').update({ avatar_color: color }).eq('user_id', currentUser.id)
   renderProfile()
-  toast(lang==='en'?'Color saved!':'Farbe gespeichert!')
+  toast(t('colorSaved'))
 }
 
 async function saveStatus() {
   const status = document.getElementById('statusInput').value.trim()
-  await sb.from('profiles').upsert({ user_id: currentUser.id, status }, { onConflict: 'user_id' })
+  await sb.from('profiles').update({ status }).eq('user_id', currentUser.id)
   renderProfile()
-  toast(lang==='en'?'Status saved!':'Status gespeichert!')
+  toast(t('statusSaved'))
 }
 
 async function init() {
@@ -785,7 +803,7 @@ function updateBadge(ei) {
 async function saveSession() {
   if (!selectedDay) return
   const date = document.getElementById('trainDate').value
-  if (!date) return toast('Datum fehlt', true)
+  if (!date) return toast(t('dateMissing'), true)
   const exercisesData = selectedDay.exercises.map((exId, ei) => {
     const ex = EXERCISES.find(e => e.id === exId) || {name:exId}
     const rows = document.querySelectorAll(`#setrows_${ei} tr`)
@@ -794,11 +812,12 @@ async function saveSession() {
     return {id:exId, name:ex.name, sets, note:document.getElementById('note_'+ei)?.value||''}
   })
   const { error } = await sb.from('sessions').insert({user_id:currentUser.id, plan_id:activePlanId, date, day_id:selectedDay.id, day_name:selectedDay.name, exercises:exercisesData})
-  if (error) return toast('Fehler beim Speichern', true)
+  if (error) return toast(t('saveError'), true)
 
   // Award XP
   await awardXP(exercisesData, date)
 
+  await sb.from('audit_log').insert({ user_id: currentUser.id, action: `Session gespeichert: ${selectedDay.name} (${date})`, details: { day_id: selectedDay.id, date } })
   toast(lang==='en'?'Session saved! XP awarded 🔥':'Session gespeichert! XP erhalten 🔥')
   await loadSessions()
   selectedDay = null
@@ -859,10 +878,10 @@ async function awardXP(exercisesData, date) {
   // Save XP history entries
   if (xpEntries.length) await sb.from('xp_history').insert(xpEntries)
 
-  // Update profile XP
+  // Update profile XP - use update not upsert to prevent duplicate rows
   const { data: prof } = await sb.from('profiles').select('xp').eq('user_id', currentUser.id).single()
   const currentXP = prof?.xp || 0
-  await sb.from('profiles').upsert({ user_id: currentUser.id, xp: currentXP + totalXP }, { onConflict: 'user_id' })
+  await sb.from('profiles').update({ xp: currentXP + totalXP }).eq('user_id', currentUser.id)
 }
 
 const RAPIDAPI_KEY = '97f87cf90amsh539c733e15b2ba7p176d29jsn4b747e8f34a6'
@@ -987,12 +1006,14 @@ function renderHistory() {
 }
 
 async function deleteSession(id) {
-  if (!confirm('Löschen?')) return
+  if (!confirm(lang==='en'?'Delete session?':'Session löschen?')) return
+  const session = sessions.find(s => s.id === id)
   await sb.from('sessions').delete().eq('id', id)
+  await sb.from('audit_log').insert({ user_id: currentUser.id, action: `Session gelöscht: ${session?.day_name||''} (${session?.date||''})`, details: { session_id: id } })
   sessions = sessions.filter(s => s.id !== id)
   renderHistory()
   renderAnalyse()
-  toast('Gelöscht')
+  toast(t('deleted'))
 }
 
 function renderAnalyse() {
@@ -1220,7 +1241,7 @@ async function savePlan() {
     days: builderDays.map((d,i) => ({id:'day_'+i,label:'Tag '+(i+1),name:d.name||'Tag '+(i+1),focus:d.focus,color:d.color,exercises:d.exercises}))
   }
   const { data, error } = await sb.from('plans').insert(plan).select().single()
-  if (error) return toast('Fehler beim Speichern', true)
+  if (error) return toast(t('saveError'), true)
   plans.push(data)
   toast('Plan gespeichert!')
   hidePlanBuilder()
@@ -1266,6 +1287,7 @@ function showTab(tab, btn) {
   if (tab==='plans') renderPlansList()
   if (tab==='profile') renderProfile()
   if (tab==='pit') renderPit()
+  if (tab==='admin') renderAdmin()
 }
 
 init()
