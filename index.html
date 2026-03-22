@@ -177,14 +177,14 @@ const sb = createClient(
 const EXERCISES = [
   {id:'incline_press',name:'Schrägbankdrücken',search:'incline bench press',muscle:'Brust',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Bench_Press_Medium-Grip/0.jpg',video:'male-barbell-incline-bench-press-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Bench_Press/0.jpg',tips:['Bank auf 30–45°','Ellbogen ca. 45° nach außen','Explosiv drücken, langsam runter','Obere Brust spüren']},
   {id:'bench_press',name:'Flachbankdrücken',search:'barbell bench press',muscle:'Brust',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg',video:'male-barbell-bench-press-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press/0.jpg',tips:['Schulterblätter zusammen','Füße fest auf Boden','Stange zur unteren Brust','Explosiv drücken']},
-  {id:'cable_fly',name:'Kabel Fly',search:'cable chest fly',muscle:'Brust',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Cross-Over/0.jpg',video:'male-cable-chest-fly-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Cross-Over/0.jpg',tips:['Arme leicht gebeugt','Hände zusammenführen','Brust zusammendrücken','Langsam zurück']},
+  {id:'cable_fly',name:'Kabel Fly',search:'chest fly',muscle:'Brust',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Cross-Over/0.jpg',video:'male-cable-chest-fly-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Cross-Over/0.jpg',tips:['Arme leicht gebeugt','Hände zusammenführen','Brust zusammendrücken','Langsam zurück']},
   {id:'pushups',name:'Liegestütze',search:'push up',muscle:'Brust',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Ups/0.jpg',video:'male-push-up-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-up/0.jpg',tips:['Körper gerade','Brust berührt fast Boden','Ellbogen leicht innen','Kern angespannt']},
   {id:'lat_pulldown',name:'Latzug weit',search:'lat pulldown',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg',video:'male-machine-pulldown-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg',tips:['Breiter Griff','Brust raus, leicht zurücklehnen','Ellbogen nach unten führen','Kontrolliert strecken']},
   {id:'lat_neutral',name:'Latzug neutral',search:'lat pulldown',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Neutral_Grip_Pull-Up/0.jpg',video:'male-machine-pulldown-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Front_Lat_Pulldown/0.jpg',tips:['Neutraler Griff','Ellbogen nach unten/hinten','Untere Lats aktiv','Brust rausstrecken']},
-  {id:'cable_row',name:'Kabelrudern',search:'seated cable row',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/0.jpg',video:'male-cable-seated-row-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Seated_Row/0.jpg',tips:['Aufrecht sitzen','Mit Ellbogen ziehen','Schulterblätter zusammen','Langsam dehnen']},
+  {id:'cable_row',name:'Kabelrudern',search:'cable seated row',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/0.jpg',video:'male-cable-seated-row-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Seated_Row/0.jpg',tips:['Aufrecht sitzen','Mit Ellbogen ziehen','Schulterblätter zusammen','Langsam dehnen']},
   {id:'pullups',name:'Klimmzüge',search:'pull up',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pull-ups/0.jpg',video:'male-pull-up-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pull-up/0.jpg',tips:['Schulterbreiter Griff','Brust zur Stange','Schulterblätter runterziehen','Langsam runter']},
   {id:'rdl',name:'Rumän. Kreuzheben',search:'romanian deadlift',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg',video:'male-barbell-romanian-deadlift-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg',tips:['Leichte Kniebeugung','Hüfte nach hinten','Rücken gerade','Bis Hamstrings spüren']},
-  {id:'shoulder_press',name:'Schulterdrücken',search:'dumbbell shoulder press',muscle:'Schultern',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shoulder_Press/0.jpg',video:'male-dumbbell-shoulder-press-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shoulder_Press/0.jpg',tips:['Hanteln auf Ohrhöhe','Gerade nach oben','Nicht ganz durchstrecken','Langsam runter']},
+  {id:'shoulder_press',name:'Schulterdrücken',search:'overhead press',muscle:'Schultern',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shoulder_Press/0.jpg',video:'male-dumbbell-shoulder-press-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shoulder_Press/0.jpg',tips:['Hanteln auf Ohrhöhe','Gerade nach oben','Nicht ganz durchstrecken','Langsam runter']},
   {id:'lateral_raise',name:'Seitheben',search:'dumbbell lateral raise',muscle:'Schultern',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lateral_Raise/0.jpg',video:'male-dumbbell-lateral-raise-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lateral_Raise/0.jpg',tips:['Leichtes Gewicht','Arme leicht gebeugt','Pinkiefinger leicht hoch','Nur bis Schulterniveau']},
   {id:'rear_delt',name:'Rear Delt Fly',search:'reverse cable fly',muscle:'Schultern',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Flyes/0.jpg',video:'male-cable-reverse-fly-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bent-Over_Lateral_Raise/0.jpg',tips:['Leichtes Gewicht','Nach außen/hinten führen','Schulterblätter zusammen','Wichtig für Gesundheit']},
   {id:'face_pull',name:'Face Pull',search:'cable face pull',muscle:'Schultern',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/0.jpg',video:'male-cable-face-pull-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/0.jpg',tips:['Kabel auf Augenhöhe','Seil zur Stirn ziehen','Ellbogen hoch','Externe Rotation trainieren']},
@@ -440,14 +440,60 @@ async function openTutorial(exId) {
     const usedToday = usage?.count || 0
     if (usedToday >= 690) { vid.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Tageslimit erreicht (690/690)</p>'; return }
 
-    // Step 1: get exercise ID by name
-    const searchRes = await fetch(`https://exercisedb.p.rapidapi.com/exercises/name/${encodeURIComponent(ex.search||ex.name)}?limit=1&offset=0`, {
-      headers: { 'x-rapidapi-key': RAPIDAPI_KEY, 'x-rapidapi-host': 'exercisedb.p.rapidapi.com' }
-    })
-    const searchData = await searchRes.json()
-    const exerciseDbId = searchData?.[0]?.id
+    const DB_IDS = {
+      incline_press: '0047',
+      bench_press: '0025',
+      cable_fly: '1262',       // ⚠️ Ähnlich: Cable One Arm Decline Chest Fly
+      pushups: '0669',
+      lat_pulldown: '0673',    // ⚠️ Ähnlich: Reverse Grip Machine Lat Pulldown
+      lat_neutral: '0651',     // ⚠️ Ähnlich: Pull Up Neutral Grip
+      cable_row: '0861',
+      pullups: '0651',
+      rdl: '0085',
+      shoulder_press: '0091',  // ⚠️ Ähnlich: Barbell Seated Overhead Press
+      lateral_raise: '0334',
+      rear_delt: '0154',       // ⚠️ Ähnlich: Cable Cross-Over Reverse Fly
+      face_pull: '1722',       // ⚠️ Ähnlich: Cable High Pulley Overhead Tricep Ext.
+      bicep_curl: '1651',      // ⚠️ Ähnlich: Dumbbell Bicep Curl Lunge
+      hammer_curl: '0165',     // ⚠️ Ähnlich: Cable Hammer Curl with Rope
+      tricep_pushdown: '0199',
+      overhead_tri: '1722',
+      leg_press: '0739',
+      hack_squat: '0046',
+      leg_extension: '0585',
+      bulgarian: '0097',       // ⚠️ Ähnlich: Barbell Side Split Squat
+      squat: '3303',
+      rdl_ham: '0085',
+      leg_curl: '0496',        // ⚠️ Ähnlich: Inverse Leg Curl
+      hip_thrust: '1409',      // ⚠️ Ähnlich: Barbell Glute Bridge
+      calf_raise: '0417',
+      plank: '0464',           // ⚠️ Ähnlich: Front Plank with Twist
+      hanging_leg_raise: '0472',
+      cable_crunch: '0857',    // ⚠️ Ähnlich: Wheel Rollout
+      ab_wheel: '0857',
+    }
+    const DB_WARNINGS = {
+      cable_fly: '⚠️ GIF zeigt ähnliche Übung (Cable Decline Fly)',
+      lat_pulldown: '⚠️ GIF zeigt ähnliche Übung (Reverse Grip Lat Pulldown)',
+      lat_neutral: '⚠️ GIF zeigt ähnliche Übung (Neutral Grip Pull Up)',
+      shoulder_press: '⚠️ GIF zeigt ähnliche Übung (Barbell Seated Overhead Press)',
+      rear_delt: '⚠️ GIF zeigt ähnliche Übung (Cable Reverse Fly)',
+      face_pull: '⚠️ GIF zeigt ähnliche Übung (Overhead Tricep Extension)',
+      bicep_curl: '⚠️ GIF zeigt ähnliche Übung (Bicep Curl Lunge)',
+      hammer_curl: '⚠️ GIF zeigt ähnliche Übung (Cable Hammer Curl)',
+      bulgarian: '⚠️ GIF zeigt ähnliche Übung (Barbell Split Squat)',
+      leg_curl: '⚠️ GIF zeigt ähnliche Übung (Inverse Leg Curl)',
+      hip_thrust: '⚠️ GIF zeigt ähnliche Übung (Barbell Glute Bridge)',
+      plank: '⚠️ GIF zeigt ähnliche Übung (Plank with Twist)',
+      cable_crunch: '⚠️ GIF zeigt ähnliche Übung (Wheel Rollout)',
+      ab_wheel: '⚠️ GIF zeigt ähnliche Übung (Wheel Rollout)',
+    }
+    const exerciseDbId = DB_IDS[exId]
+    const warning = DB_WARNINGS[exId]
+    if (warning) {
+      document.getElementById('tutMuscle').textContent = ex.muscle + '  ' + warning
+    }
     if (exerciseDbId) {
-      // Step 2: fetch GIF via our Vercel proxy (avoids CORS)
       const gifUrl = `/api/gif?id=${exerciseDbId}`
       gifMemCache[exId] = gifUrl
       await sb.from('exercise_gifs').upsert({ exercise_id: exId, gif_url: gifUrl })
