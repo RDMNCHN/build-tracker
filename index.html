@@ -231,25 +231,25 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
 <div id="planBuilderPage" style="display:none;padding:16px;padding-bottom:90px">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
     <button onclick="hidePlanBuilder()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">←</button>
-    <h2 style="font-size:18px;font-weight:700">Neuer Trainingsplan</h2>
+    <h2 style="font-size:18px;font-weight:700" id="planBuilderTitle">Neuer Trainingsplan</h2>
   </div>
-  <div class="section-header">Plan Details</div>
+  <div class="section-header" id="planDetailsHeader">Plan Details</div>
   <input type="text" id="planTitle" placeholder="Plan Name (z.B. Push Pull Legs)">
   <input type="text" id="planDesc" placeholder="Beschreibung (optional)">
-  <div class="section-header">Trainingstage</div>
+  <div class="section-header" id="trainingDaysHeader">Trainingstage</div>
   <div id="builderDays"></div>
-  <button class="btn btn-card" style="margin-bottom:10px;border-style:dashed" onclick="addBuilderDay()">+ Tag hinzufügen</button>
-  <button class="btn btn-accent" onclick="savePlan()">Plan speichern</button>
+  <button class="btn btn-card" style="margin-bottom:10px;border-style:dashed" id="addDayBtn" onclick="addBuilderDay()">+ Tag hinzufügen</button>
+  <button class="btn btn-accent" id="savePlanBtn" onclick="savePlan()">Plan speichern</button>
 </div>
 
 <div class="modal-overlay" id="exPickerModal" onclick="if(event.target===this)closeExPicker()">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div style="font-size:15px;font-weight:700;margin-bottom:12px">Übungen auswählen</div>
-    <input type="text" id="exSearch" placeholder="Suchen..." oninput="filterExercises()" style="margin-bottom:8px">
+    <div style="font-size:15px;font-weight:700;margin-bottom:12px" id="selectExTitle">Übungen auswählen</div>
+    <input type="text" id="exSearch" id="exSearchInput" placeholder="Suchen..." oninput="filterExercises()" style="margin-bottom:8px">
     <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:10px" id="muscleFilters"></div>
     <div id="exPickerList" style="max-height:300px;overflow-y:auto"></div>
-    <button class="btn btn-accent" style="margin-top:12px" onclick="closeExPicker()">Fertig</button>
+    <button class="btn btn-accent" style="margin-top:12px" id="doneBtn" onclick="closeExPicker()">Fertig</button>
   </div>
 </div>
 
@@ -338,7 +338,7 @@ const T = {
     delete:'Löschen', planDetails:'Plan Details', planName:'Plan Name (z.B. Push Pull Legs)',
     planDesc:'Beschreibung (optional)', trainingDays:'Trainingstage', addDay:'+ Tag hinzufügen',
     savePlan:'Plan speichern', dayName:'Tag Name (z.B. Upper A)', focus:'Fokus (z.B. Brust · Rücken)',
-    addExercises:'+ Übungen', searchEx:'Suchen...', done:'Fertig',
+    addExercises:'+ Übungen', searchEx:'Suchen...', done:'Fertig', newPlanTitle:'Neuer Trainingsplan', selectExercises:'Übungen auswählen',
     login:'Einloggen', register:'Account erstellen', email:'E-Mail', password:'Passwort',
     noAccount:'Noch kein Account? Registrieren', hasAccount:'Schon einen Account? Einloggen',
     whichDay:'Welcher Tag?', analyseEx:'Übung analysieren', maxWeight2:'Max. Gewicht pro Session', totalReps2:'Wiederholungen gesamt', sessionsDay:'Sessions pro Tag', savedSessions:'Gespeicherte Sessions', settingsH:'Einstellungen', usernameL:'Benutzername', badgesL:'Badges', logoutL:'Ausloggen', noBadgesL:'Noch keine Badges verdient 💪', noUsernameL:'Kein Benutzername gesetzt',
@@ -360,7 +360,7 @@ const T = {
     delete:'Delete', planDetails:'Plan details', planName:'Plan name (e.g. Push Pull Legs)',
     planDesc:'Description (optional)', trainingDays:'Training days', addDay:'+ Add day',
     savePlan:'Save plan', dayName:'Day name (e.g. Upper A)', focus:'Focus (e.g. Chest · Back)',
-    addExercises:'+ Exercises', searchEx:'Search...', done:'Done',
+    addExercises:'+ Exercises', searchEx:'Search...', done:'Done', newPlanTitle:'New Training Plan', selectExercises:'Select exercises',
     login:'Log in', register:'Create account', email:'Email', password:'Password',
     noAccount:"Don't have an account? Register", hasAccount:'Already have an account? Log in',
     whichDay:'Which day?', analyseEx:'Analyze exercise', maxWeight2:'Max weight per session', totalReps2:'Total reps', sessionsDay:'Sessions per day', savedSessions:'Saved sessions', settingsH:'Settings', usernameL:'Username', badgesL:'Badges', logoutL:'Log out', noBadgesL:'No badges earned yet 💪', noUsernameL:'No username set',
@@ -400,6 +400,13 @@ function applyLang() {
     'plansH1': t('myPlans'),
     'plansP': t('managePlans'),
     'newPlanBtn': t('newPlan'),
+    'planBuilderTitle': t('newPlanTitle'),
+    'planDetailsHeader': t('planDetails'),
+    'trainingDaysHeader': t('trainingDays'),
+    'addDayBtn': t('addDay'),
+    'savePlanBtn': t('savePlan'),
+    'selectExTitle': t('selectExercises'),
+    'doneBtn': t('done'),
   }
   Object.entries(ids).forEach(([id, text]) => {
     const el = document.getElementById(id)
@@ -976,9 +983,13 @@ function showPlanBuilder() {
   builderDays = [{id:Date.now(),name:'',focus:'',color:'#e94560',exercises:[]}]
   document.getElementById('planTitle').value = ''
   document.getElementById('planDesc').value = ''
+  document.getElementById('planTitle').placeholder = t('planName')
+  document.getElementById('planDesc').placeholder = t('planDesc')
+  if (document.getElementById('exSearchInput')) document.getElementById('exSearchInput').placeholder = t('searchEx')
   renderBuilderDays()
   document.getElementById('appShell').style.display = 'none'
   document.getElementById('planBuilderPage').style.display = 'block'
+  applyLang()
 }
 
 function hidePlanBuilder() {
@@ -999,10 +1010,10 @@ function renderBuilderDays() {
     <div class="card" style="border-color:${day.color}">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
         <div style="width:12px;height:12px;border-radius:50%;background:${day.color};flex-shrink:0"></div>
-        <input type="text" value="${day.name}" oninput="builderDays[${idx}].name=this.value" placeholder="Tag Name (z.B. Upper A)" style="flex:1;margin-bottom:0;font-size:13px;padding:7px 10px">
+        <input type="text" value="${day.name}" oninput="builderDays[${idx}].name=this.value" placeholder="${t('dayName')}" style="flex:1;margin-bottom:0;font-size:13px;padding:7px 10px">
         <button onclick="builderDays.splice(${idx},1);renderBuilderDays()" style="background:none;border:none;color:var(--accent);font-size:18px;cursor:pointer;padding:0 4px">×</button>
       </div>
-      <input type="text" value="${day.focus}" oninput="builderDays[${idx}].focus=this.value" placeholder="Fokus (z.B. Brust · Rücken)" style="margin-bottom:8px;font-size:12px;padding:7px 10px">
+      <input type="text" value="${day.focus}" oninput="builderDays[${idx}].focus=this.value" placeholder="${t('focus')}" style="margin-bottom:8px;font-size:12px;padding:7px 10px">
       <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
         ${day.exercises.map(exId => {
           const ex = EXERCISES.find(e=>e.id===exId)||{name:exId}
