@@ -213,7 +213,13 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
     <!-- Hero with avatar -->
     <div id="profileHero" style="background:linear-gradient(135deg,#2a2f50 0%,#1a1d2e 100%);border-radius:var(--radius);padding:20px 16px;margin-bottom:16px">
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">
-        <div id="profileAvatar" style="width:64px;height:64px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;flex-shrink:0;border:3px solid rgba(255,255,255,0.2);cursor:pointer" onclick="toggleColorPicker()">?</div>
+        <div style="position:relative;flex-shrink:0" onclick="openAvatarPicker()">
+          <div id="profileAvatar" style="width:64px;height:64px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;border:3px solid rgba(255,255,255,0.2);cursor:pointer;overflow:hidden">
+            <img id="profileAvatarImg" src="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%">
+            <span id="profileAvatarInitial">?</span>
+          </div>
+          <div style="position:absolute;bottom:0;right:0;width:22px;height:22px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid var(--bg2);cursor:pointer">📷</div>
+        </div>
         <div style="flex:1;min-width:0">
           <div id="profileName" style="font-size:18px;font-weight:700">...</div>
           <div id="profileEmail" style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
@@ -240,13 +246,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
       <div id="profileStatusDisplay" style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:8px;font-style:italic"></div>
     </div>
 
-    <!-- Color picker (hidden by default) -->
-    <div id="colorPicker" style="display:none;margin-bottom:12px">
-      <div class="card">
-        <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Avatar Farbe wählen</div>
-        <div style="display:flex;flex-wrap:wrap;gap:10px" id="colorOptsRow"></div>
-      </div>
-    </div>
+
 
     <div class="section-header">Einstellungen</div>
 
@@ -437,6 +437,28 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
     <button class="btn btn-card" style="margin-top:16px" onclick="document.getElementById('tutorialModal').classList.remove('open')">Schließen</button>
   </div>
 </div>
+
+<!-- Avatar picker modal -->
+<div class="modal-overlay" id="avatarModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px">Profilbild ändern</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+      <button class="btn btn-card" onclick="document.getElementById('avatarFileInput').click()">
+        <span style="font-size:18px;margin-right:10px">🖼️</span> Foto aus Galerie
+      </button>
+      <button class="btn btn-card" onclick="document.getElementById('avatarCameraInput').click()">
+        <span style="font-size:18px;margin-right:10px">📷</span> Foto aufnehmen
+      </button>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Oder Farbe wählen</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px" id="colorOptsRow"></div>
+    <div id="avatarUploadProgress" style="display:none;text-align:center;padding:10px;color:var(--muted);font-size:13px">Wird hochgeladen...</div>
+    <button class="btn btn-card" onclick="document.getElementById('avatarModal').classList.remove('open')">Abbrechen</button>
+  </div>
+</div>
+<input type="file" id="avatarFileInput" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+<input type="file" id="avatarCameraInput" accept="image/*" capture="user" style="display:none" onchange="uploadAvatar(this)">
 
 <div class="modal-overlay" id="xpModal" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal-sheet">
@@ -768,9 +790,18 @@ async function renderProfile() {
 
   // Avatar
   const av = document.getElementById('profileAvatar')
-  av.textContent = initial
   av.style.background = color
   av.style.borderColor = color
+  const avatarImg = document.getElementById('profileAvatarImg')
+  const avatarInitial = document.getElementById('profileAvatarInitial')
+  if (prof?.avatar_url) {
+    avatarImg.src = prof.avatar_url
+    avatarImg.style.display = 'block'
+    if (avatarInitial) avatarInitial.style.display = 'none'
+  } else {
+    avatarImg.style.display = 'none'
+    if (avatarInitial) { avatarInitial.style.display = 'block'; avatarInitial.textContent = initial }
+  }
 
   document.getElementById('profileName').textContent = username || (t('noUsernameL'))
   document.getElementById('profileEmail').textContent = email
@@ -809,9 +840,67 @@ async function renderProfile() {
   applyLang()
 }
 
+function openAvatarPicker() {
+  document.getElementById('avatarModal').classList.add('open')
+  // populate color opts inside modal
+  const row = document.getElementById('colorOptsRow')
+  if (row && !row.children.length) {
+    const colors = ['#e94560','#f5a623','#27ae60','#3d7ebf','#9b59b6','#e67e22','#1abc9c','#e91e8c','#e74c3c','#2ecc71']
+    row.innerHTML = colors.map(c => `<div onclick="setAvatarColor('${c}')" style="width:40px;height:40px;border-radius:50%;background:${c};cursor:pointer;border:2px solid transparent" class="color-opt"></div>`).join('')
+  }
+}
+
 function toggleColorPicker() {
-  const cp = document.getElementById('colorPicker')
-  cp.style.display = cp.style.display === 'none' ? 'block' : 'none'
+  openAvatarPicker()
+}
+
+async function uploadAvatar(input) {
+  const file = input.files[0]
+  if (!file) return
+  const maxSize = 5 * 1024 * 1024
+  if (file.size > maxSize) return toast('Bild zu groß (max 5MB)', true)
+
+  document.getElementById('avatarUploadProgress').style.display = 'block'
+  document.getElementById('avatarModal').classList.remove('open')
+
+  // Resize image before upload
+  const resized = await resizeImage(file, 400)
+  const fileName = currentUser.id + '/avatar.' + (file.type.includes('png') ? 'png' : 'jpg')
+
+  const { error } = await sb.storage.from('avatars').upload(fileName, resized, {
+    cacheControl: '3600',
+    upsert: true,
+    contentType: resized.type
+  })
+
+  document.getElementById('avatarUploadProgress').style.display = 'none'
+
+  if (error) { toast('Upload fehlgeschlagen: ' + error.message, true); return }
+
+  const { data } = sb.storage.from('avatars').getPublicUrl(fileName)
+  const avatarUrl = data.publicUrl + '?t=' + Date.now()
+
+  await sb.from('profiles').update({ avatar_url: avatarUrl }).eq('user_id', currentUser.id)
+  renderProfile()
+  toast('Profilbild gespeichert!')
+}
+
+function resizeImage(file, maxSize) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      let w = img.width, h = img.height
+      if (w > h) { if (w > maxSize) { h = h * maxSize / w; w = maxSize } }
+      else { if (h > maxSize) { w = w * maxSize / h; h = maxSize } }
+      canvas.width = w; canvas.height = h
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+      URL.revokeObjectURL(url)
+      canvas.toBlob(resolve, 'image/jpeg', 0.85)
+    }
+    img.src = url
+  })
 }
 
 async function setAvatarColor(color) {
@@ -1782,7 +1871,7 @@ async function renderPit() {
     const isMe = p.user_id === currentUser?.id
     return `<div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:10px;border:1px solid ${isMe?'var(--accent)':'var(--border)'};display:flex;align-items:center;gap:14px">
       <div style="font-size:16px;font-weight:700;color:var(--muted);min-width:24px;text-align:center">#${idx+1}</div>
-      <div style="width:46px;height:46px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0;border:2px solid rgba(255,255,255,0.2)">${initial}</div>
+      <div style="width:46px;height:46px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0;border:2px solid rgba(255,255,255,0.2);overflow:hidden">${p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : initial}</div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <span style="font-size:14px;font-weight:700">${p.username || 'Anonym'}</span>
