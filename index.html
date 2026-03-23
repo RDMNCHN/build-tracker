@@ -2124,8 +2124,18 @@ async function loadAdminDbExercises() {
   const noGif = exList.filter(e => !e.rapidapi_id)
   const withGif = exList.filter(e => e.rapidapi_id)
   const noGifBadge = noGif.length > 0 ? `<div style="background:rgba(233,69,96,0.15);border:1px solid var(--accent);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--accent);font-weight:600">⚠️ ${noGif.length} Übung${noGif.length>1?'en':''} ohne GIF-ID</div>` : '<div style="background:rgba(39,174,96,0.1);border:1px solid var(--green);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--green);font-weight:600">✅ Alle Übungen haben eine GIF-ID</div>'
-  el.innerHTML = noGifBadge +
-    `<button class="btn btn-accent" style="margin-bottom:14px" onclick="showAddExerciseWizard()">+ Neue Übung hinzufügen</button>` +
+
+  // Check if exercisedb cache exists
+  const { count } = await sb.from('exercisedb_cache').select('*', {count:'exact',head:true})
+  const cacheInfo = count > 0
+    ? `<div style="background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.2);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--green)">✅ ExerciseDB Cache: ${count} Übungen lokal gespeichert</div>`
+    : `<div style="background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.2);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--gold)">⚠️ ExerciseDB noch nicht gecacht — einmalig importieren für offline Suche</div>`
+
+  el.innerHTML = noGifBadge + cacheInfo +
+    `<div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="btn btn-accent btn-sm" style="flex:1" onclick="showAddExerciseWizard()">+ Neue Übung</button>
+      <button class="btn btn-card btn-sm" style="flex:1" onclick="importAllExerciseDB()">📥 ExerciseDB importieren</button>
+    </div>` +
     `<div id="adminExWizard" style="display:none"></div>` +
     exList.map(ex => `
     <div style="background:var(--card);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;border:1px solid ${ex.rapidapi_id?'var(--border)':'rgba(233,69,96,0.4)'}">
@@ -2215,43 +2225,116 @@ function showAddExerciseWizard() {
     </div>`
 }
 
+let wizardSearchResults = []
+
+async function importAllExerciseDB() {
+  if (!confirm('Alle Übungen von ExerciseDB laden und lokal speichern? Das braucht 2-3 API Calls und ca. 30 Sekunden.')) return
+  toast('Import läuft... bitte warten ⏳')
+  try {
+    // Fetch all exercises in batches
+    const batchSize = 500
+    let offset = 0
+    let allExercises = []
+    while (true) {
+      const res = await fetch(`/api/gif?list=1&offset=${offset}&limit=${batchSize}`)
+      const batch = await res.json()
+      if (!batch?.length) break
+      allExercises = allExercises.concat(batch)
+      if (batch.length < batchSize) break
+      offset += batchSize
+    }
+    if (!allExercises.length) return toast('Keine Daten erhalten', true)
+    // Save in chunks of 100 to Supabase
+    const chunkSize = 100
+    for (let i = 0; i < allExercises.length; i += chunkSize) {
+      const chunk = allExercises.slice(i, i + chunkSize).map(ex => ({
+        id: ex.id,
+        name: ex.name,
+        body_part: ex.bodyPart,
+        target: ex.target,
+        equipment: ex.equipment,
+        secondary_muscles: ex.secondaryMuscles || [],
+        gif_url: ex.gifUrl,
+        instructions: ex.instructions || [],
+        difficulty: ex.difficulty || null,
+        category: ex.category || null
+      }))
+      await sb.from('exercisedb_cache').upsert(chunk, { onConflict: 'id' })
+    }
+    toast(`✅ ${allExercises.length} Übungen importiert!`)
+    loadAdminDbExercises()
+  } catch(e) {
+    toast('Fehler beim Import: ' + e.message, true)
+  }
+}
+
 async function searchExerciseDB() {
   const query = document.getElementById('wizSearch').value.trim()
   if (!query) return toast('Bitte Suchbegriff eingeben', true)
   const results = document.getElementById('wizResults')
   results.innerHTML = '<div class="spinner"></div>'
   try {
-    const res = await fetch(`/api/gif?search=${encodeURIComponent(query)}`)
-    const data = await res.json()
-    if (!data?.length) { results.innerHTML = '<p style="color:var(--muted);padding:20px;text-align:center;font-size:13px">Keine Ergebnisse</p>'; return }
-    results.innerHTML = data.slice(0,15).map(ex => `
-      <div onclick="selectWizardExercise(${JSON.stringify(ex).replace(/'/g,"&#39;")})" style="padding:10px 12px;background:var(--card);border-radius:10px;margin-bottom:6px;cursor:pointer;border:1.5px solid var(--border);transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:13px;font-weight:700;text-transform:capitalize">${ex.name}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">
-          ${ex.bodyPart} · ${ex.target} · <span style="color:var(--gold)">${ex.difficulty||''}</span>
+    // Try local cache first
+    const { data: cached, error } = await sb.from('exercisedb_cache')
+      .select('*')
+      .ilike('name', `%${query}%`)
+      .limit(15)
+    if (!error && cached?.length) {
+      // Use local cache — no API call needed
+      wizardSearchResults = cached.map(ex => ({
+        id: ex.id, name: ex.name, bodyPart: ex.body_part,
+        target: ex.target, equipment: ex.equipment,
+        secondaryMuscles: ex.secondary_muscles || [],
+        gifUrl: ex.gif_url, instructions: ex.instructions || [],
+        difficulty: ex.difficulty, category: ex.category
+      }))
+    } else {
+      // Fallback to API
+      const res = await fetch(`/api/gif?search=${encodeURIComponent(query)}`)
+      wizardSearchResults = await res.json() || []
+    }
+    if (!wizardSearchResults.length) {
+      results.innerHTML = '<p style="color:var(--muted);padding:20px;text-align:center;font-size:13px">Keine Ergebnisse — versuche einen anderen Begriff</p>'
+      return
+    }
+    results.innerHTML = wizardSearchResults.slice(0,15).map((ex, idx) => {
+      const gifPreview = ex.gifUrl
+        ? `<img src="${ex.gifUrl}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;flex-shrink:0" loading="lazy">`
+        : `<div style="width:60px;height:60px;background:var(--bg3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">💪</div>`
+      return `<div onclick="selectWizardExercise(${idx})" style="padding:10px 12px;background:var(--card);border-radius:10px;margin-bottom:6px;cursor:pointer;border:1.5px solid var(--border);display:flex;gap:10px;align-items:center" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        ${gifPreview}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;text-transform:capitalize">${ex.name}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${ex.bodyPart||ex.body_part} · ${ex.target} · <span style="color:var(--gold)">${ex.difficulty||''}</span></div>
+          <div style="font-size:10px;color:var(--muted)">📦 ${ex.equipment}</div>
         </div>
-        <div style="font-size:10px;color:var(--muted);margin-top:2px">Equipment: ${ex.equipment}</div>
-      </div>`).join('')
+      </div>`
+    }).join('')
   } catch(e) {
     results.innerHTML = '<p style="color:var(--accent);padding:20px;text-align:center;font-size:13px">Fehler beim Laden</p>'
   }
 }
 
-function selectWizardExercise(ex) {
+function selectWizardExercise(idx) {
+  const ex = wizardSearchResults[idx]
+  if (!ex) return
   wizardSelectedEx = ex
   document.getElementById('wizStep1').style.display = 'none'
   document.getElementById('wizStep2').style.display = 'block'
-  const instructions = (ex.instructions||[]).slice(0,4).join('\n')
+  const gifPreview = ex.gifUrl
+    ? `<img src="${ex.gifUrl}" style="width:100%;max-height:160px;object-fit:contain;border-radius:10px;margin-bottom:10px">`
+    : ''
   document.getElementById('wizSelectedPreview').innerHTML = `
+    ${gifPreview}
     <div style="font-size:14px;font-weight:700;text-transform:capitalize;margin-bottom:6px">${ex.name}</div>
-    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
-      <span style="font-size:11px;background:var(--bg2);padding:2px 8px;border-radius:10px;color:var(--text2)">${ex.bodyPart}</span>
-      <span style="font-size:11px;background:var(--bg2);padding:2px 8px;border-radius:10px;color:var(--text2)">${ex.target}</span>
-      <span style="font-size:11px;background:var(--bg2);padding:2px 8px;border-radius:10px;color:var(--text2)">${ex.equipment}</span>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">
+      <span style="font-size:11px;background:var(--bg2);padding:2px 8px;border-radius:10px">${ex.bodyPart}</span>
+      <span style="font-size:11px;background:var(--bg2);padding:2px 8px;border-radius:10px">${ex.target}</span>
+      <span style="font-size:11px;background:var(--bg2);padding:2px 8px;border-radius:10px">${ex.equipment}</span>
       ${ex.difficulty?`<span style="font-size:11px;background:rgba(245,166,35,0.15);padding:2px 8px;border-radius:10px;color:var(--gold)">${ex.difficulty}</span>`:''}
     </div>
-    <div style="font-size:11px;color:var(--muted)">ID: <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">${ex.id}</code></div>
-    ${(ex.secondaryMuscles||[]).length?`<div style="font-size:11px;color:var(--muted);margin-top:3px">Sekundär: ${ex.secondaryMuscles.join(', ')}</div>`:''}`
+    ${(ex.secondaryMuscles||[]).length?`<div style="font-size:11px;color:var(--muted);margin-bottom:4px">Sekundär: ${ex.secondaryMuscles.join(', ')}</div>`:''}
+    <div style="font-size:11px;color:var(--muted)">API-ID: <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">${ex.id}</code></div>`
 }
 
 async function saveNewExercise() {
@@ -2276,6 +2359,10 @@ async function saveNewExercise() {
     status: 'active'
   })
   if (error) return toast('Fehler: ' + (error.message.includes('duplicate')?'Diese Übung existiert bereits':error.message), true)
+  // Cache the GIF URL directly — no API call needed later
+  if (ex.gifUrl) {
+    await sb.from('exercise_gifs').upsert({ exercise_id: id, gif_url: `/api/gif?id=${ex.id}` })
+  }
   await loadExercises()
   toast('Übung hinzugefügt! 💪')
   document.getElementById('adminExWizard').style.display = 'none'
