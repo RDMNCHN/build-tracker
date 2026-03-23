@@ -2173,55 +2173,111 @@ async function deleteDbExercise(exId, name) {
   loadAdminDbExercises()
 }
 
+let wizardSelectedEx = null
+
 function showAddExerciseWizard() {
   const wizard = document.getElementById('adminExWizard')
   if (!wizard) return
   wizard.style.display = wizard.style.display === 'none' ? 'block' : 'none'
   if (wizard.style.display === 'none') return
+  wizardSelectedEx = null
   const muscles = ['Brust','Rücken','Schultern','Bizeps','Trizeps','Quads','Hamstrings','Glutes','Waden','Core']
   wizard.innerHTML = `
-    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
-      <div style="font-size:14px;font-weight:700;margin-bottom:14px">Neue Übung hinzufügen</div>
-      <input type="text" id="newExId" placeholder="ID (z.B. cable_curl) — nur Buchstaben + _" style="margin-bottom:8px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <input type="text" id="newExNameDe" placeholder="Name Deutsch *" style="margin-bottom:0">
-        <input type="text" id="newExNameEn" placeholder="Name English *" style="margin-bottom:0">
+    <div style="background:var(--card2);border:1px solid var(--accent);border-radius:var(--radius);padding:16px;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px">+ Neue Übung hinzufügen</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Suche in ExerciseDB — Daten werden automatisch übernommen</div>
+
+      <!-- Step 1: Search -->
+      <div id="wizStep1">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input type="text" id="wizSearch" placeholder="Übung suchen (English)..." style="margin-bottom:0;flex:1" onkeydown="if(event.key==='Enter')searchExerciseDB()">
+          <button class="btn btn-accent btn-sm" onclick="searchExerciseDB()" style="white-space:nowrap">Suchen</button>
+        </div>
+        <div id="wizResults" style="max-height:280px;overflow-y:auto"></div>
       </div>
-      <select id="newExMuscle" style="margin-bottom:8px">
-        <option value="">Muskelgruppe *</option>
-        ${muscles.map(m=>`<option value="${m}">${m}</option>`).join('')}
-      </select>
-      <div style="margin-bottom:8px">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Tipps (je eine Zeile)</div>
-        <textarea id="newExTips" placeholder="Tipp 1&#10;Tipp 2&#10;Tipp 3&#10;Tipp 4" style="height:80px;resize:none;margin-bottom:0"></textarea>
-      </div>
-      <div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:10px">
-        <div style="font-size:12px;font-weight:600;margin-bottom:4px">RapidAPI Exercise ID (optional)</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Suche die ID auf <a href="https://rapidapi.com/justin-WFnsXH_t6/api/exercisedb" target="_blank" style="color:var(--accent)">ExerciseDB</a> oder nutze die API direkt</div>
-        <input type="text" id="newExRapidId" placeholder="z.B. 0199" style="margin-bottom:0">
-      </div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-accent btn-sm" onclick="saveNewExercise()">💾 Speichern</button>
-        <button class="btn btn-card btn-sm" onclick="document.getElementById('adminExWizard').style.display='none'">Abbrechen</button>
+
+      <!-- Step 2: Confirm & add DE name -->
+      <div id="wizStep2" style="display:none">
+        <div id="wizSelectedPreview" style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:12px"></div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Name auf Deutsch *</div>
+        <input type="text" id="wizNameDe" placeholder="z.B. Klimmzug weit" style="margin-bottom:10px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Muskelgruppe *</div>
+        <select id="wizMuscle" style="margin-bottom:12px">
+          <option value="">Wählen...</option>
+          ${muscles.map(m=>`<option value="${m}">${m}</option>`).join('')}
+        </select>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-accent btn-sm" onclick="saveNewExercise()">💾 Speichern</button>
+          <button class="btn btn-card btn-sm" onclick="document.getElementById('wizStep1').style.display='block';document.getElementById('wizStep2').style.display='none';wizardSelectedEx=null">← Zurück</button>
+          <button class="btn btn-card btn-sm" onclick="document.getElementById('adminExWizard').style.display='none'">Abbrechen</button>
+        </div>
       </div>
     </div>`
 }
 
+async function searchExerciseDB() {
+  const query = document.getElementById('wizSearch').value.trim()
+  if (!query) return toast('Bitte Suchbegriff eingeben', true)
+  const results = document.getElementById('wizResults')
+  results.innerHTML = '<div class="spinner"></div>'
+  try {
+    const res = await fetch(`/api/gif?search=${encodeURIComponent(query)}`)
+    const data = await res.json()
+    if (!data?.length) { results.innerHTML = '<p style="color:var(--muted);padding:20px;text-align:center;font-size:13px">Keine Ergebnisse</p>'; return }
+    results.innerHTML = data.slice(0,15).map(ex => `
+      <div onclick="selectWizardExercise(${JSON.stringify(ex).replace(/'/g,"&#39;")})" style="padding:10px 12px;background:var(--card);border-radius:10px;margin-bottom:6px;cursor:pointer;border:1.5px solid var(--border);transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:13px;font-weight:700;text-transform:capitalize">${ex.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">
+          ${ex.bodyPart} · ${ex.target} · <span style="color:var(--gold)">${ex.difficulty||''}</span>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">Equipment: ${ex.equipment}</div>
+      </div>`).join('')
+  } catch(e) {
+    results.innerHTML = '<p style="color:var(--accent);padding:20px;text-align:center;font-size:13px">Fehler beim Laden</p>'
+  }
+}
+
+function selectWizardExercise(ex) {
+  wizardSelectedEx = ex
+  document.getElementById('wizStep1').style.display = 'none'
+  document.getElementById('wizStep2').style.display = 'block'
+  const instructions = (ex.instructions||[]).slice(0,4).join('\n')
+  document.getElementById('wizSelectedPreview').innerHTML = `
+    <div style="font-size:14px;font-weight:700;text-transform:capitalize;margin-bottom:6px">${ex.name}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
+      <span style="font-size:11px;background:var(--bg2);padding:2px 8px;border-radius:10px;color:var(--text2)">${ex.bodyPart}</span>
+      <span style="font-size:11px;background:var(--bg2);padding:2px 8px;border-radius:10px;color:var(--text2)">${ex.target}</span>
+      <span style="font-size:11px;background:var(--bg2);padding:2px 8px;border-radius:10px;color:var(--text2)">${ex.equipment}</span>
+      ${ex.difficulty?`<span style="font-size:11px;background:rgba(245,166,35,0.15);padding:2px 8px;border-radius:10px;color:var(--gold)">${ex.difficulty}</span>`:''}
+    </div>
+    <div style="font-size:11px;color:var(--muted)">ID: <code style="background:var(--bg3);padding:1px 5px;border-radius:4px">${ex.id}</code></div>
+    ${(ex.secondaryMuscles||[]).length?`<div style="font-size:11px;color:var(--muted);margin-top:3px">Sekundär: ${ex.secondaryMuscles.join(', ')}</div>`:''}`
+}
+
 async function saveNewExercise() {
-  const id = document.getElementById('newExId').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'_')
-  const name_de = document.getElementById('newExNameDe').value.trim()
-  const name_en = document.getElementById('newExNameEn').value.trim()
-  const muscle = document.getElementById('newExMuscle').value
-  const tipsRaw = document.getElementById('newExTips').value.trim()
-  const rapidapi_id = document.getElementById('newExRapidId').value.trim() || null
-  if (!id) return toast('Bitte ID eingeben', true)
-  if (!name_de || !name_en) return toast('Bitte Namen eingeben', true)
+  if (!wizardSelectedEx) return toast('Keine Übung ausgewählt', true)
+  const ex = wizardSelectedEx
+  const name_de = document.getElementById('wizNameDe')?.value.trim()
+  const muscle = document.getElementById('wizMuscle')?.value
+  if (!name_de) return toast('Bitte deutschen Namen eingeben', true)
   if (!muscle) return toast('Bitte Muskelgruppe wählen', true)
-  const tips_de = tipsRaw ? tipsRaw.split('\n').map(t=>t.trim()).filter(Boolean) : []
-  const { error } = await sb.from('exercises').insert({ id, name_de, name_en, muscle, rapidapi_id, tips_de, status:'active' })
-  if (error) return toast('Fehler: ' + error.message, true)
+  const id = ex.name.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')
+  const tips_en = (ex.instructions||[]).slice(0,4)
+  const { error } = await sb.from('exercises').insert({
+    id, name_de, name_en: ex.name, muscle,
+    rapidapi_id: ex.id,
+    tips_de: [], tips_en,
+    body_part: ex.bodyPart,
+    equipment: ex.equipment,
+    target: ex.target,
+    secondary_muscles: ex.secondaryMuscles||[],
+    difficulty: ex.difficulty||null,
+    category: ex.category||null,
+    status: 'active'
+  })
+  if (error) return toast('Fehler: ' + (error.message.includes('duplicate')?'Diese Übung existiert bereits':error.message), true)
   await loadExercises()
-  toast('Übung hinzugefügt!')
+  toast('Übung hinzugefügt! 💪')
   document.getElementById('adminExWizard').style.display = 'none'
   loadAdminDbExercises()
 }
