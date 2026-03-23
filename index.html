@@ -13,87 +13,128 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-:root{--bg:#0f1117;--bg2:#1a1d2e;--bg3:#1e2235;--card:#242840;--card2:#2a2f50;--border:#3a3f6a;--text:#f0f0f0;--muted:#8a8fa8;--accent:#e94560;--gold:#f5a623;--green:#27ae60;--blue:#3d7ebf;--purple:#9b59b6;--radius:10px}
+:root{
+  --bg:#0b0c11;--bg2:#12141f;--bg3:#1a1c2a;--card:#1e2030;--card2:#252840;
+  --border:rgba(255,255,255,0.08);--text:#f0f0f0;--muted:#6b7080;
+  --accent:#e94560;--gold:#f5a623;--green:#27ae60;--blue:#3d7ebf;--purple:#9b59b6;
+  --radius:16px;--radius-sm:10px
+}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;min-height:100vh}
 input,select,textarea,button{font-family:inherit}
-.page{display:none;padding:16px;padding-bottom:90px}
-.page.active{display:block}
-.tab-bar{display:flex;background:var(--bg2);border-top:1px solid var(--border);position:fixed;bottom:0;left:0;right:0;z-index:100}
-.tab-btn{flex:1;padding:12px 4px;font-size:11px;font-weight:600;color:var(--muted);background:none;border:none;border-top:2px solid transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
-.tab-btn.active{color:var(--accent);border-top-color:var(--accent)}
+
+/* ── Pages ── */
+.page{display:none;padding:16px;padding-bottom:96px}
+.page.active{display:block;animation:fadeSlideUp 0.3s cubic-bezier(0.34,1.4,0.64,1) both}
+
+/* ── Tab Bar ── */
+.tab-bar{display:flex;background:rgba(11,12,17,0.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);position:fixed;bottom:0;left:0;right:0;z-index:100;padding:6px 4px 10px}
+.tab-btn{flex:1;padding:4px 2px;font-size:9px;font-weight:700;color:var(--muted);background:none;border:none;border-top:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:color 0.2s,transform 0.12s;text-transform:uppercase;letter-spacing:.3px}
+.tab-btn:active{transform:scale(0.88)}
+.tab-btn.active{color:var(--accent)}
+.tab-icon-wrap{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;transition:background 0.2s}
+.tab-btn.active .tab-icon-wrap{background:rgba(233,69,96,0.15)}
 .tab-icon{font-size:18px}
-.hero{background:linear-gradient(135deg,var(--accent) 0%,#8b1a2a 100%);border-radius:var(--radius);padding:20px 16px;margin-bottom:16px}
-.hero h1{font-size:20px;font-weight:700}
-.hero p{font-size:12px;color:rgba(255,255,255,0.75);margin-top:4px}
-.section-header{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:18px 0 10px}
+
+/* ── Hero ── */
+.hero{padding:22px 16px 18px;border-bottom:1px solid var(--border);margin-bottom:0}
+.hero-greeting{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.hero h1{font-size:24px;font-weight:800;letter-spacing:-0.5px;margin-bottom:12px;line-height:1.1}
+.hero h1 .accent{color:var(--accent)}
+.hero p{font-size:12px;color:var(--muted);margin-top:4px}
+.hero-pills{display:flex;gap:6px;flex-wrap:wrap}
+.hero-pill{border-radius:20px;padding:5px 11px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px}
+.pill-red{background:rgba(233,69,96,0.12);border:1px solid rgba(233,69,96,0.25);color:#e94560}
+.pill-gold{background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.25);color:#f5a623}
+.pill-green{background:rgba(39,174,96,0.12);border:1px solid rgba(39,174,96,0.25);color:#27ae60}
+.pill-blue{background:rgba(61,126,191,0.12);border:1px solid rgba(61,126,191,0.25);color:#3d7ebf}
+
+/* ── Section header ── */
+.section-header{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin:18px 0 10px}
+.page.active .section-header{animation:staggerFade 0.28s ease both}
+
+/* ── Cards ── */
 .card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:14px;margin-bottom:10px}
-.btn{border:none;border-radius:var(--radius);padding:13px 16px;font-size:14px;font-weight:700;cursor:pointer;display:block;width:100%;text-align:center;transition:all .2s}
-.btn:active{transform:scale(.98)}
+.page.active .card{animation:bounceIn 0.38s cubic-bezier(0.34,1.5,0.64,1) both}
+
+/* ── Buttons ── */
+.btn{border:none;border-radius:var(--radius-sm);padding:14px 16px;font-size:14px;font-weight:700;cursor:pointer;display:block;width:100%;text-align:center;transition:transform 0.12s cubic-bezier(0.34,1.6,0.64,1),opacity 0.15s}
+.btn:active{transform:scale(0.93)!important}
 .btn-accent{background:var(--accent);color:#fff}
 .btn-green{background:var(--green);color:#fff}
 .btn-card{background:var(--card2);color:var(--text);border:1px solid var(--border)}
-.btn-danger{background:none;color:var(--accent);border:1px solid var(--accent)}
+.btn-danger{background:none;color:var(--accent);border:1px solid rgba(233,69,96,0.4)}
 .btn-sm{padding:7px 12px;font-size:12px;width:auto;display:inline-block}
-input[type=text],input[type=email],input[type=password],input[type=date],select,textarea{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:11px 12px;font-size:14px;margin-bottom:10px}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+
+/* ── Inputs ── */
+input[type=text],input[type=email],input[type=password],input[type=date],select,textarea{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:12px 14px;font-size:14px;margin-bottom:10px;transition:border-color 0.2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(233,69,96,0.5);background:var(--card2)}
 input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1)}
 select option{background:var(--card)}
-.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:10px 20px;border-radius:30px;font-weight:600;font-size:13px;z-index:999;opacity:0;pointer-events:none;white-space:nowrap}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:10px 22px;border-radius:30px;font-weight:700;font-size:13px;z-index:999;opacity:0;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;animation:toastBounce 0.4s cubic-bezier(0.34,1.5,0.64,1) both}
+
+/* ── Spinner ── */
 .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:40px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;align-items:flex-end;justify-content:center}
+
+/* ── Modals ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;align-items:flex-end;justify-content:center}
 .modal-overlay.open{display:flex}
-.modal-sheet{background:var(--bg2);border-radius:18px 18px 0 0;width:100%;max-height:90vh;overflow-y:auto;padding:16px 16px 40px}
-.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.modal-sheet{background:var(--bg2);border-radius:24px 24px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:16px 16px 40px}
+.modal-overlay.open .modal-sheet{animation:slideUpSheet 0.36s cubic-bezier(0.34,1.3,0.64,1) both}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px}
+
+/* ── Day Grid ── */
 .day-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.day-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px 10px;cursor:pointer}
-.day-card.selected{background:var(--card2)}
-.day-card .day-title{font-size:13px;font-weight:700}
+.day-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 12px;cursor:pointer;transition:transform 0.18s cubic-bezier(0.34,1.6,0.64,1),border-color 0.2s,background 0.2s}
+.day-card:active{transform:scale(0.95)}
+.day-card.selected{background:rgba(233,69,96,0.08);border-color:rgba(233,69,96,0.5)}
+.day-card .day-title{font-size:13px;font-weight:800;margin-bottom:3px}
 .day-card .day-sub{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
-.ex-block{background:var(--card);border-radius:var(--radius);margin-bottom:10px;border:1px solid var(--border);overflow:hidden}
-.ex-header{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
-.ex-body{padding:0 14px 14px;display:none}
+.day-dot-indicator{width:8px;height:8px;border-radius:50%;margin-bottom:8px}
+.day-ex-badge{font-size:10px;color:var(--muted);background:rgba(255,255,255,0.07);border-radius:6px;padding:2px 7px;display:inline-block;margin-top:6px}
+
+/* ── Exercise Blocks ── */
+.ex-block{background:var(--card);border-radius:var(--radius);margin-bottom:10px;border:1px solid var(--border);overflow:hidden;animation:bounceIn 0.35s cubic-bezier(0.34,1.5,0.64,1) both;transition:transform 0.15s}
+.ex-header{padding:13px 15px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:10px}
+.ex-muscle-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ex-name-label{font-size:13px;font-weight:700;flex:1}
+.ex-muscle-badge{font-size:10px;color:var(--muted);background:rgba(255,255,255,0.07);padding:2px 8px;border-radius:6px}
+.ex-body{padding:0 15px 14px;display:none}
 .ex-body.open{display:block}
 .sets-table{width:100%;border-collapse:collapse;margin-bottom:8px}
-.sets-table th{font-size:11px;color:var(--muted);text-align:center;padding:4px;font-weight:600}
+.sets-table th{font-size:10px;color:var(--muted);text-align:center;padding:4px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 .sets-table td{padding:5px 4px;text-align:center}
-.sets-table input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 4px;font-size:14px;text-align:center;margin-bottom:0}
+.sets-table input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 4px;font-size:15px;font-weight:700;text-align:center;margin-bottom:0;transition:border-color 0.2s}
+.sets-table input:focus{border-color:rgba(233,69,96,0.5);background:var(--card2);outline:none}
+
+/* ── Stats ── */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.stat-card{background:var(--card);border-radius:var(--radius);padding:14px;text-align:center}
-.stat-card .val{font-size:26px;font-weight:700;color:var(--gold)}
-.stat-card .lbl{font-size:12px;color:var(--muted);margin-top:4px}
-.chart-box{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px}
-.chart-box h3{font-size:13px;color:var(--muted);margin-bottom:10px;font-weight:600}
+.stat-card{background:var(--card);border-radius:var(--radius);padding:16px;border:1px solid var(--border)}
+.stat-card .val{font-size:30px;font-weight:800;color:var(--gold);line-height:1;letter-spacing:-1px;margin-bottom:5px}
+.stat-card .lbl{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.chart-box{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid var(--border)}
+.chart-box h3{font-size:12px;color:var(--muted);margin-bottom:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+
+/* ── Login ── */
 #loginPage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
 .login-box{width:100%;max-width:380px}
-.login-box h1{font-size:24px;font-weight:700;text-align:center;margin-bottom:6px}
+.login-box h1{font-size:28px;font-weight:800;text-align:center;margin-bottom:6px;letter-spacing:-0.5px}
 .login-box p{color:var(--muted);text-align:center;font-size:13px;margin-bottom:32px}
-label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
 
-/* ── Apple-style animations ── */
+/* ── Animations ── */
 @keyframes fadeSlideUp{from{opacity:0;transform:translateY(18px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes bounceIn{0%{opacity:0;transform:translateY(20px) scale(0.95)}55%{transform:translateY(-5px) scale(1.02)}80%{transform:translateY(2px) scale(0.99)}100%{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes popIn{0%{opacity:0;transform:scale(0.8)}60%{transform:scale(1.06)}100%{opacity:1;transform:scale(1)}}
 @keyframes slideUpSheet{from{transform:translateY(100%);opacity:0.5}to{transform:translateY(0);opacity:1}}
 @keyframes staggerFade{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
 @keyframes toastBounce{0%{opacity:0;transform:translateX(-50%) scale(0.7) translateY(12px)}65%{transform:translateX(-50%) scale(1.07) translateY(-3px)}100%{opacity:1;transform:translateX(-50%) scale(1) translateY(0)}}
-
-.page.active{display:block;animation:fadeSlideUp 0.3s cubic-bezier(0.34,1.4,0.64,1) both}
-.page.active .hero{animation:fadeSlideUp 0.35s cubic-bezier(0.34,1.3,0.64,1) 0.03s both}
-.page.active .card{animation:bounceIn 0.38s cubic-bezier(0.34,1.5,0.64,1) both}
-.page.active .section-header{animation:staggerFade 0.28s ease both}
-.modal-overlay.open .modal-sheet{animation:slideUpSheet 0.36s cubic-bezier(0.34,1.3,0.64,1) both}
 .pit-card{animation:bounceIn 0.4s cubic-bezier(0.34,1.5,0.64,1) both}
-.ex-block{animation:bounceIn 0.35s cubic-bezier(0.34,1.5,0.64,1) both}
 #profileRankBadge{animation:popIn 0.4s cubic-bezier(0.34,1.6,0.64,1) 0.1s both}
-.toast.show{opacity:1;animation:toastBounce 0.4s cubic-bezier(0.34,1.5,0.64,1) both}
-.btn{transition:transform 0.13s cubic-bezier(0.34,1.6,0.64,1),background 0.18s,opacity 0.15s}
-.btn:active{transform:scale(0.93)!important}
-.tab-btn{transition:color 0.2s,border-color 0.2s,transform 0.12s}
-.tab-btn:active{transform:scale(0.88)}
-.day-card{transition:transform 0.18s cubic-bezier(0.34,1.6,0.64,1),border-color 0.2s,background 0.2s}
-.day-card:active{transform:scale(0.95)}
 .color-opt{transition:transform 0.18s cubic-bezier(0.34,1.8,0.64,1),border 0.15s}
 .color-opt:active{transform:scale(0.85)}
 #profileAvatar{transition:transform 0.2s cubic-bezier(0.34,1.6,0.64,1)}
@@ -355,13 +396,13 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
   </div>
 
   <nav class="tab-bar">
-    <button class="tab-btn active" onclick="showTab('train',this)"><span class="tab-icon">💪</span><span data-t="training">Training</span></button>
-    <button class="tab-btn" onclick="showTab('analyse',this)"><span class="tab-icon">📊</span><span data-t="analyse">Analyse</span></button>
-    <button class="tab-btn" onclick="showTab('history',this)"><span class="tab-icon">📋</span><span data-t="history">Verlauf</span></button>
-    <button class="tab-btn" onclick="showTab('plans',this)"><span class="tab-icon">⚙️</span><span data-t="plans">Pläne</span></button>
-    <button class="tab-btn" onclick="showTab('pit',this)"><span class="tab-icon">⚔️</span>The Pit</button>
-    <button class="tab-btn" onclick="showTab('profile',this)"><span class="tab-icon">👤</span><span data-t="profile">Profil</span></button>
-    <button class="tab-btn" id="adminTab" style="display:none" onclick="showTab('admin',this)"><span class="tab-icon">🔐</span>Admin</button>
+    <button class="tab-btn active" onclick="showTab('train',this)"><div class="tab-icon-wrap"><span class="tab-icon">💪</span></div><span data-t="training">Training</span></button>
+    <button class="tab-btn" onclick="showTab('analyse',this)"><div class="tab-icon-wrap"><span class="tab-icon">📊</span></div><span data-t="analyse">Analyse</span></button>
+    <button class="tab-btn" onclick="showTab('history',this)"><div class="tab-icon-wrap"><span class="tab-icon">📋</span></div><span data-t="history">Verlauf</span></button>
+    <button class="tab-btn" onclick="showTab('plans',this)"><div class="tab-icon-wrap"><span class="tab-icon">⚙️</span></div><span data-t="plans">Pläne</span></button>
+    <button class="tab-btn" onclick="showTab('pit',this)"><div class="tab-icon-wrap"><span class="tab-icon">⚔️</span></div>The Pit</button>
+    <button class="tab-btn" onclick="showTab('profile',this)"><div class="tab-icon-wrap"><span class="tab-icon">👤</span></div><span data-t="profile">Profil</span></button>
+    <button class="tab-btn" id="adminTab" style="display:none" onclick="showTab('admin',this)"><div class="tab-icon-wrap"><span class="tab-icon">🔐</span></div>Admin</button>
   </nav>
 
   <div id="page-admin" class="page">
@@ -391,10 +432,10 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
 
     <!-- Exercises tab -->
     <div id="adminTabExercises" style="display:none">
-      <div style="display:flex;gap:0;margin-bottom:14px;background:var(--bg3);border-radius:var(--radius);padding:3px">
-        <button id="adminExApprovedBtn" onclick="switchAdminExTab('approved')" style="flex:1;padding:8px;font-size:12px;font-weight:700;border:none;border-radius:7px;cursor:pointer;background:var(--green);color:#fff;transition:all .2s">✅ Genehmigt</button>
-        <button id="adminExPendingBtn" onclick="switchAdminExTab('pending')" style="flex:1;padding:8px;font-size:12px;font-weight:700;border:none;border-radius:7px;cursor:pointer;background:none;color:var(--muted);transition:all .2s">⏳ Ausstehend</button>
-        <button id="adminExRejectedBtn" onclick="switchAdminExTab('rejected')" style="flex:1;padding:8px;font-size:12px;font-weight:700;border:none;border-radius:7px;cursor:pointer;background:none;color:var(--muted);transition:all .2s">❌ Abgelehnt</button>
+      <div style="display:flex;gap:0;margin-bottom:14px;background:var(--card);border-radius:var(--radius);padding:3px;border:1px solid var(--border)">
+        <button id="adminExDbBtn" onclick="switchAdminExTab('db')" style="flex:1;padding:8px;font-size:11px;font-weight:700;border:none;border-radius:7px;cursor:pointer;background:var(--accent);color:#fff;transition:all .2s">💪 DB Übungen</button>
+        <button id="adminExApprovedBtn" onclick="switchAdminExTab('approved')" style="flex:1;padding:8px;font-size:11px;font-weight:700;border:none;border-radius:7px;cursor:pointer;background:none;color:var(--muted);transition:all .2s">✅ Requests</button>
+        <button id="adminExPendingBtn" onclick="switchAdminExTab('pending')" style="flex:1;padding:8px;font-size:11px;font-weight:700;border:none;border-radius:7px;cursor:pointer;background:none;color:var(--muted);transition:all .2s">⏳ Pending</button>
       </div>
       <div id="adminExContent"></div>
     </div>
@@ -937,6 +978,27 @@ async function submitNewPassword() {
   showLogin()
 }
 
+let dbExercises = [] // loaded from Supabase
+
+async function loadExercises() {
+  const { data, error } = await sb.from('exercises').select('*').eq('status','active').order('muscle').order('name_de')
+  if (error || !data?.length) return // fallback to hardcoded
+  dbExercises = data.map(ex => ({
+    id: ex.id,
+    name: ex.name_de,
+    en: ex.name_en,
+    search: ex.name_en.toLowerCase(),
+    muscle: ex.muscle,
+    tips: ex.tips_de || [],
+    rapidapi_id: ex.rapidapi_id,
+    fromDB: true
+  }))
+}
+
+function getExercises() {
+  return dbExercises.length > 0 ? dbExercises : EXERCISES
+}
+
 async function init() {
   // Check for password recovery in URL hash
   const hash = window.location.hash
@@ -992,6 +1054,7 @@ async function showApp() {
   applyLang()
   renderProfile()
   if (isAdmin()) document.getElementById('adminTab').style.display = 'flex'
+  await loadExercises()
   await loadPlans()
   await loadSessions()
 }
@@ -1092,18 +1155,33 @@ function selectDay(id) {
   setTimeout(() => document.getElementById('exerciseSection').scrollIntoView({behavior:'smooth'}), 100)
 }
 
+const MUSCLE_COLORS = {
+  'Brust':'#e94560','Chest':'#e94560',
+  'Rücken':'#3d7ebf','Back':'#3d7ebf',
+  'Schultern':'#f5a623','Shoulders':'#f5a623',
+  'Bizeps':'#27ae60','Biceps':'#27ae60',
+  'Trizeps':'#9b59b6','Triceps':'#9b59b6',
+  'Quads':'#e67e22','Quadriceps':'#e67e22',
+  'Hamstrings':'#1abc9c',
+  'Glutes':'#e91e8c',
+  'Waden':'#2ecc71','Calves':'#2ecc71',
+  'Core':'#f39c12',
+}
+
 function buildExerciseList() {
   const list = document.getElementById('exerciseList')
   list.innerHTML = selectedDay.exercises.map((exId, ei) => {
-    const ex = EXERCISES.find(e => e.id === exId) || {id:exId, name:exId, muscle:''}
+    const ex = getExercises().find(e => e.id === exId) || {id:exId, name:exId, muscle:''}
+    const mColor = MUSCLE_COLORS[ex.muscle] || 'var(--accent)'
     return `<div class="ex-block" style="animation-delay:${ei * 0.05}s">
       <div class="ex-header" onclick="toggleEx(${ei})">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:600">${ex.name}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">${ex.muscle}</div>
+        <div style="width:7px;height:7px;border-radius:50%;background:${mColor};flex-shrink:0"></div>
+        <div style="flex:1;min-width:0;margin-left:2px">
+          <div style="font-size:14px;font-weight:700">${exName(ex)}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">${ex.muscle}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          <button onclick="event.stopPropagation();openTutorial('${exId}')" style="font-size:11px;color:var(--gold);background:none;border:1px solid var(--gold);border-radius:20px;padding:3px 9px;cursor:pointer">Tutorial</button>
+          <button onclick="event.stopPropagation();openTutorial('${exId}')" style="font-size:11px;color:var(--gold);background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);border-radius:20px;padding:3px 9px;cursor:pointer;font-weight:600">Tutorial</button>
           <div id="badge_${ei}" style="font-size:11px;background:var(--bg3);color:var(--muted);padding:3px 8px;border-radius:20px;white-space:nowrap">Eintragen</div>
         </div>
       </div>
@@ -1154,7 +1232,7 @@ async function saveSession() {
   const date = document.getElementById('trainDate').value
   if (!date) return toast(t('dateMissing'), true)
   const exercisesData = selectedDay.exercises.map((exId, ei) => {
-    const ex = EXERCISES.find(e => e.id === exId) || {name:exId}
+    const ex = getExercises().find(e => e.id === exId) || {name:exId}
     const rows = document.querySelectorAll(`#setrows_${ei} tr`)
     const sets = []
     rows.forEach(r => { const ins = r.querySelectorAll('input'); sets.push({kg:parseFloat(ins[0]?.value)||0, reps:parseInt(ins[1]?.value)||0}) })
@@ -1237,7 +1315,7 @@ const RAPIDAPI_KEY = '97f87cf90amsh539c733e15b2ba7p176d29jsn4b747e8f34a6'
 const gifMemCache = {}
 
 async function openTutorial(exId) {
-  const ex = EXERCISES.find(e => e.id === exId)
+  const ex = getExercises().find(e => e.id === exId)
   if (!ex) return
   document.getElementById('tutTitle').textContent = exName(ex)
   document.getElementById('tutMuscle').textContent = ex.muscle
@@ -1372,10 +1450,10 @@ function renderAnalyse() {
   const now = new Date()
   const last7 = new Set(sessions.filter(s => (now-new Date(s.date))/86400000 <= 7).map(s=>s.date)).size
   document.getElementById('statsGrid').innerHTML = `
-    <div class="stat-card"><div class="val">${totalSessions}</div><div class="lbl">Sessions gesamt</div></div>
-    <div class="stat-card"><div class="val">${thisMonth}</div><div class="lbl">Diesen Monat</div></div>
-    <div class="stat-card"><div class="val">${totalSets}</div><div class="lbl">Sätze gesamt</div></div>
-    <div class="stat-card"><div class="val">${last7}</div><div class="lbl">Tage letzte Woche</div></div>`
+    <div class="stat-card"><div class="val" style="font-size:30px;font-weight:800;letter-spacing:-1px">${totalSessions}</div><div class="lbl">Sessions gesamt</div></div>
+    <div class="stat-card"><div class="val" style="font-size:30px;font-weight:800;letter-spacing:-1px">${thisMonth}</div><div class="lbl">Diesen Monat</div></div>
+    <div class="stat-card"><div class="val" style="font-size:30px;font-weight:800;letter-spacing:-1px">${totalSets}</div><div class="lbl">Sätze gesamt</div></div>
+    <div class="stat-card"><div class="val" style="font-size:30px;font-weight:800;letter-spacing:-1px">${last7}</div><div class="lbl">Tage letzte Woche</div></div>`
   // Render 4-week heatmap
   const heatmap = document.getElementById('heatmap')
   if (heatmap) {
@@ -1413,7 +1491,7 @@ function renderAnalyse() {
   const sel = document.getElementById('analyseSelect')
   const cur = sel.value
   sel.innerHTML = '<option value="">Übung wählen...</option>' + allExIds.map(id => {
-    const ex = EXERCISES.find(e=>e.id===id)||{name:id}
+    const ex = getExercises().find(e=>e.id===id)||{name:id}
     return `<option value="${id}">${ex.name}</option>`
   }).join('')
   if (cur) sel.value = cur
@@ -1671,7 +1749,7 @@ function renderBuilderDays() {
       <input type="text" value="${day.focus}" oninput="builderDays[${idx}].focus=this.value" placeholder="${t('focus')}" style="margin-bottom:8px;font-size:12px;padding:7px 10px">
       <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
         ${day.exercises.map(exId => {
-          const ex = EXERCISES.find(e=>e.id===exId)||{name:exId}
+          const ex = getExercises().find(e=>e.id===exId)||{name:exId}
           return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;display:flex;align-items:center;gap:5px">${ex.name}<span onclick="builderDays[${idx}].exercises=builderDays[${idx}].exercises.filter(id=>id!=='${exId}');renderBuilderDays()" style="cursor:pointer;color:var(--muted)">×</span></div>`
         }).join('')}
       </div>
@@ -1702,7 +1780,7 @@ function filterExercises() {
   const search = document.getElementById('exSearch').value.toLowerCase()
   const day = builderDays[currentPickerDayIdx]
   const muscleAll = getMuscles()[0]
-  const filtered = EXERCISES.filter(ex => {
+  const filtered = getExercises().filter(ex => {
     const matchM = currentPickerMuscle===muscleAll || ex.muscle===currentPickerMuscle || 
                    (lang==='en' && getMuscles().indexOf(currentPickerMuscle) > 0 && 
                     MUSCLES_DE[getMuscles().indexOf(currentPickerMuscle)]===ex.muscle)
@@ -1897,6 +1975,7 @@ async function renderPit() {
 async function renderAdmin() {
   if (!isAdmin()) return
   loadInviteCodes()
+  if (currentAdminTab === 'exercises') loadAdminDbExercises()
   const { data: profiles } = await sb.from('profiles').select('*').order('xp', {ascending:false})
   const adminList = document.getElementById('adminUserList')
   adminList.innerHTML = (profiles||[]).map(p => {
@@ -2021,13 +2100,14 @@ function switchAdminTab(tab) {
 
 function switchAdminExTab(tab) {
   currentAdminExTab = tab
-  const tabs = ['approved','pending','rejected']
-  const colors = {approved:'var(--green)', pending:'var(--gold)', rejected:'var(--accent)'}
+  const tabs = ['db','approved','pending']
+  const colors = {db:'var(--accent)', approved:'var(--green)', pending:'var(--gold)'}
   tabs.forEach(t => {
     const btn = document.getElementById('adminEx' + t.charAt(0).toUpperCase() + t.slice(1) + 'Btn')
     if (btn) { btn.style.background = t === tab ? colors[t] : 'none'; btn.style.color = t === tab ? '#fff' : 'var(--muted)' }
   })
-  loadAdminExercises(tab)
+  if (tab === 'db') loadAdminDbExercises()
+  else loadAdminExercises(tab)
 }
 
 async function loadAdminLogs() {
@@ -2049,6 +2129,117 @@ async function loadAdminLogs() {
       <div style="color:var(--muted)">${log.action}</div>
     </div>`
   }).join('')
+}
+
+async function loadAdminDbExercises() {
+  const el = document.getElementById('adminExContent')
+  if (!el) return
+  el.innerHTML = '<div class="spinner"></div>'
+  const { data: exList } = await sb.from('exercises').select('*').order('muscle').order('name_de')
+  if (!exList?.length) { el.innerHTML = '<p style="color:var(--muted);padding:20px;text-align:center">Keine Übungen in DB</p>'; return }
+  const noGif = exList.filter(e => !e.rapidapi_id)
+  const withGif = exList.filter(e => e.rapidapi_id)
+  const noGifBadge = noGif.length > 0 ? `<div style="background:rgba(233,69,96,0.15);border:1px solid var(--accent);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--accent);font-weight:600">⚠️ ${noGif.length} Übung${noGif.length>1?'en':''} ohne GIF-ID</div>` : '<div style="background:rgba(39,174,96,0.1);border:1px solid var(--green);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--green);font-weight:600">✅ Alle Übungen haben eine GIF-ID</div>'
+  el.innerHTML = noGifBadge +
+    `<button class="btn btn-accent" style="margin-bottom:14px" onclick="showAddExerciseWizard()">+ Neue Übung hinzufügen</button>` +
+    `<div id="adminExWizard" style="display:none"></div>` +
+    exList.map(ex => `
+    <div style="background:var(--card);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;border:1px solid ${ex.rapidapi_id?'var(--border)':'rgba(233,69,96,0.4)'}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div>
+          <span style="font-size:13px;font-weight:700">${ex.name_de}</span>
+          <span style="font-size:11px;color:var(--muted);margin-left:6px">/ ${ex.name_en}</span>
+        </div>
+        <span style="font-size:10px;background:var(--bg3);padding:2px 8px;border-radius:10px;color:var(--muted)">${ex.muscle}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        ${ex.rapidapi_id
+          ? `<span style="font-size:11px;color:var(--green)">✅ GIF ID: <code style="background:var(--bg3);padding:1px 6px;border-radius:4px">${ex.rapidapi_id}</code></span>`
+          : `<span style="font-size:11px;color:var(--accent)">⚠️ Keine GIF-ID</span>`
+        }
+        <button onclick="editExerciseGifId('${ex.id}','${ex.rapidapi_id||''}')" style="font-size:11px;color:var(--accent);background:none;border:1px solid var(--accent);border-radius:6px;padding:3px 8px;cursor:pointer;margin-left:auto">
+          ${ex.rapidapi_id ? '✏️ ID ändern' : '+ GIF-ID eintragen'}
+        </button>
+        <button onclick="deleteDbExercise('${ex.id}','${ex.name_de}')" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer">
+          🗑️
+        </button>
+      </div>
+    </div>`).join('')
+}
+
+async function editExerciseGifId(exId, currentId) {
+  const newId = prompt(`RapidAPI Exercise ID für ${exId}:
+
+Suche auf: https://exercisedb.p.rapidapi.com/exercises
+Aktuell: ${currentId||'keine'}`, currentId||'')
+  if (newId === null) return
+  const { error } = await sb.from('exercises').update({ rapidapi_id: newId||null }).eq('id', exId)
+  if (error) return toast('Fehler: ' + error.message, true)
+  // Clear GIF cache for this exercise
+  await sb.from('exercise_gifs').delete().eq('exercise_id', exId)
+  toast('GIF-ID gespeichert! Cache geleert.')
+  loadAdminDbExercises()
+}
+
+async function deleteDbExercise(exId, name) {
+  if (!confirm(`"${name}" wirklich löschen?`)) return
+  await sb.from('exercises').update({ status: 'inactive' }).eq('id', exId)
+  await loadExercises()
+  toast('Übung deaktiviert')
+  loadAdminDbExercises()
+}
+
+function showAddExerciseWizard() {
+  const wizard = document.getElementById('adminExWizard')
+  if (!wizard) return
+  wizard.style.display = wizard.style.display === 'none' ? 'block' : 'none'
+  if (wizard.style.display === 'none') return
+  const muscles = ['Brust','Rücken','Schultern','Bizeps','Trizeps','Quads','Hamstrings','Glutes','Waden','Core']
+  wizard.innerHTML = `
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:14px">Neue Übung hinzufügen</div>
+      <input type="text" id="newExId" placeholder="ID (z.B. cable_curl) — nur Buchstaben + _" style="margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <input type="text" id="newExNameDe" placeholder="Name Deutsch *" style="margin-bottom:0">
+        <input type="text" id="newExNameEn" placeholder="Name English *" style="margin-bottom:0">
+      </div>
+      <select id="newExMuscle" style="margin-bottom:8px">
+        <option value="">Muskelgruppe *</option>
+        ${muscles.map(m=>`<option value="${m}">${m}</option>`).join('')}
+      </select>
+      <div style="margin-bottom:8px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Tipps (je eine Zeile)</div>
+        <textarea id="newExTips" placeholder="Tipp 1&#10;Tipp 2&#10;Tipp 3&#10;Tipp 4" style="height:80px;resize:none;margin-bottom:0"></textarea>
+      </div>
+      <div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:10px">
+        <div style="font-size:12px;font-weight:600;margin-bottom:4px">RapidAPI Exercise ID (optional)</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Suche die ID auf <a href="https://rapidapi.com/justin-WFnsXH_t6/api/exercisedb" target="_blank" style="color:var(--accent)">ExerciseDB</a> oder nutze die API direkt</div>
+        <input type="text" id="newExRapidId" placeholder="z.B. 0199" style="margin-bottom:0">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-accent btn-sm" onclick="saveNewExercise()">💾 Speichern</button>
+        <button class="btn btn-card btn-sm" onclick="document.getElementById('adminExWizard').style.display='none'">Abbrechen</button>
+      </div>
+    </div>`
+}
+
+async function saveNewExercise() {
+  const id = document.getElementById('newExId').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'_')
+  const name_de = document.getElementById('newExNameDe').value.trim()
+  const name_en = document.getElementById('newExNameEn').value.trim()
+  const muscle = document.getElementById('newExMuscle').value
+  const tipsRaw = document.getElementById('newExTips').value.trim()
+  const rapidapi_id = document.getElementById('newExRapidId').value.trim() || null
+  if (!id) return toast('Bitte ID eingeben', true)
+  if (!name_de || !name_en) return toast('Bitte Namen eingeben', true)
+  if (!muscle) return toast('Bitte Muskelgruppe wählen', true)
+  const tips_de = tipsRaw ? tipsRaw.split('\n').map(t=>t.trim()).filter(Boolean) : []
+  const { error } = await sb.from('exercises').insert({ id, name_de, name_en, muscle, rapidapi_id, tips_de, status:'active' })
+  if (error) return toast('Fehler: ' + error.message, true)
+  await loadExercises()
+  toast('Übung hinzugefügt!')
+  document.getElementById('adminExWizard').style.display = 'none'
+  loadAdminDbExercises()
 }
 
 async function loadAdminExercises(status) {
