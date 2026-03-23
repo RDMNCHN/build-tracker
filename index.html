@@ -1998,22 +1998,6 @@ async function renderAdmin() {
       </div>
     </div>`
   }).join('')
-  // Exercise requests section
-  const { data: pendingReqs } = await sb.from('exercise_requests').select('*').eq('status','pending').order('votes',{ascending:false})
-  if (pendingReqs?.length) {
-    const reqHtml = `<div class="section-header" style="margin-top:20px">Übungsanfragen (${pendingReqs.length} ausstehend)</div>` +
-      pendingReqs.map(req => `<div style="background:var(--card);border-radius:var(--radius);padding:12px;margin-bottom:8px;border:1px solid var(--border)">
-        <div style="font-size:13px;font-weight:700">${req.name}${req.name_en?' / '+req.name_en:''}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">${req.muscle} · 👍 ${req.votes}</div>
-        ${req.description?`<div style="font-size:11px;color:var(--muted);margin-top:4px">${req.description}</div>`:''}
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn btn-green btn-sm" onclick="adminApproveExercise('${req.id}','${req.name}','${req.name_en||''}','${req.muscle}')">✅ Genehmigen</button>
-          <button class="btn btn-danger btn-sm" onclick="adminRejectExercise('${req.id}')">❌ Ablehnen</button>
-        </div>
-      </div>`).join('')
-    document.getElementById('adminUserList').insertAdjacentHTML('beforebegin', reqHtml)
-  }
-
 }
 
 async function adminViewHistory(userId, username) {
