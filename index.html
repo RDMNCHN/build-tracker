@@ -801,6 +801,30 @@ async function saveUsername() {
   toast(t('usernameSaved'))
 }
 
+let xpHistoryOpen = false
+
+async function toggleXpHistory() {
+  xpHistoryOpen = !xpHistoryOpen
+  const list = document.getElementById('xpHistoryList')
+  const arrow = document.getElementById('xpHistArrow')
+  if (arrow) arrow.textContent = xpHistoryOpen ? '▲' : '▼'
+  if (!xpHistoryOpen) { list.style.display = 'none'; return }
+  list.style.display = 'flex'
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Wird geladen...</div>'
+  const { data } = await sb.from('xp_history').select('*').eq('user_id', currentUser.id).order('created_at', {ascending:false}).limit(50)
+  if (!data?.length) { list.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">' + t('noXpYet') + '</div>'; return }
+  list.innerHTML = data.map(entry => {
+    const date = new Date(entry.created_at).toLocaleString(lang==='de'?'de-DE':'en-US', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:8px">
+      <div>
+        <div style="font-size:13px">${entry.reason}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${date}</div>
+      </div>
+      <span style="font-size:13px;font-weight:700;color:var(--gold);flex-shrink:0;margin-left:12px">+${entry.amount} XP</span>
+    </div>`
+  }).join('')
+}
+
 async function openXpModal() {
   document.getElementById('xpModal').classList.add('open')
   const list = document.getElementById('xpHistoryList')
