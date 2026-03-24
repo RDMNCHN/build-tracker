@@ -2793,32 +2793,31 @@ async function togglePushNotifications() {
   }
   const existing = await getPushSubscription()
   if (existing) {
-    // Unsubscribe
     await existing.unsubscribe()
     await sb.from('push_subscriptions').delete().eq('user_id', currentUser.id)
     btn.textContent = 'Aktivieren'
     btn.style.color = 'var(--text)'
     toast('Notifications deaktiviert')
-  } else {
-    // Subscribe
-    try {
-      const permission = await Notification.requestPermission()
-      if (permission !== 'granted') return toast('Berechtigung verweigert', true)
-      const reg = await navigator.serviceWorker.ready
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-      })
-      await sb.from('push_subscriptions').upsert({
-        user_id: currentUser.id,
-        subscription: sub.toJSON()
-      }, { onConflict: 'user_id' })
-      btn.textContent = 'Aktiv ✅'
-      btn.style.color = 'var(--green)'
-      toast('Push Notifications aktiviert! 🔔')
-    } catch(e) {
-      toast('Fehler: ' + e.message, true)
-    }
+    return
+  }
+  // Request permission FIRST — must be synchronous from click
+  const permission = await Notification.requestPermission()
+  if (permission !== 'granted') return toast('Berechtigung verweigert', true)
+  try {
+    const reg = await navigator.serviceWorker.ready
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    })
+    await sb.from('push_subscriptions').upsert({
+      user_id: currentUser.id,
+      subscription: sub.toJSON()
+    }, { onConflict: 'user_id' })
+    btn.textContent = 'Aktiv ✅'
+    btn.style.color = 'var(--green)'
+    toast('Push Notifications aktiviert! 🔔')
+  } catch(e) {
+    toast('Fehler: ' + e.message, true)
   }
 }
 
