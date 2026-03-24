@@ -827,23 +827,24 @@ async function toggleXpHistory() {
 
 async function openXpModal() {
   document.getElementById('xpModal').classList.add('open')
-  const list = document.getElementById('xpHistoryList')
-  list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Wird geladen...</div>'
-  const { data } = await sb.from('xp_history').select('*').eq('user_id', currentUser.id).order('created_at', {ascending:false}).limit(50)
-  if (!data?.length) {
-    list.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">' + (t('noXpYet')) + '</div>'
-    return
+  xpHistoryOpen = false
+  const histList = document.getElementById('xpHistoryList')
+  histList.style.display = 'none'
+  histList.innerHTML = ''
+  const arrow = document.getElementById('xpHistArrow')
+  if (arrow) arrow.textContent = '▼'
+
+  // Render ranks
+  const ranksList = document.getElementById('xpRanksList')
+  if (ranksList) {
+    ranksList.innerHTML = RANKS.map(r =>
+      `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:8px">
+        <span style="font-size:16px">${r.icon}</span>
+        <span style="font-size:13px;font-weight:700;color:${r.color};flex:1">${r.name}</span>
+        <span style="font-size:12px;color:var(--muted)">${r.xp === 0 ? 'Start' : r.xp.toLocaleString() + ' XP'}</span>
+      </div>`
+    ).join('')
   }
-  list.innerHTML = data.map(entry => {
-    const date = new Date(entry.created_at).toLocaleDateString(lang==='de'?'de-DE':'en-US', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:8px">
-      <div>
-        <div style="font-size:13px">${entry.reason}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">${date}</div>
-      </div>
-      <span style="font-size:13px;font-weight:700;color:var(--gold);flex-shrink:0;margin-left:12px">+${entry.amount} XP</span>
-    </div>`
-  }).join('')
 }
 
 async function triggerXPRecalc() {
