@@ -566,41 +566,32 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
     <div style="font-size:12px;color:var(--muted);margin-bottom:16px" id="xpModalSub">So verdienst du XP</div>
 
     <div style="margin-bottom:16px">
-      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px" id="xpEarnTitle">XP verdienen</div>
-      <div style="display:flex;flex-direction:column;gap:6px" id="xpEarnList">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:8px">
-          <span style="font-size:13px">💪 Session abschließen</span>
-          <span style="font-size:13px;font-weight:700;color:var(--gold)">+50 XP</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:8px">
-          <span style="font-size:13px">🏆 Persönlicher Rekord</span>
-          <span style="font-size:13px;font-weight:700;color:var(--gold)">+150 XP</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:8px">
-          <span style="font-size:13px">📅 1 Session / Woche</span>
-          <span style="font-size:13px;font-weight:700;color:var(--gold)">+20 XP</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:8px">
-          <span style="font-size:13px">📅 2 Sessions / Woche</span>
-          <span style="font-size:13px;font-weight:700;color:var(--gold)">+60 XP</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:8px">
-          <span style="font-size:13px">📅 3 Sessions / Woche</span>
-          <span style="font-size:13px;font-weight:700;color:var(--gold)">+150 XP</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:8px">
-          <span style="font-size:13px">📅 4 Sessions / Woche</span>
-          <span style="font-size:13px;font-weight:700;color:var(--gold)">+280 XP</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:8px">
-          <span style="font-size:13px">📅 5+ Sessions / Woche</span>
-          <span style="font-size:13px;font-weight:700;color:var(--gold)">+450 XP</span>
-        </div>
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">XP Formel</div>
+      <div style="background:var(--bg3);border-radius:10px;padding:12px 14px;margin-bottom:8px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Pro Übung in einer Session:</div>
+        <div style="font-size:14px;font-weight:700;color:var(--gold);font-family:monospace">(Sätze × 40) + (Reps × 7.5)</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Beispiel: 4 Sätze × 10 Reps = 160 + 75 = 235 XP</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:10px;padding:12px 14px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Session XP = Summe aller Übungs-XP</div>
+        <div style="font-size:11px;color:var(--muted)">XP wird beim Löschen von Sessions automatisch angepasst</div>
       </div>
     </div>
 
+    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Ränge</div>
+    <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px">
+      ${RANKS.map((r,i) => {
+        const next = RANKS[i+1]
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:8px">
+          <span style="font-size:16px">${r.icon}</span>
+          <span style="font-size:13px;font-weight:700;color:${r.color};flex:1">${r.name}</span>
+          <span style="font-size:12px;color:var(--muted)">${r.xp === 0 ? 'Start' : r.xp.toLocaleString() + ' XP'}</span>
+        </div>`
+      }).join('')}
+    </div>
+
     <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px" id="xpHistTitle">Deine XP History</div>
-    <div id="xpHistoryList" style="max-height:250px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
+    <div id="xpHistoryList" style="max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
       <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Noch keine XP verdient</div>
     </div>
 
@@ -1492,6 +1483,8 @@ async function deleteSession(id) {
   await sb.from('sessions').delete().eq('id', id)
   await sb.from('audit_log').insert({ user_id: currentUser.id, action: `Session gelöscht: ${session?.day_name||''} (${session?.date||''})`, details: { session_id: id } })
   sessions = sessions.filter(s => s.id !== id)
+  // Recalc XP after deletion
+  await recalcUserXP()
   renderHistory()
   renderAnalyse()
   toast(t('deleted'))
