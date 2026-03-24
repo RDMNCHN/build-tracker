@@ -350,6 +350,26 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
       </div>
     </div>
 
+    <div class="card" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:14px;font-weight:600">Update Log</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px" id="updateLogSub">Was ist neu in Grindset</div>
+        </div>
+        <button onclick="openUpdateLog()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">📋 Anzeigen</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:14px;font-weight:600" id="notifLabel">Push Notifications</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px" id="notifSub">Benachrichtigungen erhalten</div>
+        </div>
+        <button onclick="togglePushNotifications()" id="notifBtn" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">Aktivieren</button>
+      </div>
+    </div>
+
     <button class="btn btn-danger" style="margin-top:8px" onclick="handleLogout()" id="logoutBtn">Ausloggen</button>
   </div>
 
@@ -405,7 +425,20 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
     </div>
   </div>
 
-  <!-- XP Animation Modal -->
+  <!-- Update Log Modal -->
+<div class="modal-overlay" id="updateLogModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="font-size:17px;font-weight:700;margin-bottom:4px">📋 Update Log</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Was ist neu in Grindset</div>
+    <div id="updateLogList" style="max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px">
+      <div class="spinner"></div>
+    </div>
+    <button class="btn btn-card" style="margin-top:16px" onclick="document.getElementById('updateLogModal').classList.remove('open')">Schließen</button>
+  </div>
+</div>
+
+<!-- XP Animation Modal -->
   <div id="xpAnimModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.92);flex-direction:column;align-items:center;justify-content:center">
     <div style="text-align:center;padding:32px;max-width:320px;width:100%">
       <div id="xpAnimEmoji" style="font-size:64px;margin-bottom:16px;animation:popIn 0.5s cubic-bezier(0.34,1.6,0.64,1)">💪</div>
@@ -472,6 +505,25 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
 
     <!-- Users tab -->
     <div id="adminTabUsers">
+      <div class="section-header">Push Notification senden</div>
+      <div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:16px;border:1px solid var(--border)">
+        <input type="text" id="pushTitle" placeholder="Titel *" style="margin-bottom:8px">
+        <textarea id="pushBody" placeholder="Nachricht *" style="height:70px;resize:none;margin-bottom:10px"></textarea>
+        <button class="btn btn-accent btn-sm" onclick="sendPushToAll()">📢 An alle senden</button>
+        <div id="pushStatus" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+      </div>
+
+      <div class="section-header">Update Log verwalten</div>
+      <div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:16px;border:1px solid var(--border)">
+        <div style="display:grid;grid-template-columns:80px 1fr;gap:8px;margin-bottom:8px">
+          <input type="text" id="updateVersion" placeholder="Version *" style="margin-bottom:0">
+          <input type="text" id="updateTitle" placeholder="Titel *" style="margin-bottom:0">
+        </div>
+        <textarea id="updateDesc" placeholder="Beschreibung — was ist neu?" style="height:80px;resize:none;margin-bottom:10px"></textarea>
+        <button class="btn btn-accent btn-sm" onclick="saveUpdateLog()">💾 Update speichern</button>
+      </div>
+      <div id="updateLogAdmin" style="margin-bottom:20px"></div>
+
       <div class="section-header">Einladungscodes</div>
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <button class="btn btn-accent btn-sm" onclick="generateInviteCode()">+ Code generieren</button>
@@ -2041,6 +2093,7 @@ async function renderPit() {
 async function renderAdmin() {
   if (!isAdmin()) return
   loadInviteCodes()
+  loadUpdateLogAdmin()
   if (currentAdminTab === 'exercises') loadAdminDbExercises()
   const { data: profiles } = await sb.from('profiles').select('*').order('xp', {ascending:false})
   const adminList = document.getElementById('adminUserList')
@@ -2518,6 +2571,59 @@ async function loadApprovedExercises() {
     </div>`).join('')
 }
 
+async function sendPushToAll() {
+  const title = document.getElementById('pushTitle').value.trim()
+  const body = document.getElementById('pushBody').value.trim()
+  if (!title || !body) return toast('Bitte Titel und Nachricht eingeben', true)
+  const status = document.getElementById('pushStatus')
+  status.textContent = 'Sende...'
+  const { data: subs } = await sb.from('push_subscriptions').select('subscription')
+  if (!subs?.length) { status.textContent = 'Keine Subscribers'; return }
+  const res = await fetch('/api/push', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subscriptions: subs.map(s => s.subscription), title, body })
+  })
+  const result = await res.json()
+  status.textContent = `✅ ${result.sent} gesendet, ${result.failed} fehlgeschlagen`
+  toast(`Notification gesendet an ${result.sent} User!`)
+}
+
+async function saveUpdateLog() {
+  const version = document.getElementById('updateVersion').value.trim()
+  const title = document.getElementById('updateTitle').value.trim()
+  const description = document.getElementById('updateDesc').value.trim()
+  if (!version || !title || !description) return toast('Bitte alle Felder ausfüllen', true)
+  const { error } = await sb.from('update_logs').insert({ version, title, description })
+  if (error) return toast('Fehler: ' + error.message, true)
+  document.getElementById('updateVersion').value = ''
+  document.getElementById('updateTitle').value = ''
+  document.getElementById('updateDesc').value = ''
+  toast('Update gespeichert!')
+  loadUpdateLogAdmin()
+}
+
+async function loadUpdateLogAdmin() {
+  const el = document.getElementById('updateLogAdmin')
+  if (!el) return
+  const { data } = await sb.from('update_logs').select('*').order('created_at', {ascending:false}).limit(10)
+  if (!data?.length) { el.innerHTML = ''; return }
+  el.innerHTML = data.map(u => `
+    <div style="background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div style="font-size:12px;font-weight:700">v${u.version} — ${u.title}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${u.description.slice(0,60)}${u.description.length>60?'...':''}</div>
+      </div>
+      <button onclick="deleteUpdateLog('${u.id}')" style="font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;flex-shrink:0;margin-left:8px">🗑️</button>
+    </div>`).join('')
+}
+
+async function deleteUpdateLog(id) {
+  await sb.from('update_logs').delete().eq('id', id)
+  loadUpdateLogAdmin()
+  toast('Update gelöscht')
+}
+
 async function generateInviteCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   let code = ''
@@ -2678,6 +2784,89 @@ function closeXPAnimation() {
   renderProfile()
 }
 
+const VAPID_PUBLIC_KEY = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEqwIVk4nX5OkK3H1fCRR7_66CXW8cUgRmV4orPj5if2b8QXCLbQILWq8Ljg1oQMPLmsaOXngvpWgNyF7nNtIu4Q'
+
+async function togglePushNotifications() {
+  const btn = document.getElementById('notifBtn')
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    return toast('Push Notifications werden nicht unterstützt', true)
+  }
+  const existing = await getPushSubscription()
+  if (existing) {
+    // Unsubscribe
+    await existing.unsubscribe()
+    await sb.from('push_subscriptions').delete().eq('user_id', currentUser.id)
+    btn.textContent = 'Aktivieren'
+    btn.style.color = 'var(--text)'
+    toast('Notifications deaktiviert')
+  } else {
+    // Subscribe
+    try {
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') return toast('Berechtigung verweigert', true)
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      })
+      await sb.from('push_subscriptions').upsert({
+        user_id: currentUser.id,
+        subscription: sub.toJSON()
+      }, { onConflict: 'user_id' })
+      btn.textContent = 'Aktiv ✅'
+      btn.style.color = 'var(--green)'
+      toast('Push Notifications aktiviert! 🔔')
+    } catch(e) {
+      toast('Fehler: ' + e.message, true)
+    }
+  }
+}
+
+async function getPushSubscription() {
+  if (!('serviceWorker' in navigator)) return null
+  const reg = await navigator.serviceWorker.ready
+  return await reg.pushManager.getSubscription()
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = window.atob(base64)
+  const outputArray = new Uint8Array(rawData.length)
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i)
+  return outputArray
+}
+
+async function checkNotifStatus() {
+  const btn = document.getElementById('notifBtn')
+  if (!btn) return
+  const sub = await getPushSubscription()
+  if (sub) { btn.textContent = 'Aktiv ✅'; btn.style.color = 'var(--green)' }
+  else { btn.textContent = 'Aktivieren'; btn.style.color = 'var(--text)' }
+}
+
+async function openUpdateLog() {
+  document.getElementById('updateLogModal').classList.add('open')
+  const list = document.getElementById('updateLogList')
+  list.innerHTML = '<div class="spinner"></div>'
+  const { data } = await sb.from('update_logs').select('*').order('created_at', {ascending:false})
+  if (!data?.length) {
+    list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px">Noch keine Updates</p>'
+    return
+  }
+  list.innerHTML = data.map(u => {
+    const date = new Date(u.created_at).toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'})
+    return `<div style="background:var(--card);border-radius:var(--radius);padding:14px;border:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:11px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:20px;font-weight:700">v${u.version}</span>
+        <span style="font-size:13px;font-weight:700">${u.title}</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:auto">${date}</span>
+      </div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6;white-space:pre-line">${u.description}</div>
+    </div>`
+  }).join('')
+}
+
 function showTab(tab, btn) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'))
@@ -2689,7 +2878,7 @@ function showTab(tab, btn) {
   if (tab==='analyse') renderAnalyse()
   if (tab==='history') renderHistory()
   if (tab==='plans') renderPlansList()
-  if (tab==='profile') renderProfile()
+  if (tab==='profile') { renderProfile(); checkNotifStatus() }
   if (tab==='pit') {
     renderPit()
     if (currentPitTab === 'exercises') renderExerciseRequests()
