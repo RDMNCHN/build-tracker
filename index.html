@@ -293,8 +293,6 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
       <div id="profileStatusDisplay" style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:8px;font-style:italic"></div>
     </div>
 
-
-
     <div class="section-header">Einstellungen</div>
 
     <div class="card" style="margin-bottom:10px">
@@ -357,16 +355,6 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
           <div style="font-size:12px;color:var(--muted);margin-top:2px" id="updateLogSub">Was ist neu in Grindset</div>
         </div>
         <button onclick="openUpdateLog()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">📋 Anzeigen</button>
-      </div>
-    </div>
-
-    <div class="card" style="margin-bottom:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div>
-          <div style="font-size:14px;font-weight:600" id="notifLabel">Push Notifications</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px" id="notifSub">Benachrichtigungen erhalten</div>
-        </div>
-        <button onclick="togglePushNotifications()" id="notifBtn" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">Aktivieren</button>
       </div>
     </div>
 
@@ -505,14 +493,6 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
 
     <!-- Users tab -->
     <div id="adminTabUsers">
-      <div class="section-header">Push Notification senden</div>
-      <div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:16px;border:1px solid var(--border)">
-        <input type="text" id="pushTitle" placeholder="Titel *" style="margin-bottom:8px">
-        <textarea id="pushBody" placeholder="Nachricht *" style="height:70px;resize:none;margin-bottom:10px"></textarea>
-        <button class="btn btn-accent btn-sm" onclick="sendPushToAll()">📢 An alle senden</button>
-        <div id="pushStatus" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
-      </div>
-
       <div class="section-header">Update Log verwalten</div>
       <div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:16px;border:1px solid var(--border)">
         <div style="display:grid;grid-template-columns:80px 1fr;gap:8px;margin-bottom:8px">
@@ -655,48 +635,7 @@ const sb = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdod29od2JsZ3RyeWllbnVwemtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNzMxMTAsImV4cCI6MjA4OTc0OTExMH0.yioE8W9L0WGIiYTZ7F1c62bRj3yzJQO8obLD66APmlI'
 )
 
-const EXERCISES = [
-  {id:'incline_press',name:'Schrägbankdrücken',en:'Incline Bench Press',search:'incline bench press',muscle:'Brust',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Bench_Press_Medium-Grip/0.jpg',video:'male-barbell-incline-bench-press-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Bench_Press/0.jpg',tips:['Bank auf 30–45°','Ellbogen ca. 45° nach außen','Explosiv drücken, langsam runter','Obere Brust spüren']},
-  {id:'bench_press',name:'Flachbankdrücken',en:'Bench Press',search:'barbell bench press',muscle:'Brust',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg',video:'male-barbell-bench-press-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press/0.jpg',tips:['Schulterblätter zusammen','Füße fest auf Boden','Stange zur unteren Brust','Explosiv drücken']},
-  {id:'cable_fly',name:'Kabel Fly',en:'Cable Fly',search:'chest fly',muscle:'Brust',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Cross-Over/0.jpg',video:'male-cable-chest-fly-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Cross-Over/0.jpg',tips:['Arme leicht gebeugt','Hände zusammenführen','Brust zusammendrücken','Langsam zurück']},
-  {id:'pushups',name:'Liegestütze',en:'Push-Ups',search:'push up',muscle:'Brust',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Ups/0.jpg',video:'male-push-up-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-up/0.jpg',tips:['Körper gerade','Brust berührt fast Boden','Ellbogen leicht innen','Kern angespannt']},
-  {id:'lat_pulldown',name:'Latzug weit',en:'Lat Pulldown (Wide)',search:'lat pulldown',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg',video:'male-machine-pulldown-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg',tips:['Breiter Griff','Brust raus, leicht zurücklehnen','Ellbogen nach unten führen','Kontrolliert strecken']},
-  {id:'lat_neutral',name:'Latzug neutral',en:'Lat Pulldown (Neutral)',search:'lat pulldown',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Neutral_Grip_Pull-Up/0.jpg',video:'male-machine-pulldown-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Front_Lat_Pulldown/0.jpg',tips:['Neutraler Griff','Ellbogen nach unten/hinten','Untere Lats aktiv','Brust rausstrecken']},
-  {id:'cable_row',name:'Kabelrudern',en:'Seated Cable Row',search:'cable seated row',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/0.jpg',video:'male-cable-seated-row-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Seated_Row/0.jpg',tips:['Aufrecht sitzen','Mit Ellbogen ziehen','Schulterblätter zusammen','Langsam dehnen']},
-  {id:'pullups',name:'Klimmzüge',en:'Pull-Ups',search:'pull up',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pull-ups/0.jpg',video:'male-pull-up-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pull-up/0.jpg',tips:['Schulterbreiter Griff','Brust zur Stange','Schulterblätter runterziehen','Langsam runter']},
-  {id:'rdl',name:'Rumän. Kreuzheben',en:'Romanian Deadlift',search:'romanian deadlift',muscle:'Rücken',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg',video:'male-barbell-romanian-deadlift-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg',tips:['Leichte Kniebeugung','Hüfte nach hinten','Rücken gerade','Bis Hamstrings spüren']},
-  {id:'shoulder_press',name:'Schulterdrücken',en:'Shoulder Press',search:'overhead press',muscle:'Schultern',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shoulder_Press/0.jpg',video:'male-dumbbell-shoulder-press-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shoulder_Press/0.jpg',tips:['Hanteln auf Ohrhöhe','Gerade nach oben','Nicht ganz durchstrecken','Langsam runter']},
-  {id:'lateral_raise',name:'Seitheben',en:'Lateral Raise',search:'dumbbell lateral raise',muscle:'Schultern',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lateral_Raise/0.jpg',video:'male-dumbbell-lateral-raise-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lateral_Raise/0.jpg',tips:['Leichtes Gewicht','Arme leicht gebeugt','Pinkiefinger leicht hoch','Nur bis Schulterniveau']},
-  {id:'rear_delt',name:'Rear Delt Fly',en:'Rear Delt Fly',search:'reverse cable fly',muscle:'Schultern',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Flyes/0.jpg',video:'male-cable-reverse-fly-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bent-Over_Lateral_Raise/0.jpg',tips:['Leichtes Gewicht','Nach außen/hinten führen','Schulterblätter zusammen','Wichtig für Gesundheit']},
-  {id:'face_pull',name:'Face Pull',en:'Face Pull',search:'cable face pull',muscle:'Schultern',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/0.jpg',video:'male-cable-face-pull-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/0.jpg',tips:['Kabel auf Augenhöhe','Seil zur Stirn ziehen','Ellbogen hoch','Externe Rotation trainieren']},
-  {id:'bicep_curl',name:'Bizepscurls KH',en:'Dumbbell Bicep Curl',search:'dumbbell bicep curl',muscle:'Bizeps',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bicep_Curl/0.jpg',video:'male-dumbbell-bicep-curl-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bicep_Curl/0.jpg',tips:['Ellbogen am Körper','Langsam runter','Oben anspannen','Kein Schwung']},
-  {id:'hammer_curl',name:'Hammer Curl',en:'Hammer Curl',search:'hammer curl',muscle:'Bizeps',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hammer_Curls/0.jpg',video:'male-dumbbell-hammer-curl-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hammer_Curl/0.jpg',tips:['Daumen nach oben','Brachialis trainieren','Ellbogen fixiert','Langsam runter']},
-  {id:'tricep_pushdown',name:'Trizeps Pushdown',en:'Tricep Pushdown',search:'cable pushdown',muscle:'Trizeps',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushdown/0.jpg',video:'male-cable-pushdown-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown/0.jpg',tips:['Ellbogen fixiert','Nur Unterarm bewegt','Unten anspannen','Langsam zurück']},
-  {id:'overhead_tri',name:'Overhead Trizeps',en:'Overhead Tricep Extension',search:'overhead tricep extension',muscle:'Trizeps',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Overhead_Extension_with_Rope/0.jpg',video:'male-dumbbell-tricep-overhead-extension-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Triceps_Extension/0.jpg',tips:['Langer Kopf trainieren','Ellbogen oben halten','Nur Unterarm bewegt','Langsam runter']},
-  {id:'leg_press',name:'Beinpresse',en:'Leg Press',search:'leg press',muscle:'Quads',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/0.jpg',video:'male-sled-leg-press-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/0.jpg',tips:['Füße schulterbreit','Knie nicht durchstrecken','90° Winkel unten','Langsam runter']},
-  {id:'hack_squat',name:'Hack Squat',en:'Hack Squat',search:'hack squat',muscle:'Quads',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hack_Squat/0.jpg',video:'male-sled-hack-squat-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hack_Squat/0.jpg',tips:['Füße schulterbreit','Tief runter','Rücken flach','Durch Fersen drücken']},
-  {id:'leg_extension',name:'Beinstrecker',en:'Leg Extension',search:'leg extension',muscle:'Quads',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Extensions/0.jpg',video:'male-machine-leg-extension-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Extensions/0.jpg',tips:['Aufrecht sitzen','Langsam oben','Sehr langsam runter','Kein Schwung']},
-  {id:'bulgarian',name:'Bulgarian Split Squats',en:'Bulgarian Split Squat',search:'bulgarian split squat',muscle:'Quads',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bulgarian_Split_Squat/0.jpg',video:'male-dumbbell-bulgarian-split-squat-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bulgarian_Split_Squat/0.jpg',tips:['Hinterer Fuß auf Bank','Senkrecht runter','Knie über Fuß','Hüfte dehnen']},
-  {id:'squat',name:'Kniebeuge',en:'Squat',search:'barbell squat',muscle:'Quads',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/0.jpg',video:'male-barbell-squat-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/0.jpg',tips:['Füße schulterbreit','Knie in Richtung Zehen','Tief runter','Durch Fersen drücken']},
-  {id:'rdl_ham',name:'Rumän. KH (Hamstrings)',en:'Romanian Deadlift',search:'romanian deadlift',muscle:'Hamstrings',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg',video:'male-barbell-romanian-deadlift-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg',tips:['Hüfte nach hinten','Rücken gerade','Bis Hamstrings spüren','Dann Hüfte vor']},
-  {id:'leg_curl',name:'Beinbeuger',en:'Leg Curl',search:'leg curl',muscle:'Hamstrings',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Leg_Curls/0.jpg',video:'male-machine-leg-curl-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Curl/0.jpg',tips:['Hüften fest','Fersen zum Gesäß','Oben anspannen','Langsam strecken']},
-  {id:'hip_thrust',name:'Hip Thrust',en:'Hip Thrust',search:'barbell hip thrust',muscle:'Glutes',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hip_Thrust/0.jpg',video:'male-barbell-hip-thrust-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hip_Thrust/0.jpg',tips:['Schulterblätter auf Bank','Hüfte explosiv hoch','Oben maximal anspannen','Knie nach außen']},
-  {id:'calf_raise',name:'Wadenheben',en:'Calf Raise',search:'calf raise',muscle:'Waden',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/0.jpg',video:'male-machine-calf-raise-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Calf_Raises/0.jpg',tips:['Volle Bewegung','Langsam und bewusst','Oben halten','Hohes Volumen']},
-  {id:'plank',name:'Plank',en:'Plank',search:'plank',muscle:'Core',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg',video:'male-plank-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg',tips:['Gerade Linie','Bauch anspannen','Schultern über Ellbogen','Ruhig atmen']},
-  {id:'hanging_leg_raise',name:'Hanging Leg Raise',en:'Hanging Leg Raise',search:'hanging leg raise',muscle:'Core',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Leg_Raise/0.jpg',video:'male-hanging-leg-raise-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Leg_Raise/0.jpg',tips:['Fest hängen','Knie zur Brust','Kontrolliert runter','Kein Schwingen']},
-  {id:'cable_crunch',name:'Kabel Crunch',en:'Cable Crunch',search:'cable crunch',muscle:'Core',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crunch/0.jpg',video:'male-cable-crunch-front',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crunch/0.jpg',tips:['Kniend','Bauch zusammenrollen','Hüfte bleibt still','Langsam zurück']},
-  {id:'ab_wheel',name:'Ab Wheel',en:'Ab Wheel Rollout',search:'ab wheel rollout',muscle:'Core',gif:'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ab_Roller/0.jpg',video:'male-ab-wheel-rollout-front',tips:['Knie auf Boden','Langsam rollen','Rücken nicht durchhängen','Durch Bauch zurück']},
-  {id:'t_bar_row',name:'T-Bar Row',en:'T-Bar Row',search:'t bar row',muscle:'Rücken',tips:['Rücken gerade, leicht vorgebeugt','Stange nah am Körper führen','Ellbogen nach hinten ziehen','Schulterblätter zusammendrücken']},
-  {id:'barbell_shrug',name:'Shrugs (LH)',en:'Barbell Shrug',search:'barbell shrug',muscle:'Schultern',tips:['Schultern gerade nach oben ziehen','Nicht kreisen — nur hoch und runter','Oben kurz halten und anspannen','Langsam runter für volle Dehnung']},
-  {id:'dumbbell_shrug',name:'Shrugs (KH)',en:'Dumbbell Shrug',search:'dumbbell shrug',muscle:'Schultern',tips:['Schultern gerade nach oben','Nicht kreisen','Oben kurz halten','Langsam runter']},
-  {id:'cable_pullover',name:'Cable Pullover',en:'Cable Pullover',search:'straight arm pulldown',muscle:'Rücken',tips:['Arme leicht gebeugt halten','Von oben nach unten ziehen','Lats aktiv anspannen','Kontrolliert zurück']},
-  {id:'plate_shoulder_press',name:'Plate Loaded Shoulder Press',en:'Plate Loaded Shoulder Press',search:'lever chest press',muscle:'Schultern',tips:['Aufrecht sitzen','Gerade nach oben drücken','Kern anspannen','Kontrolliert runter']},
-  {id:'incline_smith',name:'Incline Smith Machine Press',en:'Incline Smith Machine Press',search:'smith incline bench press',muscle:'Brust',tips:['Bank auf 30–45°','Smith Machine führt die Bahn','Ellbogen leicht nach außen','Obere Brust fokussieren']},
-  {id:'cable_crunches',name:'Cable Crunches',en:'Cable Crunches',search:'cable kneeling crunch',muscle:'Core',tips:['Kniend vor dem Kabel','Bauch zusammenrollen','Hüfte bleibt still','Langsam zurück']},
-  {id:'plate_back_row',name:'Plate Loaded Upper Back Row',en:'Plate Loaded Upper Back Row',search:'t bar row',muscle:'Rücken',tips:['Rücken gerade','Ellbogen nach hinten','Schulterblätter zusammen','Langsam dehnen']},
-  {id:'kneeling_pulldown',name:'Kneeling Cable Pulldown',en:'Kneeling Cable Pulldown',search:'reverse grip machine lat pulldown',muscle:'Rücken',tips:['Kniend vor dem Kabel','Stange zur Brust ziehen','Ellbogen nach unten','Lats anspannen']},
-  {id:'cable_flyes',name:'Cable Flyes',en:'Cable Flyes',search:'chest fly',muscle:'Brust',tips:['Arme leicht gebeugt','Hände zusammenführen','Brust in der Mitte anspannen','Langsam zurück dehnen']},
-]
+const EXERCISES = [] // Loaded from DB via getExercises()
 
 const MUSCLES_DE = ['Alle','Brust','Rücken','Schultern','Bizeps','Trizeps','Quads','Hamstrings','Glutes','Waden','Core']
 const MUSCLES_EN = ['All','Chest','Back','Shoulders','Biceps','Triceps','Quads','Hamstrings','Glutes','Calves','Core']
@@ -1483,24 +1422,7 @@ async function openTutorial(exId) {
     const usedToday = usage?.count || 0
     if (usedToday >= 690) { vid.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Tageslimit erreicht (690/690)</p>'; return }
 
-    const DB_IDS = {
-      incline_press:'0047', bench_press:'0025', cable_fly:'1262',
-      pushups:'0669', lat_pulldown:'0673', lat_neutral:'0651',
-      cable_row:'0861', pullups:'0651', rdl:'0085',
-      shoulder_press:'0091', lateral_raise:'0334', rear_delt:'0154',
-      face_pull:'1722', bicep_curl:'1651', hammer_curl:'0165',
-      tricep_pushdown:'0199', overhead_tri:'1722',
-      leg_press:'0739', hack_squat:'0046', leg_extension:'0585',
-      bulgarian:'0097', squat:'3303', rdl_ham:'0085',
-      leg_curl:'0496', hip_thrust:'1409', calf_raise:'0417',
-      plank:'0464', hanging_leg_raise:'0472', cable_crunch:'0857',
-      ab_wheel:'0857', t_bar_row:'0606', barbell_shrug:'0095',
-      dumbbell_shrug:'0406', cable_pullover:'0237',
-      dumbbell_lateral_raise2:'0334', plate_shoulder_press:'0576',
-      incline_smith:'0757', cable_crunches:'0175',
-      plate_back_row:'0606', kneeling_pulldown:'0673', cable_flyes:'1262',
-    }
-    const exerciseDbId = DB_IDS[exId]
+    const exerciseDbId = ex.rapidapi_id || null
     if (exerciseDbId) {
       const gifUrl = `/api/gif?id=${exerciseDbId}`
       gifMemCache[exId] = gifUrl
@@ -2571,24 +2493,6 @@ async function loadApprovedExercises() {
     </div>`).join('')
 }
 
-async function sendPushToAll() {
-  const title = document.getElementById('pushTitle').value.trim()
-  const body = document.getElementById('pushBody').value.trim()
-  if (!title || !body) return toast('Bitte Titel und Nachricht eingeben', true)
-  const status = document.getElementById('pushStatus')
-  status.textContent = 'Sende...'
-  const { data: subs } = await sb.from('push_subscriptions').select('subscription')
-  if (!subs?.length) { status.textContent = 'Keine Subscribers'; return }
-  const res = await fetch('/api/push', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ subscriptions: subs.map(s => s.subscription), title, body })
-  })
-  const result = await res.json()
-  status.textContent = `✅ ${result.sent} gesendet, ${result.failed} fehlgeschlagen`
-  toast(`Notification gesendet an ${result.sent} User!`)
-}
-
 async function saveUpdateLog() {
   const version = document.getElementById('updateVersion').value.trim()
   const title = document.getElementById('updateTitle').value.trim()
@@ -2784,66 +2688,6 @@ function closeXPAnimation() {
   renderProfile()
 }
 
-const VAPID_PUBLIC_KEY = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEqwIVk4nX5OkK3H1fCRR7_66CXW8cUgRmV4orPj5if2b8QXCLbQILWq8Ljg1oQMPLmsaOXngvpWgNyF7nNtIu4Q'
-
-async function togglePushNotifications() {
-  const btn = document.getElementById('notifBtn')
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    return toast('Push Notifications werden nicht unterstützt', true)
-  }
-  const existing = await getPushSubscription()
-  if (existing) {
-    await existing.unsubscribe()
-    await sb.from('push_subscriptions').delete().eq('user_id', currentUser.id)
-    btn.textContent = 'Aktivieren'
-    btn.style.color = 'var(--text)'
-    toast('Notifications deaktiviert')
-    return
-  }
-  // Request permission FIRST — must be synchronous from click
-  const permission = await Notification.requestPermission()
-  if (permission !== 'granted') return toast('Berechtigung verweigert', true)
-  try {
-    const reg = await navigator.serviceWorker.ready
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-    })
-    await sb.from('push_subscriptions').upsert({
-      user_id: currentUser.id,
-      subscription: sub.toJSON()
-    }, { onConflict: 'user_id' })
-    btn.textContent = 'Aktiv ✅'
-    btn.style.color = 'var(--green)'
-    toast('Push Notifications aktiviert! 🔔')
-  } catch(e) {
-    toast('Fehler: ' + e.message, true)
-  }
-}
-
-async function getPushSubscription() {
-  if (!('serviceWorker' in navigator)) return null
-  const reg = await navigator.serviceWorker.ready
-  return await reg.pushManager.getSubscription()
-}
-
-function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4)
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
-  const rawData = window.atob(base64)
-  const outputArray = new Uint8Array(rawData.length)
-  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i)
-  return outputArray
-}
-
-async function checkNotifStatus() {
-  const btn = document.getElementById('notifBtn')
-  if (!btn) return
-  const sub = await getPushSubscription()
-  if (sub) { btn.textContent = 'Aktiv ✅'; btn.style.color = 'var(--green)' }
-  else { btn.textContent = 'Aktivieren'; btn.style.color = 'var(--text)' }
-}
-
 async function openUpdateLog() {
   document.getElementById('updateLogModal').classList.add('open')
   const list = document.getElementById('updateLogList')
@@ -2877,7 +2721,7 @@ function showTab(tab, btn) {
   if (tab==='analyse') renderAnalyse()
   if (tab==='history') renderHistory()
   if (tab==='plans') renderPlansList()
-  if (tab==='profile') { renderProfile(); checkNotifStatus() }
+  if (tab==='profile') renderProfile()
   if (tab==='pit') {
     renderPit()
     if (currentPitTab === 'exercises') renderExerciseRequests()
