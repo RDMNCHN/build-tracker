@@ -2073,20 +2073,28 @@ async function adminViewHistory(userId, username) {
 }
 
 async function adminRecalcXP(userId, username) {
-  const { data: allSessions } = await sb.from('sessions').select('exercises').eq('user_id', userId)
+  const { data: allSessions, error } = await sb.from('sessions').select('exercises').eq('user_id', userId)
+  if (error) return toast('Fehler: ' + error.message, true)
   let totalXP = 0
   for (const s of allSessions||[]) totalXP += calcSessionXP(s.exercises||[])
-  await sb.from('profiles').update({ xp: totalXP }).eq('user_id', userId)
-  await sb.from('audit_log').insert({ user_id: ADMIN_ID, action: `Admin neuberechnete XP für ${username}: ${totalXP} XP` })
-  toast(`XP für ${username} neu berechnet: ${totalXP.toLocaleString()} XP`)
+  const { error: updateErr } = await sb.from('profiles').update({ xp: totalXP }).eq('user_id', userId)
+  if (updateErr) return toast('Update Fehler: ' + updateErr.message, true)
+  await sb.from('audit_log').insert({ user_id: ADMIN_ID, action: `Admin neuberechnete XP für ${username}: ${totalXP} XP`, details: { target_user: userId } })
+  toast(`✅ XP für ${username}: ${totalXP.toLocaleString()} XP`)
   renderAdmin()
 }
 
 async function adminDeleteSession(sessionId, userId, username) {
-  if (!confirm('Session wirklich löschen?')) return
-  await sb.from('sessions').delete().eq('id', sessionId)
+  if (!confirm('Session wirklich löschen? XP wird neu berechnet.')) return
+  const { error } = await sb.from('sessions').delete().eq('id', sessionId)
+  if (error) return toast('Fehler: ' + error.message, true)
   await sb.from('audit_log').insert({ user_id: ADMIN_ID, action: `Admin löschte Session von ${username}`, details: { session_id: sessionId, target_user: userId } })
-  toast('Session gelöscht')
+  // Recalc XP for this user after deletion
+  const { data: allSessions } = await sb.from('sessions').select('exercises').eq('user_id', userId)
+  let totalXP = 0
+  for (const s of allSessions||[]) totalXP += calcSessionXP(s.exercises||[])
+  await sb.from('profiles').update({ xp: totalXP }).eq('user_id', userId)
+  toast(`Session gelöscht · XP neu: ${totalXP.toLocaleString()}`)
   adminViewHistory(userId, username)
 }
 
