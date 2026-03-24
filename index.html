@@ -579,19 +579,13 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
     </div>
 
     <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Ränge</div>
-    <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px">
-      ${RANKS.map((r,i) => {
-        const next = RANKS[i+1]
-        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:8px">
-          <span style="font-size:16px">${r.icon}</span>
-          <span style="font-size:13px;font-weight:700;color:${r.color};flex:1">${r.name}</span>
-          <span style="font-size:12px;color:var(--muted)">${r.xp === 0 ? 'Start' : r.xp.toLocaleString() + ' XP'}</span>
-        </div>`
-      }).join('')}
-    </div>
+    <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px" id="xpRanksList"></div>
 
-    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px" id="xpHistTitle">Deine XP History</div>
-    <div id="xpHistoryList" style="max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
+    <div onclick="toggleXpHistory()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px" id="xpHistTitle">Deine XP History</div>
+      <span id="xpHistArrow" style="color:var(--muted);font-size:14px">▼</span>
+    </div>
+    <div id="xpHistoryList" style="display:none;max-height:250px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
       <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Noch keine XP verdient</div>
     </div>
 
@@ -2040,7 +2034,7 @@ async function renderAdmin() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <button class="btn btn-card btn-sm" onclick="adminViewHistory('${p.user_id}','${p.username||'Anonym'}')">📋 Verlauf</button>
         <button class="btn btn-card btn-sm" onclick="adminViewXP('${p.user_id}','${p.username||'Anonym'}')">⚡ XP History</button>
-        <button class="btn btn-card btn-sm" onclick="adminSetXP('${p.user_id}','${p.username||'Anonym'}',${p.xp||0})">✏️ XP setzen</button>
+        <button class="btn btn-card btn-sm" onclick="adminRecalcXP('${p.user_id}','${p.username||'Anonym'}')">🔄 XP neu</button>
         <button class="btn btn-danger btn-sm" onclick="adminResetXP('${p.user_id}','${p.username||'Anonym'}')">🗑️ XP reset</button>
       </div>
     </div>`
@@ -2054,16 +2048,38 @@ async function adminViewHistory(userId, username) {
   const body = document.getElementById('adminModalBody')
   if (!data?.length) { body.innerHTML = '<p style="color:var(--muted);padding:20px;text-align:center">Keine Sessions</p>'; modal.classList.add('open'); return }
   body.innerHTML = data.map(s => {
-    const exCount = (s.exercises||[]).filter(e => (e.sets||[]).some(set => set.kg > 0 || set.reps > 0)).length
-    return `<div style="padding:10px 12px;background:var(--bg3);border-radius:8px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <div style="font-size:13px;font-weight:600">${s.date}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.day_name||''} · ${exCount} Übungen</div>
+    const validExes = (s.exercises||[]).filter(e => (e.sets||[]).some(set => set.reps > 0))
+    const sessionXP = calcSessionXP(s.exercises||[])
+    const exDetails = validExes.map(e => {
+      const validSets = (e.sets||[]).filter(set => set.reps > 0)
+      const totalReps = validSets.reduce((a,b) => a+(b.reps||0), 0)
+      const maxKg = Math.max(...validSets.map(s=>s.kg||0))
+      return `<div style="font-size:11px;color:var(--muted);padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+        ${e.name} · ${validSets.length} Sätze · ${totalReps} Reps ${maxKg>0?'· '+maxKg+'kg max':''}
+      </div>`
+    }).join('')
+    return `<div style="background:var(--bg3);border-radius:10px;margin-bottom:8px;overflow:hidden">
+      <div style="padding:10px 12px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:13px;font-weight:700">${s.date} · ${s.day_name||''}</div>
+          <div style="font-size:11px;color:var(--gold);margin-top:2px">+${sessionXP.toLocaleString()} XP · ${validExes.length} Übungen</div>
+        </div>
+        <button onclick="adminDeleteSession('${s.id}','${userId}','${username}')" style="font-size:11px;color:var(--accent);background:none;border:1px solid var(--accent);border-radius:6px;padding:4px 8px;cursor:pointer;flex-shrink:0">Löschen</button>
       </div>
-      <button onclick="adminDeleteSession('${s.id}','${userId}','${username}')" style="font-size:11px;color:var(--accent);background:none;border:1px solid var(--accent);border-radius:6px;padding:4px 8px;cursor:pointer">Löschen</button>
+      ${exDetails ? `<div style="padding:0 12px 10px">${exDetails}</div>` : ''}
     </div>`
   }).join('')
   modal.classList.add('open')
+}
+
+async function adminRecalcXP(userId, username) {
+  const { data: allSessions } = await sb.from('sessions').select('exercises').eq('user_id', userId)
+  let totalXP = 0
+  for (const s of allSessions||[]) totalXP += calcSessionXP(s.exercises||[])
+  await sb.from('profiles').update({ xp: totalXP }).eq('user_id', userId)
+  await sb.from('audit_log').insert({ user_id: ADMIN_ID, action: `Admin neuberechnete XP für ${username}: ${totalXP} XP` })
+  toast(`XP für ${username} neu berechnet: ${totalXP.toLocaleString()} XP`)
+  renderAdmin()
 }
 
 async function adminDeleteSession(sessionId, userId, username) {
