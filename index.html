@@ -173,6 +173,14 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
     <button onclick="toggleAuthMode()" style="width:100%;margin-top:14px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:8px" id="authToggle">Noch kein Account? Registrieren</button>
     <button onclick="showForgotPassword()" style="width:100%;margin-top:4px;background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:6px;opacity:0.7" id="forgotPwBtn">Passwort vergessen?</button>
 
+    <!-- Update Log on login -->
+    <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
+      <button onclick="toggleLoginUpdates()" style="width:100%;background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;gap:6px">
+        <span>📋 Was ist neu in Grindset</span><span id="loginUpdatesArrow">▼</span>
+      </button>
+      <div id="loginUpdatesList" style="display:none;margin-top:12px;max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+
     <!-- Forgot password form -->
     <div id="forgotPwForm" style="display:none;margin-top:16px;padding:16px;background:var(--card);border-radius:var(--radius);border:1px solid var(--border)">
       <div style="font-size:14px;font-weight:600;margin-bottom:10px">Passwort zurücksetzen</div>
@@ -1106,6 +1114,7 @@ async function init() {
 
 function showLogin() {
   document.getElementById('loginPage').style.display = 'flex'
+  loadLoginUpdates()
   document.getElementById('appShell').style.display = 'none'
   document.getElementById('planBuilderPage').style.display = 'none'
 }
@@ -1267,6 +1276,9 @@ function buildExerciseList() {
     </div>`
   }).join('')
   selectedDay.exercises.forEach((_,ei) => { addSetRow(ei); addSetRow(ei); addSetRow(ei) })
+  setTimeout(restoreSessionDraft, 100)
+  // Auto-save on any input change
+  document.getElementById('exerciseSection').addEventListener('input', autoSaveSession)
 }
 
 function toggleEx(ei) {
@@ -1314,8 +1326,12 @@ async function saveSession() {
 
   // Award XP
   const { sessionXP, newTotal, rankUp } = await awardXP(exercisesData, date)
+  // Update last_active
+  await sb.from('profiles').update({ last_active: new Date().toISOString() }).eq('user_id', currentUser.id)
 
   await sb.from('audit_log').insert({ user_id: currentUser.id, action: `Session gespeichert: ${selectedDay.name} (${date})`, details: { day_id: selectedDay.id, date } })
+  clearSessionDraft()
+  haptic('success')
   await loadSessions()
   selectedDay = null
   document.getElementById('exerciseSection').style.display = 'none'
@@ -1337,6 +1353,18 @@ function calcSessionXP(exercisesData) {
     total += Math.round((totalSets * 40) + (totalReps * 7.5))
   }
   return total
+}
+
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const days = Math.floor(diff / 86400000)
+  const hours = Math.floor(diff / 3600000)
+  if (days === 0 && hours === 0) return 'Heute aktiv'
+  if (days === 0) return `vor ${hours}h aktiv`
+  if (days === 1) return 'Gestern aktiv'
+  if (days < 7) return `vor ${days} Tagen aktiv`
+  if (days < 30) return `vor ${Math.floor(days/7)} Woche(n) aktiv`
+  return `vor ${Math.floor(days/30)} Monat(en) aktiv`
 }
 
 async function recalcUserXP() {
@@ -1947,6 +1975,7 @@ async function renderPit() {
           <span style="font-size:11px;color:var(--muted)">· ${p.xp||0} XP</span>
         </div>
         ${p.status?`<div style="font-size:11px;color:var(--muted);margin-top:2px;font-style:italic">"${p.status}"</div>`:''}
+        ${p.last_active?`<div style="font-size:10px;color:var(--muted);margin-top:2px">🕐 ${timeAgo(p.last_active)}</div>`:''}
       </div>
     </div>`
   }).join('')
@@ -2650,6 +2679,110 @@ async function openUpdateLog() {
   }).join('')
 }
 
+// ── Update Log on login ──
+let loginUpdatesOpen = false
+async function loadLoginUpdates() {
+  const { data } = await sb.from('update_logs').select('*').order('created_at', {ascending:false}).limit(5)
+  const list = document.getElementById('loginUpdatesList')
+  if (!list || !data?.length) return
+  list.innerHTML = data.map(u => {
+    const date = new Date(u.created_at).toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'})
+    return `<div style="background:var(--card);border-radius:10px;padding:12px;border:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span style="font-size:10px;background:var(--accent);color:#fff;padding:2px 7px;border-radius:20px;font-weight:700">v${u.version}</span>
+        <span style="font-size:12px;font-weight:700">${u.title}</span>
+        <span style="font-size:10px;color:var(--muted);margin-left:auto">${date}</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.5;white-space:pre-line">${u.description}</div>
+    </div>`
+  }).join('')
+}
+
+function toggleLoginUpdates() {
+  loginUpdatesOpen = !loginUpdatesOpen
+  const list = document.getElementById('loginUpdatesList')
+  const arrow = document.getElementById('loginUpdatesArrow')
+  list.style.display = loginUpdatesOpen ? 'flex' : 'none'
+  if (arrow) arrow.textContent = loginUpdatesOpen ? '▲' : '▼'
+}
+
+// ── Auto-Save session to localStorage ──
+function autoSaveSession() {
+  if (!selectedDay) return
+  const data = { dayId: selectedDay.id, date: document.getElementById('trainDate').value, exercises: [] }
+  selectedDay.exercises.forEach((exId, ei) => {
+    const rows = document.querySelectorAll(`#setrows_${ei} tr`)
+    const sets = []
+    rows.forEach(r => { const ins = r.querySelectorAll('input'); sets.push({kg: ins[0]?.value||'', reps: ins[1]?.value||''}) })
+    const note = document.getElementById('note_'+ei)?.value || ''
+    data.exercises.push({ exId, sets, note })
+  })
+  localStorage.setItem('grindset_session_draft', JSON.stringify(data))
+}
+
+function restoreSessionDraft() {
+  const saved = localStorage.getItem('grindset_session_draft')
+  if (!saved || !selectedDay) return
+  try {
+    const data = JSON.parse(saved)
+    if (data.dayId !== selectedDay.id) return
+    if (data.date) document.getElementById('trainDate').value = data.date
+    data.exercises.forEach((ex, ei) => {
+      const tbody = document.getElementById('setrows_'+ei)
+      if (!tbody) return
+      ex.sets.forEach((set, si) => {
+        const rows = tbody.querySelectorAll('tr')
+        if (rows[si]) {
+          const ins = rows[si].querySelectorAll('input')
+          if (ins[0]) ins[0].value = set.kg
+          if (ins[1]) ins[1].value = set.reps
+        }
+      })
+      const noteEl = document.getElementById('note_'+ei)
+      if (noteEl && ex.note) noteEl.value = ex.note
+    })
+    toast('📋 Letzte Eingaben wiederhergestellt')
+  } catch(e) {}
+}
+
+function clearSessionDraft() {
+  localStorage.removeItem('grindset_session_draft')
+}
+
+// ── Haptic Feedback ──
+function haptic(type = 'light') {
+  if (!navigator.vibrate) return
+  if (type === 'light') navigator.vibrate(10)
+  else if (type === 'medium') navigator.vibrate(30)
+  else if (type === 'success') navigator.vibrate([20, 50, 20])
+  else if (type === 'heavy') navigator.vibrate(60)
+}
+
+// ── Swipe gestures between tabs ──
+(function() {
+  const TABS = ['train','analyse','history','plans','pit','profile']
+  let touchStartX = 0, touchStartY = 0
+  document.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX
+    touchStartY = e.touches[0].clientY
+  }, {passive: true})
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX
+    const dy = e.changedTouches[0].clientY - touchStartY
+    if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.8) return
+    const activePage = document.querySelector('.page.active')
+    if (!activePage) return
+    const currentTab = activePage.id.replace('page-','')
+    const idx = TABS.indexOf(currentTab)
+    if (idx === -1) return
+    let nextIdx = dx < 0 ? idx + 1 : idx - 1
+    if (nextIdx < 0 || nextIdx >= TABS.length) return
+    const nextTab = TABS[nextIdx]
+    const btn = document.querySelector(`[onclick*="showTab('${nextTab}'"]`)
+    if (btn) showTab(nextTab, btn)
+  }, {passive: true})
+})()
+
 function showTab(tab, btn) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'))
@@ -2658,6 +2791,7 @@ function showTab(tab, btn) {
   void newPage.offsetWidth // force reflow to restart animation
   newPage.classList.add('active')
   btn.classList.add('active')
+  haptic('light')
   if (tab==='analyse') renderAnalyse()
   if (tab==='history') renderHistory()
   if (tab==='plans') renderPlansList()
