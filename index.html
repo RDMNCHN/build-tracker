@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.1</title>
+<title>Grindset v1.002</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -329,69 +329,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
       </div>
     </div>
 
-    <!-- ── Einstellungen ── -->
-    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px">⚙️ Einstellungen</div>
-
-    <div class="card" style="margin-bottom:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div>
-          <div style="font-size:14px;font-weight:600">Sprache / Language</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Deutsch / English</div>
-        </div>
-        <button onclick="toggleLang()" id="langBtn" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer">🌐 EN</button>
-      </div>
-    </div>
-
-    <div class="card" style="margin-bottom:10px">
-      <div style="font-size:14px;font-weight:600;margin-bottom:12px">🎨 Theme</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px" id="themeGrid">
-        <button onclick="setTheme('dark')" class="theme-btn" data-theme="dark" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#0b0c11;color:#f0f0f0;font-size:12px;font-weight:600;cursor:pointer">🌙 Dark</button>
-        <button onclick="setTheme('light')" class="theme-btn" data-theme="light" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#f0f2f5;color:#1a1c2a;font-size:12px;font-weight:600;cursor:pointer">☀️ Light</button>
-        <button onclick="setTheme('midnight')" class="theme-btn" data-theme="midnight" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#000;color:#e8e8f0;font-size:12px;font-weight:600;cursor:pointer">⚫ Midnight</button>
-        <button onclick="setTheme('forest')" class="theme-btn" data-theme="forest" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#0d1a12;color:#e0f0e4;font-size:12px;font-weight:600;cursor:pointer">🌲 Forest</button>
-        <button onclick="setTheme('ocean')" class="theme-btn" data-theme="ocean" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#060d1a;color:#e0eeff;font-size:12px;font-weight:600;cursor:pointer">🌊 Ocean</button>
-        <button onclick="setTheme('sunset')" class="theme-btn" data-theme="sunset" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#1a0d0a;color:#fff0ee;font-size:12px;font-weight:600;cursor:pointer">🌅 Sunset</button>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="font-size:12px;color:var(--muted)">Eigene Farbe:</div>
-        <input type="color" id="customAccent" value="#e94560" onchange="setCustomAccent(this.value)" style="width:40px;height:32px;border:none;background:none;cursor:pointer;padding:0;margin:0"><button onclick="resetAccent()" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:8px;padding:4px 8px;cursor:pointer">Reset</button>
-        <div style="font-size:11px;color:var(--muted)">Accent Farbe</div>
-      </div>
-    </div>
-
-    <div class="card" style="margin-bottom:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div>
-          <div style="font-size:14px;font-weight:600">App installieren</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Als PWA auf Startbildschirm</div>
-        </div>
-        <button onclick="installApp()" id="installBtn" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">📲 Installieren</button>
-      </div>
-      <div id="iosInstallHint" style="display:none;margin-top:10px;padding:10px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.6">
-        Auf iOS: Tippe auf <strong style="color:var(--text)">Teilen</strong> (□↑) → <strong style="color:var(--text)">Zum Startbildschirm</strong>
-      </div>
-    </div>
-
-    <div class="card" style="margin-bottom:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div>
-          <div style="font-size:14px;font-weight:600" id="resetPwLabel">Passwort zurücksetzen</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px" id="resetPwSub">Link wird an deine E-Mail gesendet</div>
-        </div>
-        <button onclick="sendPasswordReset()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer" id="resetPwBtn">Senden</button>
-      </div>
-    </div>
-
-    <div class="card" style="margin-bottom:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div>
-          <div style="font-size:14px;font-weight:600">XP neu berechnen</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Berechnet XP aus allen Sessions neu</div>
-        </div>
-        <button onclick="triggerXPRecalc()" style="background:var(--card2);border:1px solid var(--border);color:var(--gold);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">⚡ Reset</button>
-      </div>
-    </div>
-
+    <!-- Update Log Card -->
     <div class="card" style="margin-bottom:10px">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div>
@@ -401,6 +339,12 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
         <button onclick="openUpdateLog()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">📋 Anzeigen</button>
       </div>
     </div>
+
+    <!-- Einstellungen Button -->
+    <button onclick="openSettings()" class="btn btn-card" style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;padding:14px 16px">
+      <span style="font-weight:700">⚙️ Einstellungen</span>
+      <span style="color:var(--muted);font-size:18px">›</span>
+    </button>
 
     <button class="btn btn-danger" style="margin-top:8px" onclick="handleLogout()" id="logoutBtn">Ausloggen</button>
   </div>
@@ -634,6 +578,73 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
 </div>
 <input type="file" id="avatarFileInput" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
 <input type="file" id="avatarCameraInput" accept="image/*" capture="user" style="display:none" onchange="uploadAvatar(this)">
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="font-size:17px;font-weight:700;margin-bottom:16px">⚙️ Einstellungen</div>
+
+    <!-- Language -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:14px;font-weight:600">Sprache / Language</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Deutsch / English</div>
+      </div>
+      <button onclick="toggleLang()" id="langBtn" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer">🌐 DE</button>
+    </div>
+
+    <!-- Theme -->
+    <div style="padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px">🎨 Theme</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px" id="themeGrid">
+        <button onclick="setTheme('dark')" class="theme-btn" data-theme="dark" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#0b0c11;color:#f0f0f0;font-size:12px;font-weight:600;cursor:pointer">🌙 Dark</button>
+        <button onclick="setTheme('light')" class="theme-btn" data-theme="light" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#f0f2f5;color:#1a1c2a;font-size:12px;font-weight:600;cursor:pointer">☀️ Light</button>
+        <button onclick="setTheme('midnight')" class="theme-btn" data-theme="midnight" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#000;color:#e8e8f0;font-size:12px;font-weight:600;cursor:pointer">⚫ Midnight</button>
+        <button onclick="setTheme('forest')" class="theme-btn" data-theme="forest" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#0d1a12;color:#e0f0e4;font-size:12px;font-weight:600;cursor:pointer">🌲 Forest</button>
+        <button onclick="setTheme('ocean')" class="theme-btn" data-theme="ocean" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#060d1a;color:#e0eeff;font-size:12px;font-weight:600;cursor:pointer">🌊 Ocean</button>
+        <button onclick="setTheme('sunset')" class="theme-btn" data-theme="sunset" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#1a0d0a;color:#fff0ee;font-size:12px;font-weight:600;cursor:pointer">🌅 Sunset</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-size:12px;color:var(--muted)">Accent:</div>
+        <input type="color" id="customAccent" value="#e94560" onchange="setCustomAccent(this.value)" style="width:40px;height:32px;border:none;background:none;cursor:pointer;padding:0;margin:0">
+        <button onclick="resetAccent()" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:8px;padding:4px 8px;cursor:pointer">Reset</button>
+      </div>
+    </div>
+
+    <!-- Install -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:14px;font-weight:600">App installieren</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Als PWA auf Startbildschirm</div>
+      </div>
+      <button onclick="installApp()" id="installBtn" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">📲 Installieren</button>
+    </div>
+    <div id="iosInstallHint" style="display:none;padding:10px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:8px">
+      Auf iOS: Tippe auf <strong style="color:var(--text)">Teilen</strong> (□↑) → <strong style="color:var(--text)">Zum Startbildschirm</strong>
+    </div>
+
+    <!-- Password Reset -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:14px;font-weight:600" id="resetPwLabel">Passwort zurücksetzen</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px" id="resetPwSub">Link wird an deine E-Mail gesendet</div>
+      </div>
+      <button onclick="sendPasswordReset()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer" id="resetPwBtn">Senden</button>
+    </div>
+
+    <!-- XP Recalc -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0">
+      <div>
+        <div style="font-size:14px;font-weight:600">XP neu berechnen</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Berechnet XP aus allen Sessions neu</div>
+      </div>
+      <button onclick="triggerXPRecalc()" style="background:var(--card2);border:1px solid var(--border);color:var(--gold);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">⚡ Reset</button>
+    </div>
+
+    <button class="btn btn-card" style="margin-top:8px" onclick="document.getElementById('settingsModal').classList.remove('open')">Schließen</button>
+  </div>
+</div>
 
 <div class="modal-overlay" id="xpModal" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal-sheet">
@@ -993,6 +1004,20 @@ async function installApp() {
   }
 }
 
+function openSettings() {
+  document.getElementById('settingsModal').classList.add('open')
+  setTimeout(updateThemeButtons, 50)
+}
+
+async function checkUpdateBadge() {
+  const { data } = await sb.from('update_logs').select('id,created_at').order('created_at', {ascending:false}).limit(1)
+  if (!data?.length) return
+  const latestId = data[0].id
+  const seenId = localStorage.getItem('grindset_last_seen_update')
+  const badge = document.getElementById('profileTabBadge')
+  if (badge) badge.style.display = latestId !== seenId ? 'flex' : 'none'
+}
+
 async function triggerXPRecalc() {
   toast(lang==='en'?'Recalculating XP...':'XP wird neu berechnet...')
   const newTotal = await recalcUserXP()
@@ -1269,6 +1294,7 @@ function showLogin() {
 async function showApp() {
   document.getElementById('loginPage').style.display = 'none'
   document.getElementById('appShell').style.display = 'block'
+  checkUpdateBadge()
   document.getElementById('trainDate').value = today()
   // Ensure profile row exists
   const { data: prof, error: profErr } = await sb.from('profiles').select('*').eq('user_id', currentUser.id).single()
@@ -2806,6 +2832,13 @@ function closeXPAnimation() {
 
 async function openUpdateLog() {
   document.getElementById('updateLogModal').classList.add('open')
+  // Mark as seen
+  const { data } = await sb.from('update_logs').select('id').order('created_at', {ascending:false}).limit(1)
+  if (data?.length) {
+    localStorage.setItem('grindset_last_seen_update', data[0].id)
+    const badge = document.getElementById('profileTabBadge')
+    if (badge) badge.style.display = 'none'
+  }
   const list = document.getElementById('updateLogList')
   list.innerHTML = '<div class="spinner"></div>'
   const { data } = await sb.from('update_logs').select('*').order('created_at', {ascending:false})
