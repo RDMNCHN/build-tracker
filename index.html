@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.002</title>
+<title>Grindset v1.003</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2832,16 +2832,15 @@ function closeXPAnimation() {
 
 async function openUpdateLog() {
   document.getElementById('updateLogModal').classList.add('open')
-  // Mark as seen
-  const { data } = await sb.from('update_logs').select('id').order('created_at', {ascending:false}).limit(1)
+  const list = document.getElementById('updateLogList')
+  list.innerHTML = '<div class="spinner"></div>'
+  const { data } = await sb.from('update_logs').select('*').order('created_at', {ascending:false})
+  // Mark latest as seen
   if (data?.length) {
     localStorage.setItem('grindset_last_seen_update', data[0].id)
     const badge = document.getElementById('profileTabBadge')
     if (badge) badge.style.display = 'none'
   }
-  const list = document.getElementById('updateLogList')
-  list.innerHTML = '<div class="spinner"></div>'
-  const { data } = await sb.from('update_logs').select('*').order('created_at', {ascending:false})
   if (!data?.length) {
     list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px">Noch keine Updates</p>'
     return
