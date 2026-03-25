@@ -662,7 +662,7 @@ const T = {
     noAccount:'Noch kein Account? Registrieren', hasAccount:'Schon einen Account? Einloggen',
     whichDay:'Welcher Tag?', analyseEx:'Übung analysieren', maxWeight2:'Max. Gewicht pro Session', totalReps2:'Wiederholungen gesamt', sessionsDay:'Sessions pro Tag', savedSessions:'Gespeicherte Sessions', settingsH:'Einstellungen', usernameL:'Benutzername', badgesL:'Badges', logoutL:'Ausloggen', noBadgesL:'Noch keine Badges verdient 💪', noUsernameL:'Kein Benutzername gesetzt', statusL:'Status', langL:'Sprache', joinedL:'Dabei seit', memberSince:'Dabei seit', last4weeks:'Letzte 4 Wochen', xpInfo:'XP Info', xpSystem:'XP System', xpEarn:'XP verdienen', xpHistoryL:'Deine XP History', noXpYet:'Noch keine XP verdient', sessionSaved:'Session gespeichert! XP erhalten 🔥', dateMissing:'Datum fehlt', saveError:'Fehler beim Speichern', deleted:'Gelöscht', deleteConfirm:'Session löschen?', colorSaved:'Farbe gespeichert!', statusSaved:'Status gespeichert!', usernameSaved:'Name gespeichert!', enterUsername:'Bitte Namen eingeben', pitDesc:'Die Community — alle Grindset Nutzer', resetPw:'Passwort zurücksetzen', resetPwSub:'Link wird an deine E-Mail gesendet', resetPwBtn:'Senden',
     apiMonth:'GIF API — Diesen Monat', apiLeft:'Anfragen diesen Monat noch verfügbar',
-    gifLoading:'Bild wird geladen...', gifLimit:'Monatslimit erreicht',
+    
     muscles: ['Alle','Brust','Rücken','Schultern','Bizeps','Trizeps','Quads','Hamstrings','Glutes','Waden','Core'],
   },
   en: {
@@ -684,7 +684,7 @@ const T = {
     noAccount:"Don't have an account? Register", hasAccount:'Already have an account? Log in',
     whichDay:'Which day?', analyseEx:'Analyze exercise', maxWeight2:'Max weight per session', totalReps2:'Total reps', sessionsDay:'Sessions per day', savedSessions:'Saved sessions', settingsH:'Settings', usernameL:'Username', badgesL:'Badges', logoutL:'Log out', noBadgesL:'No badges earned yet 💪', noUsernameL:'No username set', statusL:'Status', langL:'Language', joinedL:'Member since', memberSince:'Member since', last4weeks:'Last 4 weeks', xpInfo:'XP Info', xpSystem:'XP System', xpEarn:'Earn XP', xpHistoryL:'Your XP History', noXpYet:'No XP earned yet', sessionSaved:'Session saved! XP awarded 🔥', dateMissing:'Date missing', saveError:'Error saving', deleted:'Deleted', deleteConfirm:'Delete session?', colorSaved:'Color saved!', statusSaved:'Status saved!', usernameSaved:'Username saved!', enterUsername:'Please enter a username', pitDesc:'The community — all Grindset users', resetPw:'Reset password', resetPwSub:'Link will be sent to your email', resetPwBtn:'Send',
     apiMonth:'GIF API — This month', apiLeft:'requests remaining this month',
-    gifLoading:'Loading image...', gifLimit:'Monthly limit reached',
+    
     muscles: ['All','Chest','Back','Shoulders','Biceps','Triceps','Quads','Hamstrings','Glutes','Calves','Core'],
   }
 }
@@ -1367,80 +1367,20 @@ async function awardXP(exercisesData, date) {
 }
 
 const RAPIDAPI_KEY = '97f87cf90amsh539c733e15b2ba7p176d29jsn4b747e8f34a6'
-const gifMemCache = {}
-
 async function openTutorial(exId) {
   const ex = getExercises().find(e => e.id === exId)
   if (!ex) return
   document.getElementById('tutTitle').textContent = exName(ex)
   document.getElementById('tutMuscle').textContent = ex.muscle
-  document.getElementById('tutTips').innerHTML = (ex.tips||[]).map((t,i) => `<li style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg3);font-size:13px;line-height:1.6"><div style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div><span>${t}</span></li>`).join('')
-  document.getElementById('tutorialModal').classList.add('open')
-
-  // Show warning immediately if this exercise has an alternative GIF
-  const DB_WARNINGS = {
-    cable_fly:'⚠️ GIF zeigt ähnliche Übung (Cable Decline Fly)',
-    lat_pulldown:'⚠️ GIF zeigt ähnliche Übung (Reverse Grip Lat Pulldown)',
-    lat_neutral:'⚠️ GIF zeigt ähnliche Übung (Neutral Grip Pull Up)',
-    shoulder_press:'⚠️ GIF zeigt ähnliche Übung (Barbell Seated Overhead Press)',
-    rear_delt:'⚠️ GIF zeigt ähnliche Übung (Cable Reverse Fly)',
-    face_pull:'⚠️ GIF zeigt ähnliche Übung (Overhead Tricep Extension)',
-    bicep_curl:'⚠️ GIF zeigt ähnliche Übung (Bicep Curl Lunge)',
-    hammer_curl:'⚠️ GIF zeigt ähnliche Übung (Cable Hammer Curl)',
-    bulgarian:'⚠️ GIF zeigt ähnliche Übung (Barbell Split Squat)',
-    leg_curl:'⚠️ GIF zeigt ähnliche Übung (Inverse Leg Curl)',
-    hip_thrust:'⚠️ GIF zeigt ähnliche Übung (Barbell Glute Bridge)',
-    plank:'⚠️ GIF zeigt ähnliche Übung (Plank with Twist)',
-    cable_crunch:'⚠️ GIF zeigt ähnliche Übung (Wheel Rollout)',
-    ab_wheel:'⚠️ GIF zeigt ähnliche Übung (Wheel Rollout)',
-    cable_pullover:'⚠️ GIF zeigt ähnliche Übung (Straight Arm Pulldown)',
-    plate_shoulder_press:'⚠️ GIF zeigt ähnliche Übung (Lever Chest Press)',
-    cable_crunches:'⚠️ GIF zeigt ähnliche Übung (Kneeling Cable Crunch)',
-    plate_back_row:'⚠️ GIF zeigt ähnliche Übung (T-Bar Row)',
-    kneeling_pulldown:'⚠️ GIF zeigt ähnliche Übung (Reverse Grip Lat Pulldown)',
-    cable_flyes:'⚠️ GIF zeigt ähnliche Übung (Cable One Arm Decline Fly)',
-  }
+  // Hide warning and video
   const wEl = document.getElementById('tutWarning')
-  const warning = DB_WARNINGS[exId]
-  if (warning) { wEl.textContent = warning; wEl.style.display = 'block' }
-  else { wEl.textContent = ''; wEl.style.display = 'none' }
-
+  if (wEl) { wEl.style.display = 'none'; wEl.textContent = '' }
   const vid = document.getElementById('tutVideo')
-  vid.innerHTML = `<div style="width:100%;height:180px;background:var(--bg3);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;margin-bottom:16px">Bild wird geladen...</div>`
-
-  // 1. Check memory cache
-  if (gifMemCache[exId]) { showGif(gifMemCache[exId]); return }
-
-  // 2. Check Supabase cache
-  const { data: cached } = await sb.from('exercise_gifs').select('gif_url').eq('exercise_id', exId).single()
-  if (cached?.gif_url) { gifMemCache[exId] = cached.gif_url; showGif(cached.gif_url); return }
-
-  // 3. Fetch from RapidAPI
-  try {
-    const today = new Date().toISOString().slice(0,10)
-    const { data: usage } = await sb.from('api_usage').select('count').eq('date', today).single()
-    const usedToday = usage?.count || 0
-    if (usedToday >= 690) { vid.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Tageslimit erreicht (690/690)</p>'; return }
-
-    const exerciseDbId = ex.rapidapi_id || null
-    if (exerciseDbId) {
-      const gifUrl = `/api/gif?id=${exerciseDbId}`
-      gifMemCache[exId] = gifUrl
-      await sb.from('exercise_gifs').upsert({ exercise_id: exId, gif_url: gifUrl })
-      await sb.from('api_usage').upsert({ date: today, count: usedToday + 1 }, { onConflict: 'date' })
-      showGif(gifUrl)
-    } else {
-      showGif(ex.gif || null)
-    }
-  } catch(e) {
-    showGif(ex.gif || null)
-  }
-}
-
-function showGif(url) {
-  const vid = document.getElementById('tutVideo')
-  if (!url) { vid.innerHTML = ''; return }
-  vid.innerHTML = `<img src="${url}" alt="Übung" style="width:100%;max-width:340px;display:block;margin:0 auto 16px;border-radius:var(--radius)" onerror="this.parentElement.innerHTML=''">`
+  if (vid) vid.innerHTML = ''
+  // Show tips — prefer tips_en for new DB exercises, fallback to tips_de
+  const tips = ex.tips_en?.length ? ex.tips_en : (ex.tips || [])
+  document.getElementById('tutTips').innerHTML = tips.map((t,i) => `<li style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg3);font-size:13px;line-height:1.6"><div style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div><span>${t}</span></li>`).join('')
+  document.getElementById('tutorialModal').classList.add('open')
 }
 
 function renderHistory() {
