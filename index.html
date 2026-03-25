@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.005</title>
+<title>Grindset v1.100</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -235,7 +235,6 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
     <select id="analyseSelect" onchange="renderCharts()" style="margin-bottom:14px"><option value="">Übung wählen...</option></select>
     <div class="chart-box"><h3 id="chartTitle1">Max. Gewicht pro Session</h3><canvas id="weightChart" height="180"></canvas></div>
     <div class="chart-box"><h3 id="chartTitle2">Wiederholungen gesamt</h3><canvas id="repsChart" height="180"></canvas></div>
-    <div class="chart-box"><h3 id="chartTitle3">Sessions pro Day</h3><canvas id="dayChart" height="180"></canvas></div>
   </div>
 
   <div id="page-history" class="page">
@@ -623,6 +622,28 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
       </div>
     </div>
 
+    <!-- Overdrive -->
+    <div style="padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div>
+            <div style="font-size:14px;font-weight:700">⚡ Overdrive Modus</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">Rest-Timer + Focus Bonus</div>
+          </div>
+          <button onclick="showOverdriveInfo()" style="background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);color:var(--gold);border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;flex-shrink:0">?</button>
+        </div>
+        <label style="position:relative;width:48px;height:26px;flex-shrink:0;margin-bottom:0">
+          <input type="checkbox" id="overdriveToggle" onchange="toggleOverdrive(this.checked)" style="opacity:0;width:0;height:0;margin:0">
+          <span id="overdriveSlider" style="position:absolute;inset:0;background:var(--bg3);border-radius:26px;cursor:pointer;transition:background 0.2s;border:1px solid var(--border)">
+            <span id="overdriveKnob" style="position:absolute;left:3px;top:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform 0.2s"></span>
+          </span>
+        </label>
+      </div>
+      <div id="overdriveInfoBox" style="display:none;background:var(--bg3);border-radius:8px;padding:10px;font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px">
+        🔥 <strong style="color:var(--text)">Overdrive</strong> startet automatisch einen 90-Sek Timer sobald du einen Satz einträgst. Wenn du innerhalb von 10 Sek nach Ablauf den nächsten Satz startest, bekommst du <strong style="color:var(--gold)">+44 XP Focus Bonus!</strong> Das Handy vibriert wenn die Zeit um ist.
+      </div>
+    </div>
+
     <!-- Install -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
       <div>
@@ -726,7 +747,7 @@ const T = {
     addExercises:'+ Übungen', searchEx:'Suchen...', done:'Fertig', newPlanTitle:'Neuer Trainingsplan', selectExercises:'Übungen auswählen',
     login:'Einloggen', register:'Account erstellen', email:'E-Mail', password:'Passwort',
     noAccount:'Noch kein Account? Registrieren', hasAccount:'Schon einen Account? Einloggen',
-    whichDay:'Welcher Tag?', analyseEx:'Übung analysieren', maxWeight2:'Max. Gewicht pro Session', totalReps2:'Wiederholungen gesamt', sessionsDay:'Sessions pro Tag', savedSessions:'Gespeicherte Sessions', settingsH:'Einstellungen', usernameL:'Benutzername', badgesL:'Badges', logoutL:'Ausloggen', noBadgesL:'Noch keine Badges verdient 💪', noUsernameL:'Kein Benutzername gesetzt', statusL:'Status', langL:'Sprache', joinedL:'Dabei seit', memberSince:'Dabei seit', last4weeks:'Letzte 4 Wochen', xpInfo:'XP Info', xpSystem:'XP System', xpEarn:'XP verdienen', xpHistoryL:'Deine XP History', noXpYet:'Noch keine XP verdient', sessionSaved:'Session gespeichert! XP erhalten 🔥', dateMissing:'Datum fehlt', saveError:'Fehler beim Speichern', deleted:'Gelöscht', deleteConfirm:'Session löschen?', colorSaved:'Farbe gespeichert!', statusSaved:'Status gespeichert!', usernameSaved:'Name gespeichert!', enterUsername:'Bitte Namen eingeben', pitDesc:'Die Community — alle Grindset Nutzer', resetPw:'Passwort zurücksetzen', resetPwSub:'Link wird an deine E-Mail gesendet', resetPwBtn:'Senden',
+    whichDay:'Welcher Tag?', analyseEx:'Übung analysieren', maxWeight2:'Max. Gewicht pro Session', totalReps2:'Wiederholungen gesamt', savedSessions:'Gespeicherte Sessions', settingsH:'Einstellungen', usernameL:'Benutzername', badgesL:'Badges', logoutL:'Ausloggen', noBadgesL:'Noch keine Badges verdient 💪', noUsernameL:'Kein Benutzername gesetzt', statusL:'Status', langL:'Sprache', joinedL:'Dabei seit', memberSince:'Dabei seit', last4weeks:'Letzte 4 Wochen', xpInfo:'XP Info', xpSystem:'XP System', xpEarn:'XP verdienen', xpHistoryL:'Deine XP History', noXpYet:'Noch keine XP verdient', sessionSaved:'Session gespeichert! XP erhalten 🔥', dateMissing:'Datum fehlt', saveError:'Fehler beim Speichern', deleted:'Gelöscht', deleteConfirm:'Session löschen?', colorSaved:'Farbe gespeichert!', statusSaved:'Status gespeichert!', usernameSaved:'Name gespeichert!', enterUsername:'Bitte Namen eingeben', pitDesc:'Die Community — alle Grindset Nutzer', resetPw:'Passwort zurücksetzen', resetPwSub:'Link wird an deine E-Mail gesendet', resetPwBtn:'Senden',
     apiMonth:'GIF API — Diesen Monat', apiLeft:'Anfragen diesen Monat noch verfügbar',
     
     muscles: ['Alle','Brust','Rücken','Schultern','Bizeps','Trizeps','Quads','Hamstrings','Glutes','Waden','Core'],
@@ -748,7 +769,7 @@ const T = {
     addExercises:'+ Exercises', searchEx:'Search...', done:'Done', newPlanTitle:'New Training Plan', selectExercises:'Select exercises',
     login:'Log in', register:'Create account', email:'Email', password:'Password',
     noAccount:"Don't have an account? Register", hasAccount:'Already have an account? Log in',
-    whichDay:'Which day?', analyseEx:'Analyze exercise', maxWeight2:'Max weight per session', totalReps2:'Total reps', sessionsDay:'Sessions per day', savedSessions:'Saved sessions', settingsH:'Settings', usernameL:'Username', badgesL:'Badges', logoutL:'Log out', noBadgesL:'No badges earned yet 💪', noUsernameL:'No username set', statusL:'Status', langL:'Language', joinedL:'Member since', memberSince:'Member since', last4weeks:'Last 4 weeks', xpInfo:'XP Info', xpSystem:'XP System', xpEarn:'Earn XP', xpHistoryL:'Your XP History', noXpYet:'No XP earned yet', sessionSaved:'Session saved! XP awarded 🔥', dateMissing:'Date missing', saveError:'Error saving', deleted:'Deleted', deleteConfirm:'Delete session?', colorSaved:'Color saved!', statusSaved:'Status saved!', usernameSaved:'Username saved!', enterUsername:'Please enter a username', pitDesc:'The community — all Grindset users', resetPw:'Reset password', resetPwSub:'Link will be sent to your email', resetPwBtn:'Send',
+    whichDay:'Which day?', analyseEx:'Analyze exercise', maxWeight2:'Max weight per session', totalReps2:'Total reps', savedSessions:'Saved sessions', settingsH:'Settings', usernameL:'Username', badgesL:'Badges', logoutL:'Log out', noBadgesL:'No badges earned yet 💪', noUsernameL:'No username set', statusL:'Status', langL:'Language', joinedL:'Member since', memberSince:'Member since', last4weeks:'Last 4 weeks', xpInfo:'XP Info', xpSystem:'XP System', xpEarn:'Earn XP', xpHistoryL:'Your XP History', noXpYet:'No XP earned yet', sessionSaved:'Session saved! XP awarded 🔥', dateMissing:'Date missing', saveError:'Error saving', deleted:'Deleted', deleteConfirm:'Delete session?', colorSaved:'Color saved!', statusSaved:'Status saved!', usernameSaved:'Username saved!', enterUsername:'Please enter a username', pitDesc:'The community — all Grindset users', resetPw:'Reset password', resetPwSub:'Link will be sent to your email', resetPwBtn:'Send',
     apiMonth:'GIF API — This month', apiLeft:'requests remaining this month',
     
     muscles: ['All','Chest','Back','Shoulders','Biceps','Triceps','Quads','Hamstrings','Glutes','Calves','Core'],
@@ -780,7 +801,6 @@ function applyLang() {
     'analyseHeader': t('analyseEx'),
     'chartTitle1': t('maxWeight2'),
     'chartTitle2': t('totalReps2'),
-    'chartTitle3': t('sessionsDay'),
     'historyHeader': t('savedSessions') + ' (' + (sessions?.length||0) + ')',
     'plansH1': t('myPlans'),
     'plansP': t('managePlans'),
@@ -1018,6 +1038,7 @@ async function installApp() {
 function openSettings() {
   document.getElementById('settingsModal').classList.add('open')
   setTimeout(updateThemeButtons, 50)
+  setTimeout(initOverdriveToggle, 50)
 }
 
 async function checkUpdateBadge() {
@@ -1446,6 +1467,7 @@ function buildExerciseList() {
         <div style="flex:1;min-width:0;margin-left:2px">
           <div style="font-size:14px;font-weight:700">${exName(ex)}</div>
           <div style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">${ex.muscle}</div>
+          <div id="pr_${ei}" style="font-size:10px;color:var(--gold);margin-top:2px"></div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
           <button onclick="event.stopPropagation();openTutorial('${exId}')" style="font-size:11px;color:var(--gold);background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);border-radius:20px;padding:3px 9px;cursor:pointer;font-weight:600">Tutorial</button>
@@ -1464,8 +1486,24 @@ function buildExerciseList() {
   }).join('')
   selectedDay.exercises.forEach((_,ei) => { addSetRow(ei); addSetRow(ei); addSetRow(ei) })
   setTimeout(restoreSessionDraft, 100)
+  setTimeout(loadPRPreviews, 150)
   // Auto-save on any input change
   document.getElementById('exerciseSection').addEventListener('input', autoSaveSession)
+}
+
+async function loadPRPreviews() {
+  if (!selectedDay || !sessions.length) return
+  selectedDay.exercises.forEach((exId, ei) => {
+    let maxKg = 0
+    sessions.forEach(s => {
+      const ex = (s.exercises||[]).find(e => e.id === exId)
+      if (!ex) return
+      const kg = Math.max(...(ex.sets||[]).map(s => s.kg||0).filter(k => k > 0))
+      if (kg > maxKg) maxKg = kg
+    })
+    const el = document.getElementById('pr_'+ei)
+    if (el && maxKg > 0) el.textContent = `🏆 Current PR: ${maxKg}kg`
+  })
 }
 
 function toggleEx(ei) {
@@ -1491,10 +1529,29 @@ function renumberRows(ei) {
 function updateBadge(ei) {
   const rows = document.querySelectorAll(`#setrows_${ei} tr`)
   let filled = 0
-  rows.forEach(r => { const ins = r.querySelectorAll('input'); if(ins[0]?.value && ins[1]?.value) filled++ })
+  let lastFilled = false
+  rows.forEach(r => {
+    const ins = r.querySelectorAll('input')
+    if (ins[0]?.value && ins[1]?.value) { filled++; lastFilled = true }
+    else lastFilled = false
+  })
   const badge = document.getElementById('badge_'+ei)
   badge.textContent = filled > 0 ? `${filled}/${rows.length} Sätze` : 'Eintragen'
   badge.style.color = filled > 0 ? 'var(--green)' : 'var(--muted)'
+  // Check focus bonus or start timer
+  if (lastFilled) {
+    if (checkFocusBonus()) {
+      // Award focus bonus XP
+      sb.from('xp_history').insert({ user_id: currentUser?.id, amount: 44, reason: '⚡ Overdrive Focus Bonus' })
+      sb.from('profiles').select('xp').eq('user_id', currentUser?.id).single().then(({data}) => {
+        if (data) sb.from('profiles').update({ xp: (data.xp||0) + 44 }).eq('user_id', currentUser?.id)
+      })
+      toast('⚡ Focus Bonus! +44 XP', false)
+      haptic('success')
+    } else {
+      startRestTimer()
+    }
+  }
 }
 
 async function saveSession() {
@@ -1691,7 +1748,6 @@ function renderAnalyse() {
   }).join('')
   if (cur) sel.value = cur
   renderCharts()
-  renderDayChart()
 }
 
 function renderCharts() {
@@ -2977,6 +3033,92 @@ function haptic(type = 'light') {
     if (btn) showTab(nextTab, btn)
   }, {passive: true})
 })()
+
+// ── Overdrive / Rest Timer ──
+let restTimer = null
+let restTimerStart = null
+let overdriveActive = false
+let focusBonusWindow = false
+
+function toggleOverdrive(enabled) {
+  localStorage.setItem('grindset_overdrive', enabled ? '1' : '0')
+  overdriveActive = enabled
+  const slider = document.getElementById('overdriveSlider')
+  const knob = document.getElementById('overdriveKnob')
+  if (slider) slider.style.background = enabled ? 'var(--accent)' : 'var(--bg3)'
+  if (knob) knob.style.transform = enabled ? 'translateX(22px)' : 'none'
+  if (!enabled) cancelRestTimer()
+}
+
+function showOverdriveInfo() {
+  const box = document.getElementById('overdriveInfoBox')
+  if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none'
+}
+
+function initOverdriveToggle() {
+  const enabled = localStorage.getItem('grindset_overdrive') === '1'
+  overdriveActive = enabled
+  const toggle = document.getElementById('overdriveToggle')
+  if (toggle) toggle.checked = enabled
+  const slider = document.getElementById('overdriveSlider')
+  const knob = document.getElementById('overdriveKnob')
+  if (slider) slider.style.background = enabled ? 'var(--accent)' : 'var(--bg3)'
+  if (knob) knob.style.transform = enabled ? 'translateX(22px)' : 'none'
+}
+
+function startRestTimer() {
+  if (!overdriveActive) return
+  cancelRestTimer()
+  focusBonusWindow = false
+  const overlay = document.getElementById('restTimerOverlay')
+  if (overlay) overlay.style.display = 'block'
+  const duration = 90
+  restTimerStart = Date.now()
+  const circle = document.getElementById('timerCircle')
+  const timerText = document.getElementById('timerText')
+  const timerLabel = document.getElementById('timerLabel')
+  const timerSub = document.getElementById('timerSub')
+  const circumference = 119.4
+
+  restTimer = setInterval(() => {
+    const elapsed = (Date.now() - restTimerStart) / 1000
+    const remaining = Math.max(0, duration - elapsed)
+    const progress = remaining / duration
+    if (circle) {
+      circle.style.strokeDashoffset = circumference * (1 - progress)
+      circle.style.stroke = remaining <= 10 ? '#f5a623' : 'var(--accent)'
+    }
+    if (timerText) timerText.textContent = Math.ceil(remaining)
+    if (remaining <= 0) {
+      clearInterval(restTimer)
+      restTimer = null
+      haptic('success')
+      focusBonusWindow = true
+      if (timerLabel) timerLabel.textContent = '⚡ Zeit! Nächster Satz jetzt!'
+      if (timerSub) timerSub.textContent = 'Noch 10 Sek für +44 XP Focus Bonus!'
+      if (circle) circle.style.stroke = 'var(--gold)'
+      // End focus bonus window after 10s
+      setTimeout(() => {
+        focusBonusWindow = false
+        cancelRestTimer()
+      }, 10000)
+    }
+  }, 200)
+}
+
+function cancelRestTimer() {
+  if (restTimer) { clearInterval(restTimer); restTimer = null }
+  const overlay = document.getElementById('restTimerOverlay')
+  if (overlay) overlay.style.display = 'none'
+  focusBonusWindow = false
+}
+
+function checkFocusBonus() {
+  if (!focusBonusWindow) return false
+  focusBonusWindow = false
+  cancelRestTimer()
+  return true
+}
 
 function showTab(tab, btn) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
