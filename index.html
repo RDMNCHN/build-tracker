@@ -320,6 +320,16 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
     </div>
 
     <div class="card" style="margin-bottom:10px">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px" id="badgesL">Badges</div>
+      <div id="badgesList" style="display:flex;flex-wrap:wrap;gap:8px">
+        <div style="color:var(--muted);font-size:13px" id="noBadgesL">Noch keine Badges verdient 💪</div>
+      </div>
+    </div>
+
+    <!-- ── Einstellungen ── -->
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px">⚙️ Einstellungen</div>
+
+    <div class="card" style="margin-bottom:10px">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div>
           <div style="font-size:14px;font-weight:600">Sprache / Language</div>
@@ -330,9 +340,32 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
     </div>
 
     <div class="card" style="margin-bottom:10px">
-      <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Badges</div>
-      <div id="badgesList" style="display:flex;flex-wrap:wrap;gap:8px">
-        <div style="color:var(--muted);font-size:13px">Noch keine Badges verdient 💪</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px">🎨 Theme</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px" id="themeGrid">
+        <button onclick="setTheme('dark')" class="theme-btn" data-theme="dark" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#0b0c11;color:#f0f0f0;font-size:12px;font-weight:600;cursor:pointer">🌙 Dark</button>
+        <button onclick="setTheme('light')" class="theme-btn" data-theme="light" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#f0f2f5;color:#1a1c2a;font-size:12px;font-weight:600;cursor:pointer">☀️ Light</button>
+        <button onclick="setTheme('midnight')" class="theme-btn" data-theme="midnight" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#000;color:#e8e8f0;font-size:12px;font-weight:600;cursor:pointer">⚫ Midnight</button>
+        <button onclick="setTheme('forest')" class="theme-btn" data-theme="forest" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#0d1a12;color:#e0f0e4;font-size:12px;font-weight:600;cursor:pointer">🌲 Forest</button>
+        <button onclick="setTheme('ocean')" class="theme-btn" data-theme="ocean" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#060d1a;color:#e0eeff;font-size:12px;font-weight:600;cursor:pointer">🌊 Ocean</button>
+        <button onclick="setTheme('sunset')" class="theme-btn" data-theme="sunset" style="padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:#1a0d0a;color:#fff0ee;font-size:12px;font-weight:600;cursor:pointer">🌅 Sunset</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-size:12px;color:var(--muted)">Eigene Farbe:</div>
+        <input type="color" id="customAccent" value="#e94560" onchange="setCustomAccent(this.value)" style="width:40px;height:32px;border:none;background:none;cursor:pointer;padding:0;margin:0">
+        <div style="font-size:11px;color:var(--muted)">Accent Farbe</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:14px;font-weight:600">App installieren</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Als PWA auf Startbildschirm</div>
+        </div>
+        <button onclick="installApp()" id="installBtn" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">📲 Installieren</button>
+      </div>
+      <div id="iosInstallHint" style="display:none;margin-top:10px;padding:10px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.6">
+        Auf iOS: Tippe auf <strong style="color:var(--text)">Teilen</strong> (□↑) → <strong style="color:var(--text)">Zum Startbildschirm</strong>
       </div>
     </div>
 
@@ -843,6 +876,69 @@ async function openXpModal() {
         <span style="font-size:12px;color:var(--muted)">${r.xp === 0 ? 'Start' : r.xp.toLocaleString() + ' XP'}</span>
       </div>`
     ).join('')
+  }
+}
+
+// ── Theme System ──
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme === 'dark' ? '' : theme)
+  localStorage.setItem('grindset_theme', theme)
+  // Update active button
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.style.borderColor = btn.dataset.theme === theme ? 'var(--accent)' : 'var(--border)'
+  })
+}
+
+function setCustomAccent(color) {
+  document.documentElement.style.setProperty('--accent', color)
+  localStorage.setItem('grindset_accent', color)
+}
+
+function applyStoredTheme() {
+  const theme = localStorage.getItem('grindset_theme') || 'dark'
+  const accent = localStorage.getItem('grindset_accent')
+  if (theme !== 'dark') document.documentElement.setAttribute('data-theme', theme)
+  if (accent) document.documentElement.style.setProperty('--accent', accent)
+}
+
+// Apply theme immediately on load
+applyStoredTheme()
+
+// Update theme buttons to show active
+function updateThemeButtons() {
+  const theme = localStorage.getItem('grindset_theme') || 'dark'
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.style.borderColor = btn.dataset.theme === theme ? 'var(--accent)' : 'var(--border)'
+  })
+  const accent = localStorage.getItem('grindset_accent')
+  const picker = document.getElementById('customAccent')
+  if (picker && accent) picker.value = accent
+}
+
+// ── PWA Install ──
+let deferredInstallPrompt = null
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault()
+  deferredInstallPrompt = e
+})
+
+async function installApp() {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+  if (isIOS) {
+    const hint = document.getElementById('iosInstallHint')
+    if (hint) hint.style.display = hint.style.display === 'none' ? 'block' : 'none'
+    return
+  }
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt()
+    const { outcome } = await deferredInstallPrompt.userChoice
+    if (outcome === 'accepted') {
+      toast('App installiert! 🎉')
+      document.getElementById('installBtn').textContent = '✅ Installiert'
+    }
+    deferredInstallPrompt = null
+  } else {
+    toast('App ist bereits installiert oder Browser unterstützt es nicht', true)
   }
 }
 
@@ -2795,7 +2891,7 @@ function showTab(tab, btn) {
   if (tab==='analyse') renderAnalyse()
   if (tab==='history') renderHistory()
   if (tab==='plans') renderPlansList()
-  if (tab==='profile') renderProfile()
+  if (tab==='profile') { renderProfile(); setTimeout(updateThemeButtons, 50) }
   if (tab==='pit') {
     renderPit()
     if (currentPitTab === 'exercises') renderExerciseRequests()
