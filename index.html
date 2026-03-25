@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.004</title>
+<title>Grindset v1.005</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -268,6 +268,17 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
   </div>
 
   <div id="page-profile" class="page">
+    <!-- Update Banner -->
+    <div id="updateBanner" style="display:none;background:linear-gradient(135deg,rgba(233,69,96,0.15),rgba(245,166,35,0.1));border:1px solid rgba(233,69,96,0.3);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;cursor:pointer" onclick="openUpdateLog()">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">🆕</span>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:var(--text)">Neues Update verfügbar!</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Tippe um den Update Log zu sehen</div>
+        </div>
+        <span style="color:var(--muted);font-size:18px">›</span>
+      </div>
+    </div>
     <!-- Hero with avatar -->
     <div id="profileHero" style="background:linear-gradient(135deg,#2a2f50 0%,#1a1d2e 100%);border-radius:var(--radius);padding:20px 16px;margin-bottom:16px">
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">
@@ -1014,8 +1025,11 @@ async function checkUpdateBadge() {
   if (!data?.length) return
   const latestId = data[0].id
   const seenId = localStorage.getItem('grindset_last_seen_update')
+  const hasNew = latestId !== seenId
   const badge = document.getElementById('profileTabBadge')
-  if (badge) badge.style.display = latestId !== seenId ? 'flex' : 'none'
+  const banner = document.getElementById('updateBanner')
+  if (badge) badge.style.display = hasNew ? 'flex' : 'none'
+  if (banner) banner.style.display = hasNew ? 'block' : 'none'
 }
 
 async function triggerXPRecalc() {
@@ -2840,6 +2854,8 @@ async function openUpdateLog() {
     localStorage.setItem('grindset_last_seen_update', data[0].id)
     const badge = document.getElementById('profileTabBadge')
     if (badge) badge.style.display = 'none'
+    const banner = document.getElementById('updateBanner')
+    if (banner) banner.style.display = 'none'
   }
   if (!data?.length) {
     list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px">Noch keine Updates</p>'
