@@ -881,17 +881,33 @@ async function openXpModal() {
 
 // ── Theme System ──
 const DEFAULT_ACCENT = '#e94560'
-const THEME_ACCENTS = { dark: '#e94560', light: '#e94560', midnight: '#e94560', forest: '#2ecc71', ocean: '#3d9be8', sunset: '#ff6b35' }
+const THEMES = {
+  dark:     { bg:'#0b0c11', bg2:'#12141f', bg3:'#1a1c2a', card:'#1e2030', card2:'#252840', border:'rgba(255,255,255,0.08)', text:'#f0f0f0', muted:'#6b7080', accent:'#e94560' },
+  light:    { bg:'#f0f2f5', bg2:'#e4e7ee', bg3:'#d8dce6', card:'#ffffff', card2:'#eef0f5', border:'rgba(0,0,0,0.1)',         text:'#1a1c2a', muted:'#7b8096', accent:'#e94560' },
+  midnight: { bg:'#000000', bg2:'#0a0a0f', bg3:'#111118', card:'#14141e', card2:'#1a1a26', border:'rgba(255,255,255,0.06)', text:'#e8e8f0', muted:'#555570', accent:'#e94560' },
+  forest:   { bg:'#0d1a12', bg2:'#122019', bg3:'#1a2e22', card:'#1e3328', card2:'#243d30', border:'rgba(255,255,255,0.08)', text:'#e0f0e4', muted:'#6b8a72', accent:'#2ecc71' },
+  ocean:    { bg:'#060d1a', bg2:'#0d1829', bg3:'#122038', card:'#162540', card2:'#1c2e4e', border:'rgba(255,255,255,0.08)', text:'#e0eeff', muted:'#5a7a9e', accent:'#3d9be8' },
+  sunset:   { bg:'#1a0d0a', bg2:'#271410', bg3:'#351a15', card:'#3d1f18', card2:'#4a261f', border:'rgba(255,255,255,0.08)', text:'#fff0ee', muted:'#8a6560', accent:'#ff6b35' },
+}
+
+function applyThemeVars(theme, customAccent) {
+  const t = THEMES[theme] || THEMES.dark
+  const root = document.documentElement
+  root.style.setProperty('--bg', t.bg)
+  root.style.setProperty('--bg2', t.bg2)
+  root.style.setProperty('--bg3', t.bg3)
+  root.style.setProperty('--card', t.card)
+  root.style.setProperty('--card2', t.card2)
+  root.style.setProperty('--border', t.border)
+  root.style.setProperty('--text', t.text)
+  root.style.setProperty('--muted', t.muted)
+  root.style.setProperty('--accent', customAccent || t.accent)
+}
 
 function setTheme(theme) {
-  if (theme === 'dark') document.documentElement.removeAttribute('data-theme')
-  else document.documentElement.setAttribute('data-theme', theme)
   localStorage.setItem('grindset_theme', theme)
-  // Reset accent to theme default unless user set custom
   const customAccent = localStorage.getItem('grindset_accent_custom')
-  const accent = customAccent || THEME_ACCENTS[theme] || DEFAULT_ACCENT
-  document.documentElement.style.setProperty('--accent', accent)
-  if (!customAccent) localStorage.removeItem('grindset_accent')
+  applyThemeVars(theme, customAccent)
   updateThemeButtons()
 }
 
@@ -902,10 +918,9 @@ function setCustomAccent(color) {
 }
 
 function resetAccent() {
-  localStorage.removeItem('grindset_accent')
   localStorage.removeItem('grindset_accent_custom')
   const theme = localStorage.getItem('grindset_theme') || 'dark'
-  const accent = THEME_ACCENTS[theme] || DEFAULT_ACCENT
+  const accent = (THEMES[theme] || THEMES.dark).accent
   document.documentElement.style.setProperty('--accent', accent)
   const picker = document.getElementById('customAccent')
   if (picker) picker.value = accent
@@ -914,9 +929,8 @@ function resetAccent() {
 
 function applyStoredTheme() {
   const theme = localStorage.getItem('grindset_theme') || 'dark'
-  const accent = localStorage.getItem('grindset_accent') || THEME_ACCENTS[theme] || DEFAULT_ACCENT
-  if (theme !== 'dark') document.documentElement.setAttribute('data-theme', theme)
-  document.documentElement.style.setProperty('--accent', accent)
+  const customAccent = localStorage.getItem('grindset_accent_custom')
+  applyThemeVars(theme, customAccent)
 }
 
 // Apply theme immediately on load
@@ -925,10 +939,13 @@ applyStoredTheme()
 function updateThemeButtons() {
   const theme = localStorage.getItem('grindset_theme') || 'dark'
   document.querySelectorAll('.theme-btn').forEach(btn => {
-    btn.style.borderColor = btn.dataset.theme === theme ? 'var(--accent)' : 'var(--border)'
-    btn.style.fontWeight = btn.dataset.theme === theme ? '800' : '600'
+    const isActive = btn.dataset.theme === theme
+    btn.style.borderColor = isActive ? 'var(--accent)' : 'rgba(255,255,255,0.1)'
+    btn.style.fontWeight = isActive ? '800' : '600'
+    btn.style.opacity = isActive ? '1' : '0.7'
   })
-  const accent = localStorage.getItem('grindset_accent') || THEME_ACCENTS[theme] || DEFAULT_ACCENT
+  const customAccent = localStorage.getItem('grindset_accent_custom')
+  const accent = customAccent || (THEMES[theme] || THEMES.dark).accent
   const picker = document.getElementById('customAccent')
   if (picker) picker.value = accent
 }
