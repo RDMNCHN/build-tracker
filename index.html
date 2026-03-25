@@ -912,7 +912,6 @@ function setTheme(theme) {
   const customAccent = localStorage.getItem('grindset_accent_custom')
   applyThemeVars(theme, customAccent)
   updateThemeButtons()
-  toast(`Theme: ${theme} — bg: ${(THEMES[theme]||THEMES.dark).bg}`)
 }
 
 function setCustomAccent(color) {
