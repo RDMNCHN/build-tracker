@@ -895,7 +895,9 @@ const THEMES = {
 
 function applyThemeVars(theme, customAccent) {
   const t = THEMES[theme] || THEMES.dark
+  const accent = customAccent || t.accent
   const root = document.documentElement
+  // Method 1: CSS custom properties
   root.style.setProperty('--bg', t.bg)
   root.style.setProperty('--bg2', t.bg2)
   root.style.setProperty('--bg3', t.bg3)
@@ -904,7 +906,18 @@ function applyThemeVars(theme, customAccent) {
   root.style.setProperty('--border', t.border)
   root.style.setProperty('--text', t.text)
   root.style.setProperty('--muted', t.muted)
-  root.style.setProperty('--accent', customAccent || t.accent)
+  root.style.setProperty('--accent', accent)
+  // Method 2: Direct background/color on body (iOS Safari fallback)
+  document.body.style.background = t.bg
+  document.body.style.color = t.text
+  // Method 3: Inject/update a style tag
+  let styleTag = document.getElementById('theme-override')
+  if (!styleTag) {
+    styleTag = document.createElement('style')
+    styleTag.id = 'theme-override'
+    document.head.appendChild(styleTag)
+  }
+  styleTag.textContent = `:root{--bg:${t.bg};--bg2:${t.bg2};--bg3:${t.bg3};--card:${t.card};--card2:${t.card2};--border:${t.border};--text:${t.text};--muted:${t.muted};--accent:${accent}}`
 }
 
 function setTheme(theme) {
@@ -2944,8 +2957,10 @@ init()
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(regs => {
     regs.forEach(reg => reg.unregister())
-  })
-  caches.keys().then(keys => keys.forEach(key => caches.delete(key)))
+  }).catch(() => {})
+}
+if (typeof caches !== 'undefined') {
+  caches.keys().then(keys => keys.forEach(key => caches.delete(key))).catch(() => {})
 }
 </script>
 </body>
