@@ -351,7 +351,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <div style="font-size:12px;color:var(--muted)">Eigene Farbe:</div>
-        <input type="color" id="customAccent" value="#e94560" onchange="setCustomAccent(this.value)" style="width:40px;height:32px;border:none;background:none;cursor:pointer;padding:0;margin:0">
+        <input type="color" id="customAccent" value="#e94560" onchange="setCustomAccent(this.value)" style="width:40px;height:32px;border:none;background:none;cursor:pointer;padding:0;margin:0"><button onclick="resetAccent()" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:8px;padding:4px 8px;cursor:pointer">Reset</button>
         <div style="font-size:11px;color:var(--muted)">Accent Farbe</div>
       </div>
     </div>
@@ -880,39 +880,57 @@ async function openXpModal() {
 }
 
 // ── Theme System ──
+const DEFAULT_ACCENT = '#e94560'
+const THEME_ACCENTS = { dark: '#e94560', light: '#e94560', midnight: '#e94560', forest: '#2ecc71', ocean: '#3d9be8', sunset: '#ff6b35' }
+
 function setTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme === 'dark' ? '' : theme)
+  if (theme === 'dark') document.documentElement.removeAttribute('data-theme')
+  else document.documentElement.setAttribute('data-theme', theme)
   localStorage.setItem('grindset_theme', theme)
-  // Update active button
-  document.querySelectorAll('.theme-btn').forEach(btn => {
-    btn.style.borderColor = btn.dataset.theme === theme ? 'var(--accent)' : 'var(--border)'
-  })
+  // Reset accent to theme default unless user set custom
+  const customAccent = localStorage.getItem('grindset_accent_custom')
+  const accent = customAccent || THEME_ACCENTS[theme] || DEFAULT_ACCENT
+  document.documentElement.style.setProperty('--accent', accent)
+  if (!customAccent) localStorage.removeItem('grindset_accent')
+  updateThemeButtons()
 }
 
 function setCustomAccent(color) {
   document.documentElement.style.setProperty('--accent', color)
   localStorage.setItem('grindset_accent', color)
+  localStorage.setItem('grindset_accent_custom', color)
+}
+
+function resetAccent() {
+  localStorage.removeItem('grindset_accent')
+  localStorage.removeItem('grindset_accent_custom')
+  const theme = localStorage.getItem('grindset_theme') || 'dark'
+  const accent = THEME_ACCENTS[theme] || DEFAULT_ACCENT
+  document.documentElement.style.setProperty('--accent', accent)
+  const picker = document.getElementById('customAccent')
+  if (picker) picker.value = accent
+  toast('Farbe zurückgesetzt')
 }
 
 function applyStoredTheme() {
   const theme = localStorage.getItem('grindset_theme') || 'dark'
-  const accent = localStorage.getItem('grindset_accent')
+  const accent = localStorage.getItem('grindset_accent') || THEME_ACCENTS[theme] || DEFAULT_ACCENT
   if (theme !== 'dark') document.documentElement.setAttribute('data-theme', theme)
-  if (accent) document.documentElement.style.setProperty('--accent', accent)
+  document.documentElement.style.setProperty('--accent', accent)
 }
 
 // Apply theme immediately on load
 applyStoredTheme()
 
-// Update theme buttons to show active
 function updateThemeButtons() {
   const theme = localStorage.getItem('grindset_theme') || 'dark'
   document.querySelectorAll('.theme-btn').forEach(btn => {
     btn.style.borderColor = btn.dataset.theme === theme ? 'var(--accent)' : 'var(--border)'
+    btn.style.fontWeight = btn.dataset.theme === theme ? '800' : '600'
   })
-  const accent = localStorage.getItem('grindset_accent')
+  const accent = localStorage.getItem('grindset_accent') || THEME_ACCENTS[theme] || DEFAULT_ACCENT
   const picker = document.getElementById('customAccent')
-  if (picker && accent) picker.value = accent
+  if (picker) picker.value = accent
 }
 
 // ── PWA Install ──
