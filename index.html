@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.132</title>
+<title>Grindset v1.133</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -292,6 +292,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <div id="profileName" style="font-size:18px;font-weight:700">...</div>
             <div id="profilePinnedAch" style="display:flex;gap:4px;align-items:center"></div>
+            <div id="profileFlair"></div>
           </div>
           <div id="profileEmail" style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
           <div id="profileJoined" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px"></div>
@@ -420,11 +421,29 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
     </div>
 
     <div id="pitTabChallenges" style="display:none">
-      <div style="text-align:center;padding:60px 20px;color:var(--muted)">
-        <div style="font-size:48px;margin-bottom:16px">⚡</div>
-        <div style="font-size:16px;font-weight:700;margin-bottom:8px">Challenges</div>
-        <div style="font-size:13px">Coming soon — wöchentliche Challenges gegen andere User</div>
+      <!-- My Challenges -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:15px;font-weight:800">⚡ Challenges</div>
+        <button onclick="openChallengeBuilder()" style="background:var(--accent);color:#fff;border:none;border-radius:20px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">+ Challenge</button>
       </div>
+
+      <!-- Pending invites -->
+      <div id="challengePendingSection" style="display:none;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px">📨 Einladungen</div>
+        <div id="challengePendingList"></div>
+      </div>
+
+      <!-- Active challenges -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px">🔥 Aktiv</div>
+      <div id="challengeActiveList"></div>
+
+      <!-- Community challenges -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px;margin-top:16px">🌍 Community</div>
+      <div id="challengeCommunityList"></div>
+
+      <!-- Past challenges -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px;margin-top:16px">🏁 Abgeschlossen</div>
+      <div id="challengeHistoryList"></div>
     </div>
   </div>
 
@@ -517,6 +536,47 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
     </div>
   </div>
 
+  <!-- Challenge Builder Modal -->
+  <div class="modal-overlay" id="challengeBuilderModal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div style="font-size:16px;font-weight:800;margin-bottom:4px">⚡ Challenge erstellen</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Fordere einen anderen User heraus</div>
+
+      <!-- Opponent -->
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Gegner</div>
+      <div id="challengeOpponentList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-height:160px;overflow-y:auto"></div>
+
+      <!-- Goal type -->
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Ziel</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+        <button onclick="setChalGoal('volume')" id="chalGoalVolume" class="chal-goal-btn" style="padding:10px;border-radius:10px;border:1px solid var(--accent);background:rgba(233,69,96,0.1);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">🏋️ Volumen<br><span style="font-size:10px;color:var(--muted);font-weight:400">Wer bewegt mehr kg?</span></button>
+        <button onclick="setChalGoal('sessions')" id="chalGoalSessions" class="chal-goal-btn" style="padding:10px;border-radius:10px;border:1px solid var(--border);background:none;color:var(--text);font-size:12px;font-weight:700;cursor:pointer">💪 Sessions<br><span style="font-size:10px;color:var(--muted);font-weight:400">Wer trainiert öfter?</span></button>
+        <button onclick="setChalGoal('exercise')" id="chalGoalExercise" class="chal-goal-btn" style="padding:10px;border-radius:10px;border:1px solid var(--border);background:none;color:var(--text);font-size:12px;font-weight:700;cursor:pointer">🎯 Übung<br><span style="font-size:10px;color:var(--muted);font-weight:400">Wer schafft mehr?</span></button>
+        <button onclick="setChalGoal('streak')" id="chalGoalStreak" class="chal-goal-btn" style="padding:10px;border-radius:10px;border:1px solid var(--border);background:none;color:var(--text);font-size:12px;font-weight:700;cursor:pointer">🔥 Streak<br><span style="font-size:10px;color:var(--muted);font-weight:400">Wer ist konstanter?</span></button>
+      </div>
+
+      <!-- Exercise search (only for 'exercise' goal) -->
+      <div id="chalExerciseSearch" style="display:none;margin-bottom:14px">
+        <input type="text" id="chalExInput" placeholder="Übung suchen..." oninput="chalSearchExercise(this.value)" style="margin-bottom:4px">
+        <div id="chalExResults" style="background:var(--bg3);border-radius:8px;max-height:120px;overflow-y:auto"></div>
+        <div id="chalExSelected" style="font-size:12px;color:var(--accent);margin-top:4px;font-weight:600"></div>
+      </div>
+
+      <!-- Duration -->
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Dauer</div>
+      <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+        <button onclick="setChalDuration(3)" id="chalDur3" style="padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer">3 Tage</button>
+        <button onclick="setChalDuration(7)" id="chalDur7" style="padding:8px 14px;border-radius:20px;border:1px solid var(--accent);background:rgba(233,69,96,0.1);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">7 Tage</button>
+        <button onclick="setChalDuration(14)" id="chalDur14" style="padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer">14 Tage</button>
+        <button onclick="setChalDuration(30)" id="chalDur30" style="padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer">30 Tage</button>
+      </div>
+
+      <button onclick="submitChallenge()" style="background:var(--accent);color:#fff;border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:700;width:100%;cursor:pointer">⚡ Challenge senden</button>
+      <button class="btn btn-card" style="margin-top:8px" onclick="document.getElementById('challengeBuilderModal').classList.remove('open')">Abbrechen</button>
+    </div>
+  </div>
+
   <!-- Achievement Unlock Modal -->
   <div id="achievementModal" style="display:none;position:fixed;inset:0;z-index:1001;background:rgba(0,0,0,0.93);flex-direction:column;align-items:center;justify-content:center">
     <div style="text-align:center;padding:32px;max-width:320px;width:100%">
@@ -560,6 +620,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
     <div style="display:flex;gap:0;margin-bottom:16px;background:var(--card);border-radius:var(--radius);padding:4px;border:1px solid var(--border)">
       <button id="adminTabUsersBtn" onclick="switchAdminTab('users')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:700;border:none;border-radius:8px;cursor:pointer;background:var(--accent);color:#fff;transition:all .2s">👥 Users</button>
       <button id="adminTabExercisesBtn" onclick="switchAdminTab('exercises')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:700;border:none;border-radius:8px;cursor:pointer;background:none;color:var(--muted);transition:all .2s">💪 Übungen</button>
+      <button id="adminTabChallengesBtn" onclick="switchAdminTab('challenges')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:700;border:none;border-radius:8px;cursor:pointer;background:none;color:var(--muted);transition:all .2s">⚡ Challenges</button>
       <button id="adminTabLogsBtn" onclick="switchAdminTab('logs')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:700;border:none;border-radius:8px;cursor:pointer;background:none;color:var(--muted);transition:all .2s">📋 Logs</button>
     </div>
 
@@ -594,6 +655,44 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
         <button id="adminExPendingBtn" onclick="switchAdminExTab('pending')" style="flex:1;padding:8px;font-size:11px;font-weight:700;border:none;border-radius:7px;cursor:pointer;background:none;color:var(--muted);transition:all .2s">⏳ Pending</button>
       </div>
       <div id="adminExContent"></div>
+    </div>
+
+    <!-- Challenges tab (Admin) -->
+    <div id="adminTabChallenges" style="display:none">
+      <div class="section-header">Community Challenge erstellen</div>
+      <div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:16px;border:1px solid var(--border)">
+        <input type="text" id="adminChalTitle" placeholder="Titel *" style="margin-bottom:8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <select id="adminChalGoalType" onchange="adminChalGoalTypeChange()" style="margin-bottom:0">
+            <option value="volume">🏋️ Volumen (kg)</option>
+            <option value="sessions">💪 Sessions</option>
+            <option value="exercise">🎯 Spezifische Übung</option>
+            <option value="streak">🔥 Streak (Tage)</option>
+          </select>
+          <input type="number" id="adminChalGoalValue" placeholder="Zielwert (optional)" style="margin-bottom:0" min="1">
+        </div>
+        <div id="adminChalExerciseRow" style="display:none;margin-bottom:8px">
+          <input type="text" id="adminChalExSearch" placeholder="Übung suchen..." oninput="adminSearchExercise(this.value)" style="margin-bottom:4px">
+          <div id="adminChalExResults" style="background:var(--bg3);border-radius:8px;max-height:150px;overflow-y:auto"></div>
+          <div id="adminChalExSelected" style="font-size:12px;color:var(--accent);margin-top:4px"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Start</div>
+            <input type="date" id="adminChalStart" style="margin-bottom:0">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Ende</div>
+            <input type="date" id="adminChalEnd" style="margin-bottom:0">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button class="btn btn-accent btn-sm" onclick="adminCreateCommunityChallenge()">🚀 Erstellen</button>
+          <button class="btn btn-card btn-sm" onclick="adminLoadChallenges()">🔄 Aktualisieren</button>
+        </div>
+      </div>
+      <div class="section-header">Alle Challenges</div>
+      <div id="adminChallengeList"></div>
     </div>
 
     <!-- Logs tab -->
@@ -1298,6 +1397,12 @@ function renderProfile() {
   applyLang()
   renderAchievements()
   renderPinnedAchievements()
+  // Flair
+  const flairEl = document.getElementById('profileFlair')
+  if (flairEl) {
+    const flair = getActiveFlair()
+    flairEl.innerHTML = flair ? `<span style="font-size:11px;background:rgba(245,166,35,0.15);border:1px solid var(--gold);color:var(--gold);padding:3px 10px;border-radius:20px;font-weight:700;margin-top:4px;display:inline-block">${flair.icon} ${flair.label}</span>` : ''
+  }
 }
 
 function openAvatarPicker() {
@@ -2274,6 +2379,7 @@ function switchPitTab(tab) {
     }
   })
   if (tab === 'exercises') renderExerciseRequests()
+  if (tab === 'challenges') renderChallenges()
 }
 
 function showExerciseRequestForm() {
@@ -2402,6 +2508,9 @@ function renderPitList(profiles) {
     const color = p.avatar_color || '#e94560'
     const isMe = p.user_id === currentUser?.id
     const pinned = p.settings?.pinned_achievements || []
+    const flair = p.settings?.challenge_flair
+    const flairActive = flair && new Date(flair.expires) > new Date()
+    const flairHTML = flairActive ? `<span style="font-size:10px;background:rgba(245,166,35,0.15);border:1px solid var(--gold);color:var(--gold);padding:2px 7px;border-radius:20px;font-weight:700">${flair.icon} ${flair.label}</span>` : ''
     const pinnedHTML = pinned.map(id => {
       const ach = ACHIEVEMENTS.find(a => a.id === id)
       if (!ach) return ''
@@ -2417,6 +2526,7 @@ function renderPitList(profiles) {
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span style="font-size:14px;font-weight:700">${p.username || 'Anonym'}</span>
           ${pinnedHTML}
+          ${flairHTML}
           ${isMe?'<span style="font-size:10px;background:var(--accent);color:#fff;padding:2px 7px;border-radius:20px">Du</span>':''}
         </div>
         <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
@@ -2613,7 +2723,7 @@ let currentAdminExTab = 'approved'
 
 function switchAdminTab(tab) {
   currentAdminTab = tab
-  const tabs = ['users','exercises','logs']
+  const tabs = ['users','exercises','challenges','logs']
   tabs.forEach(t => {
     const el = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1))
     const btn = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1) + 'Btn')
@@ -2622,6 +2732,7 @@ function switchAdminTab(tab) {
   })
   if (tab === 'exercises') loadAdminExercises('approved')
   if (tab === 'logs') loadAdminLogs()
+  if (tab === 'challenges') adminLoadChallenges()
 }
 
 function switchAdminExTab(tab) {
@@ -3401,6 +3512,557 @@ function showMotivationToast() {
   document.getElementById('motivationText').textContent = msg
   overlay.style.display = 'flex'
   setTimeout(() => { if (overlay) overlay.style.display = 'none' }, 3000)
+}
+
+// ── Challenge System ──
+
+const CHALLENGE_FLAIRS = {
+  h2h_win:       { icon: '⚔️', label: 'Conqueror' },
+  h2h_streak3:   { icon: '🔱', label: 'Hat Trick' },
+  community_win: { icon: '👑', label: "This Week's King" },
+}
+const CHALLENGE_MIN_EXERCISES = 3  // anti-farming: session needs ≥3 exercises
+const CHALLENGE_MAX_VOL_PER_SESSION = 10000  // kg cap per session
+
+// Builder state
+let chalSelectedOpponent = null
+let chalSelectedGoal = 'volume'
+let chalSelectedDuration = 7
+let chalSelectedExercise = null  // {id, name} for exercise goal type
+let adminChalSelectedExercise = null
+
+// ── Flair helpers ──
+function getActiveFlair() {
+  const f = currentProfile?.settings?.challenge_flair
+  if (!f || !f.expires) return null
+  if (new Date(f.expires) < new Date()) return null
+  return f
+}
+
+async function awardFlair(userId, flairKey) {
+  const flair = CHALLENGE_FLAIRS[flairKey]
+  if (!flair) return
+  const expires = new Date()
+  expires.setDate(expires.getDate() + 7)
+  const { data } = await sb.from('profiles').select('settings').eq('user_id', userId).single()
+  const existing = data?.settings || {}
+  await sb.from('profiles').update({
+    settings: { ...existing, challenge_flair: { key: flairKey, icon: flair.icon, label: flair.label, expires: expires.toISOString() } }
+  }).eq('user_id', userId)
+  if (userId === currentUser?.id && currentProfile) {
+    currentProfile.settings = { ...(currentProfile.settings || {}), challenge_flair: { key: flairKey, icon: flair.icon, label: flair.label, expires: expires.toISOString() } }
+  }
+}
+
+// ── Anti-farming session filter ──
+function challengeValidSessions(allSessions, startDate, endDate) {
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  end.setHours(23,59,59)
+  const seenDates = new Set()
+  return allSessions.filter(s => {
+    const d = new Date(s.date)
+    if (d < start || d > end) return false
+    // Min 3 exercises with reps
+    const validExes = (s.exercises||[]).filter(e => (e.sets||[]).some(set => set.reps > 0))
+    if (validExes.length < CHALLENGE_MIN_EXERCISES) return false
+    // Max 1 session per day
+    if (seenDates.has(s.date)) return false
+    seenDates.add(s.date)
+    return true
+  })
+}
+
+function calcChallengeScore(sessions, goalType, exerciseId) {
+  if (goalType === 'sessions') return sessions.length
+  if (goalType === 'streak') {
+    // Max consecutive days
+    const dates = [...new Set(sessions.map(s => s.date))].sort()
+    let max = 0, cur = 0, prev = null
+    for (const d of dates) {
+      const diff = prev ? (new Date(d) - new Date(prev)) / 86400000 : 1
+      cur = diff === 1 ? cur + 1 : 1
+      max = Math.max(max, cur)
+      prev = d
+    }
+    return max
+  }
+  if (goalType === 'volume') {
+    let total = 0
+    for (const s of sessions) {
+      let vol = 0
+      for (const ex of (s.exercises||[])) {
+        for (const set of (ex.sets||[])) {
+          if (set.kg > 0 && set.reps > 0) vol += set.kg * set.reps
+        }
+      }
+      total += Math.min(vol, CHALLENGE_MAX_VOL_PER_SESSION)
+    }
+    return Math.round(total)
+  }
+  if (goalType === 'exercise') {
+    // Total volume for specific exercise
+    let total = 0
+    for (const s of sessions) {
+      const ex = (s.exercises||[]).find(e => e.id === exerciseId)
+      if (!ex) continue
+      let vol = 0
+      for (const set of (ex.sets||[])) {
+        if (set.kg > 0 && set.reps > 0) vol += set.kg * set.reps
+      }
+      total += vol
+    }
+    return Math.round(total)
+  }
+  return 0
+}
+
+function formatChalScore(score, goalType) {
+  if (goalType === 'volume' || goalType === 'exercise') return score.toLocaleString() + ' kg'
+  if (goalType === 'sessions') return score + ' Sessions'
+  if (goalType === 'streak') return score + ' Tage'
+  return score
+}
+
+function goalTypeLabel(goalType, exName) {
+  if (goalType === 'volume') return '🏋️ Meistes Volumen'
+  if (goalType === 'sessions') return '💪 Meiste Sessions'
+  if (goalType === 'streak') return '🔥 Längster Streak'
+  if (goalType === 'exercise') return `🎯 ${exName || 'Übung'} — meistes Volumen`
+  return goalType
+}
+
+// ── Load + Render Challenges ──
+async function renderChallenges() {
+  if (!currentUser) return
+  const today = new Date().toISOString().slice(0,10)
+
+  const { data: allChallenges } = await sb.from('challenges')
+    .select('*')
+    .or(`creator_id.eq.${currentUser.id},opponent_id.eq.${currentUser.id},type.eq.community`)
+    .order('created_at', { ascending: false })
+
+  if (!allChallenges) return
+
+  // Separate into buckets
+  const pending    = allChallenges.filter(c => c.status === 'pending' && c.opponent_id === currentUser.id)
+  const active     = allChallenges.filter(c => c.status === 'active' && c.type === 'h2h')
+  const community  = allChallenges.filter(c => c.type === 'community' && c.status === 'active')
+  const completed  = allChallenges.filter(c => c.status === 'completed')
+
+  // Pending invites
+  const pendingSection = document.getElementById('challengePendingSection')
+  const pendingList    = document.getElementById('challengePendingList')
+  if (pending.length > 0) {
+    pendingSection.style.display = 'block'
+    pendingList.innerHTML = pending.map(c => `
+      <div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:10px;border:1px solid var(--gold)">
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px">${c.title}</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px">${goalTypeLabel(c.goal_type, c.goal_exercise_name)} · ${c.start_date} – ${c.end_date}</div>
+        <div style="display:flex;gap:8px">
+          <button onclick="respondChallenge('${c.id}','accept')" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer">✅ Annehmen</button>
+          <button onclick="respondChallenge('${c.id}','decline')" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:10px;font-size:13px;font-weight:600;cursor:pointer">❌ Ablehnen</button>
+        </div>
+      </div>`).join('')
+  } else {
+    pendingSection.style.display = 'none'
+  }
+
+  // Active H2H
+  const activeList = document.getElementById('challengeActiveList')
+  if (active.length === 0) {
+    activeList.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Keine aktiven Challenges — fordere jemanden heraus!</div>`
+  } else {
+    activeList.innerHTML = ''
+    for (const c of active) {
+      activeList.innerHTML += await buildChallengeCard(c, false)
+    }
+  }
+
+  // Community
+  const communityList = document.getElementById('challengeCommunityList')
+  if (community.length === 0) {
+    communityList.innerHTML = `<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">Keine aktiven Community Challenges</div>`
+  } else {
+    communityList.innerHTML = ''
+    for (const c of community) {
+      communityList.innerHTML += await buildCommunityCard(c)
+    }
+  }
+
+  // Completed
+  const historyList = document.getElementById('challengeHistoryList')
+  if (completed.length === 0) {
+    historyList.innerHTML = `<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">Noch keine abgeschlossenen Challenges</div>`
+  } else {
+    historyList.innerHTML = ''
+    for (const c of completed.slice(0,5)) {
+      historyList.innerHTML += await buildChallengeCard(c, true)
+    }
+  }
+
+  // Auto-complete expired active challenges
+  for (const c of active) {
+    if (c.end_date < today) await autoCompleteChallenge(c)
+  }
+  for (const c of community) {
+    if (c.end_date < today) await autoCompleteChallenge(c)
+  }
+}
+
+async function buildChallengeCard(c, finished) {
+  const isCreator = c.creator_id === currentUser.id
+  const myId = currentUser.id
+  const opponentId = isCreator ? c.opponent_id : c.creator_id
+
+  // Fetch opponent profile
+  const { data: opProf } = await sb.from('profiles').select('username,xp,avatar_color').eq('user_id', opponentId).single()
+  const opName = opProf?.username || 'Anonym'
+
+  // Get sessions for both users in range
+  const { data: mySess }  = await sb.from('sessions').select('date,exercises').eq('user_id', myId)
+  const { data: opSess }  = await sb.from('sessions').select('date,exercises').eq('user_id', opponentId)
+
+  const myValid = challengeValidSessions(mySess||[], c.start_date, c.end_date)
+  const opValid = challengeValidSessions(opSess||[], c.start_date, c.end_date)
+  const myScore = calcChallengeScore(myValid, c.goal_type, c.goal_exercise_id)
+  const opScore = calcChallengeScore(opValid, c.goal_type, c.goal_exercise_id)
+
+  const myPct = myScore + opScore > 0 ? Math.round(myScore / (myScore + opScore) * 100) : 50
+  const opPct = 100 - myPct
+  const leading = myScore > opScore ? 'Du führst 💪' : myScore < opScore ? `${opName} führt` : 'Gleichstand'
+  const today = new Date().toISOString().slice(0,10)
+  const daysLeft = Math.max(0, Math.ceil((new Date(c.end_date) - new Date(today)) / 86400000))
+  const statusLabel = finished
+    ? (c.winner_id === myId ? '🏆 Du hast gewonnen!' : c.winner_id ? `${opName} hat gewonnen` : '🤝 Unentschieden')
+    : (daysLeft === 0 ? '⏰ Endet heute' : `${daysLeft} Tag${daysLeft===1?'':'e'} verbleibend`)
+
+  return `<div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:10px;border:1px solid ${finished && c.winner_id === myId ? 'var(--gold)' : 'var(--border)'}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <div>
+        <div style="font-size:13px;font-weight:800">${c.title}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${goalTypeLabel(c.goal_type, c.goal_exercise_name)}</div>
+      </div>
+      <div style="font-size:11px;color:${finished?(c.winner_id===myId?'var(--gold)':'var(--muted)'):'var(--accent)'};font-weight:700;text-align:right">${statusLabel}</div>
+    </div>
+    <!-- Progress bar -->
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+      <div style="font-size:11px;font-weight:700;min-width:28px;text-align:right;color:var(--accent)">Du</div>
+      <div style="flex:1;background:var(--bg3);border-radius:4px;height:10px;overflow:hidden;display:flex">
+        <div style="width:${myPct}%;background:var(--accent);height:100%;border-radius:4px 0 0 4px;transition:width .5s"></div>
+        <div style="width:${opPct}%;background:${opProf?.xp>0?'var(--muted)':'var(--border)'};height:100%;border-radius:0 4px 4px 0"></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;min-width:28px;color:var(--muted)">${opName.slice(0,6)}</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:${finished?'0':'8px'}">
+      <span style="color:var(--accent);font-weight:700">${formatChalScore(myScore, c.goal_type)}</span>
+      <span style="color:var(--muted);font-size:10px">${finished?'':leading}</span>
+      <span>${formatChalScore(opScore, c.goal_type)}</span>
+    </div>
+    ${!finished ? `<button onclick="cancelChallenge('${c.id}')" style="font-size:10px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0">Aufgeben</button>` : ''}
+  </div>`
+}
+
+async function buildCommunityCard(c) {
+  const { data: allSess } = await sb.from('sessions').select('user_id,date,exercises')
+    .gte('date', c.start_date).lte('date', c.end_date)
+  const today = new Date().toISOString().slice(0,10)
+  const daysLeft = Math.max(0, Math.ceil((new Date(c.end_date) - new Date(today)) / 86400000))
+
+  // Group by user
+  const userMap = {}
+  for (const s of (allSess||[])) {
+    if (!userMap[s.user_id]) userMap[s.user_id] = []
+    userMap[s.user_id].push(s)
+  }
+
+  // Scores
+  const scores = Object.entries(userMap).map(([uid, sess]) => {
+    const valid = challengeValidSessions(sess, c.start_date, c.end_date)
+    return { uid, score: calcChallengeScore(valid, c.goal_type, c.goal_exercise_id) }
+  }).sort((a,b) => b.score - a.score)
+
+  const myScore = scores.find(s => s.uid === currentUser.id)?.score || 0
+  const myRank  = scores.findIndex(s => s.uid === currentUser.id) + 1
+  const total   = scores.reduce((sum, s) => sum + s.score, 0)
+  const goalVal = c.goal_value
+  const pct     = goalVal ? Math.min(100, Math.round(total / goalVal * 100)) : null
+
+  return `<div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:10px;border:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <div>
+        <div style="font-size:13px;font-weight:800">${c.title}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${goalTypeLabel(c.goal_type, c.goal_exercise_name)}</div>
+      </div>
+      <div style="font-size:11px;color:var(--accent);font-weight:700">${daysLeft}d left</div>
+    </div>
+    ${goalVal ? `
+    <div style="margin-bottom:8px">
+      <div style="background:var(--bg3);border-radius:4px;height:8px;overflow:hidden;margin-bottom:4px">
+        <div style="width:${pct}%;background:var(--accent);height:100%;border-radius:4px;transition:width .5s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted)">
+        <span>${formatChalScore(total, c.goal_type)} gesamt</span>
+        <span>Ziel: ${formatChalScore(goalVal, c.goal_type)}</span>
+      </div>
+    </div>` : ''}
+    <div style="display:flex;justify-content:space-between;font-size:12px">
+      <span style="color:var(--muted)">Dein Score: <span style="color:var(--text);font-weight:700">${formatChalScore(myScore, c.goal_type)}</span></span>
+      ${myRank > 0 ? `<span style="color:var(--muted)">Platz <span style="color:var(--gold);font-weight:700">#${myRank}</span> von ${scores.length}</span>` : ''}
+    </div>
+  </div>`
+}
+
+async function autoCompleteChallenge(c) {
+  if (c.type === 'h2h') {
+    const { data: mySess }  = await sb.from('sessions').select('date,exercises').eq('user_id', c.creator_id)
+    const { data: opSess }  = await sb.from('sessions').select('date,exercises').eq('user_id', c.opponent_id)
+    const myScore = calcChallengeScore(challengeValidSessions(mySess||[], c.start_date, c.end_date), c.goal_type, c.goal_exercise_id)
+    const opScore = calcChallengeScore(challengeValidSessions(opSess||[], c.start_date, c.end_date), c.goal_type, c.goal_exercise_id)
+    const winnerId = myScore > opScore ? c.creator_id : opScore > myScore ? c.opponent_id : null
+    await sb.from('challenges').update({ status: 'completed', winner_id: winnerId }).eq('id', c.id)
+    if (winnerId) {
+      await awardFlair(winnerId, 'h2h_win')
+      if (winnerId === currentUser.id) toast('🏆 Challenge gewonnen! Flair für 7 Tage!')
+    }
+  } else {
+    // Community: top user wins
+    const { data: allSess } = await sb.from('sessions').select('user_id,date,exercises').gte('date', c.start_date).lte('date', c.end_date)
+    const userMap = {}
+    for (const s of (allSess||[])) {
+      if (!userMap[s.user_id]) userMap[s.user_id] = []
+      userMap[s.user_id].push(s)
+    }
+    const scores = Object.entries(userMap).map(([uid, sess]) => ({
+      uid, score: calcChallengeScore(challengeValidSessions(sess, c.start_date, c.end_date), c.goal_type, c.goal_exercise_id)
+    })).sort((a,b) => b.score - a.score)
+    const winnerId = scores[0]?.uid || null
+    await sb.from('challenges').update({ status: 'completed', winner_id: winnerId }).eq('id', c.id)
+    if (winnerId) {
+      await awardFlair(winnerId, 'community_win')
+      if (winnerId === currentUser.id) toast('👑 Community Challenge gewonnen! Flair für 7 Tage!')
+    }
+  }
+}
+
+// ── Challenge Builder UI ──
+async function openChallengeBuilder() {
+  chalSelectedOpponent = null
+  chalSelectedGoal = 'volume'
+  chalSelectedDuration = 7
+  chalSelectedExercise = null
+  setChalGoal('volume')
+  setChalDuration(7)
+  document.getElementById('chalExInput').value = ''
+  document.getElementById('chalExSelected').textContent = ''
+  document.getElementById('chalExResults').innerHTML = ''
+
+  // Load active users (active in last 30 days, not me)
+  const { data: profiles } = await sb.from('profiles').select('user_id,username,xp,avatar_color,last_active').neq('user_id', currentUser.id).order('xp', {ascending:false})
+  const list = document.getElementById('challengeOpponentList')
+  const activeUsers = (profiles||[]).filter(p => {
+    if (!p.last_active) return false
+    return (Date.now() - new Date(p.last_active)) < 30 * 86400000
+  })
+  if (!activeUsers.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px">Keine anderen aktiven User gefunden</div>'
+  } else {
+    list.innerHTML = activeUsers.map(p => {
+      const rank = getRank(p.xp||0)
+      const initial = (p.username||'?')[0].toUpperCase()
+      return `<div onclick="selectChalOpponent('${p.user_id}','${p.username||'Anonym'}')" id="chalOpp_${p.user_id}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);cursor:pointer;background:var(--card2)">
+        <div style="width:32px;height:32px;border-radius:50%;background:${p.avatar_color||'#e94560'};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">${initial}</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700">${p.username||'Anonym'}</div>
+          <div style="font-size:11px;color:var(--muted)">${rank.icon} ${rank.name}</div>
+        </div>
+      </div>`
+    }).join('')
+  }
+  document.getElementById('challengeBuilderModal').classList.add('open')
+}
+
+function selectChalOpponent(userId, username) {
+  chalSelectedOpponent = { id: userId, name: username }
+  document.querySelectorAll('[id^="chalOpp_"]').forEach(el => {
+    el.style.borderColor = 'var(--border)'
+    el.style.background = 'var(--card2)'
+  })
+  const el = document.getElementById('chalOpp_' + userId)
+  if (el) { el.style.borderColor = 'var(--accent)'; el.style.background = 'rgba(233,69,96,0.1)' }
+}
+
+function setChalGoal(goal) {
+  chalSelectedGoal = goal
+  ;['volume','sessions','exercise','streak'].forEach(g => {
+    const btn = document.getElementById('chalGoal' + g.charAt(0).toUpperCase() + g.slice(1))
+    if (!btn) return
+    if (g === goal) { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(233,69,96,0.1)' }
+    else { btn.style.borderColor = 'var(--border)'; btn.style.background = 'none' }
+  })
+  document.getElementById('chalExerciseSearch').style.display = goal === 'exercise' ? 'block' : 'none'
+}
+
+function setChalDuration(days) {
+  chalSelectedDuration = days
+  ;[3,7,14,30].forEach(d => {
+    const btn = document.getElementById('chalDur' + d)
+    if (!btn) return
+    if (d === days) { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(233,69,96,0.1)'; btn.style.color = 'var(--text)' }
+    else { btn.style.borderColor = 'var(--border)'; btn.style.background = 'none'; btn.style.color = 'var(--muted)' }
+  })
+}
+
+function chalSearchExercise(q) {
+  const results = document.getElementById('chalExResults')
+  if (!q || q.length < 2) { results.innerHTML = ''; return }
+  const matches = getExercises().filter(e => e.name.toLowerCase().includes(q.toLowerCase())).slice(0, 8)
+  results.innerHTML = matches.map(e =>
+    `<div onclick="chalSelectExercise('${e.id}','${e.name.replace(/'/g,"&#39;")}')" style="padding:8px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)">${e.name}</div>`
+  ).join('')
+}
+
+function chalSelectExercise(id, name) {
+  chalSelectedExercise = { id, name }
+  document.getElementById('chalExSelected').textContent = '✓ ' + name
+  document.getElementById('chalExResults').innerHTML = ''
+  document.getElementById('chalExInput').value = name
+}
+
+async function submitChallenge() {
+  if (!chalSelectedOpponent) return toast('Gegner auswählen!', true)
+  if (chalSelectedGoal === 'exercise' && !chalSelectedExercise) return toast('Übung auswählen!', true)
+  const startDate = new Date().toISOString().slice(0,10)
+  const endDate = new Date(Date.now() + chalSelectedDuration * 86400000).toISOString().slice(0,10)
+  const goalLabels = { volume:'Volumen', sessions:'Sessions', exercise: chalSelectedExercise?.name||'Übung', streak:'Streak' }
+  const title = `${currentProfile?.username||'Ich'} vs ${chalSelectedOpponent.name} — ${goalLabels[chalSelectedGoal]}`
+  const { error } = await sb.from('challenges').insert({
+    type: 'h2h',
+    creator_id: currentUser.id,
+    opponent_id: chalSelectedOpponent.id,
+    title,
+    goal_type: chalSelectedGoal,
+    goal_exercise_id: chalSelectedExercise?.id || null,
+    goal_exercise_name: chalSelectedExercise?.name || null,
+    goal_value: null,
+    start_date: startDate,
+    end_date: endDate,
+    status: 'pending'
+  })
+  if (error) return toast('Fehler: ' + error.message, true)
+  document.getElementById('challengeBuilderModal').classList.remove('open')
+  toast('Challenge gesendet! ⚡')
+  haptic('success')
+  await sb.from('audit_log').insert({ user_id: currentUser.id, action: `Challenge erstellt vs ${chalSelectedOpponent.name}`, details: { opponent: chalSelectedOpponent.id } })
+  renderChallenges()
+}
+
+async function respondChallenge(challengeId, action) {
+  if (action === 'accept') {
+    await sb.from('challenges').update({ status: 'active' }).eq('id', challengeId)
+    toast('Challenge angenommen! 💪')
+    haptic('success')
+  } else {
+    await sb.from('challenges').update({ status: 'declined' }).eq('id', challengeId)
+    toast('Challenge abgelehnt')
+  }
+  renderChallenges()
+}
+
+async function cancelChallenge(challengeId) {
+  if (!confirm('Challenge wirklich aufgeben?')) return
+  await sb.from('challenges').update({ status: 'completed', winner_id: null }).eq('id', challengeId)
+  toast('Challenge aufgegeben')
+  renderChallenges()
+}
+
+// ── Admin Challenge functions ──
+function adminChalGoalTypeChange() {
+  const type = document.getElementById('adminChalGoalType').value
+  document.getElementById('adminChalExerciseRow').style.display = type === 'exercise' ? 'block' : 'none'
+}
+
+function adminSearchExercise(q) {
+  const results = document.getElementById('adminChalExResults')
+  if (!q || q.length < 2) { results.innerHTML = ''; return }
+  const matches = getExercises().filter(e => e.name.toLowerCase().includes(q.toLowerCase())).slice(0, 8)
+  results.innerHTML = matches.map(e =>
+    `<div onclick="adminSelectExercise('${e.id}','${e.name.replace(/'/g,"&#39;")}')" style="padding:8px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)">${e.name}</div>`
+  ).join('')
+}
+
+function adminSelectExercise(id, name) {
+  adminChalSelectedExercise = { id, name }
+  document.getElementById('adminChalExSelected').textContent = '✓ ' + name
+  document.getElementById('adminChalExResults').innerHTML = ''
+  document.getElementById('adminChalExSearch').value = name
+}
+
+async function adminCreateCommunityChallenge() {
+  const title     = document.getElementById('adminChalTitle').value.trim()
+  const goalType  = document.getElementById('adminChalGoalType').value
+  const goalValue = parseFloat(document.getElementById('adminChalGoalValue').value) || null
+  const startDate = document.getElementById('adminChalStart').value
+  const endDate   = document.getElementById('adminChalEnd').value
+  if (!title) return toast('Titel fehlt', true)
+  if (!startDate || !endDate) return toast('Start + Ende angeben', true)
+  if (new Date(endDate) <= new Date(startDate)) return toast('Ende muss nach Start sein', true)
+  if (goalType === 'exercise' && !adminChalSelectedExercise) return toast('Übung auswählen', true)
+  const { error } = await sb.from('challenges').insert({
+    type: 'community',
+    creator_id: currentUser.id,
+    opponent_id: null,
+    title,
+    goal_type: goalType,
+    goal_exercise_id: adminChalSelectedExercise?.id || null,
+    goal_exercise_name: adminChalSelectedExercise?.name || null,
+    goal_value: goalValue,
+    start_date: startDate,
+    end_date: endDate,
+    status: 'active'
+  })
+  if (error) return toast('Fehler: ' + error.message, true)
+  toast('Community Challenge erstellt! 🚀')
+  document.getElementById('adminChalTitle').value = ''
+  document.getElementById('adminChalGoalValue').value = ''
+  adminChalSelectedExercise = null
+  await adminLoadChallenges()
+}
+
+async function adminLoadChallenges() {
+  const { data } = await sb.from('challenges').select('*').order('created_at', { ascending: false })
+  const list = document.getElementById('adminChallengeList')
+  if (!data?.length) { list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px">Keine Challenges</div>'; return }
+  list.innerHTML = data.map(c => {
+    const typeLabel = c.type === 'community' ? '🌍 Community' : '⚔️ H2H'
+    const statusColors = { pending:'var(--muted)', active:'var(--green)', completed:'var(--gold)', declined:'var(--accent)', cancelled:'var(--muted)' }
+    return `<div style="background:var(--card);border-radius:var(--radius);padding:12px;margin-bottom:8px;border:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:13px;font-weight:700">${c.title}</div>
+        <span style="font-size:10px;color:${statusColors[c.status]||'var(--muted)'};font-weight:700;text-transform:uppercase">${c.status}</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${typeLabel} · ${goalTypeLabel(c.goal_type, c.goal_exercise_name)} · ${c.start_date} – ${c.end_date}</div>
+      <div style="display:flex;gap:6px">
+        ${c.status === 'active' ? `<button onclick="adminForceComplete('${c.id}')" style="font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid var(--gold);color:var(--gold);background:none;cursor:pointer">✓ Abschließen</button>` : ''}
+        <button onclick="adminDeleteChallenge('${c.id}')" style="font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid var(--accent);color:var(--accent);background:none;cursor:pointer">🗑 Löschen</button>
+      </div>
+    </div>`
+  }).join('')
+}
+
+async function adminForceComplete(challengeId) {
+  const { data: c } = await sb.from('challenges').select('*').eq('id', challengeId).single()
+  if (!c) return
+  await autoCompleteChallenge(c)
+  toast('Challenge abgeschlossen ✓')
+  adminLoadChallenges()
+}
+
+async function adminDeleteChallenge(challengeId) {
+  if (!confirm('Challenge wirklich löschen?')) return
+  await sb.from('challenges').delete().eq('id', challengeId)
+  toast('Gelöscht')
+  adminLoadChallenges()
 }
 
 // ── Achievement System ──
