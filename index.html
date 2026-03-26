@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.129</title>
+<title>Grindset v1.130</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1096,11 +1096,8 @@ async function saveSettingsToDB() {
   await sb.from('profiles').update({ settings }).eq('user_id', currentUser.id)
 }
 
-async function loadSettingsFromDB() {
-  if (!currentUser) return
-  const { data } = await sb.from('profiles').select('settings').eq('user_id', currentUser.id).single()
-  if (!data?.settings) return
-  const s = data.settings
+function applySettings(s) {
+  if (!s) return
   if (s.theme) localStorage.setItem('grindset_theme', s.theme)
   if (s.accent) { localStorage.setItem('grindset_accent_custom', s.accent); localStorage.setItem('grindset_accent', s.accent) }
   if (s.overdrive) localStorage.setItem('grindset_overdrive', s.overdrive)
@@ -1484,18 +1481,7 @@ async function showApp() {
   } else {
     if (prof.username) currentUser.username = prof.username
     if (prof.lang) { lang = prof.lang; localStorage.setItem('lang', lang) }
-    // Apply settings from profile (avoids separate loadSettingsFromDB call)
-    if (prof.settings) {
-      const s = prof.settings
-      if (s.theme) localStorage.setItem('grindset_theme', s.theme)
-      if (s.accent) { localStorage.setItem('grindset_accent_custom', s.accent); localStorage.setItem('grindset_accent', s.accent) }
-      if (s.overdrive) localStorage.setItem('grindset_overdrive', s.overdrive)
-      if (s.overdrive_duration) localStorage.setItem('grindset_overdrive_duration', s.overdrive_duration)
-      overdriveActive = s.overdrive === '1'
-      if (Array.isArray(s.unlocked_achievements)) unlockedAchievements = s.unlocked_achievements
-      if (Array.isArray(s.pinned_achievements)) pinnedAchievements = s.pinned_achievements
-      applyStoredTheme()
-    }
+    applySettings(prof.settings)
   }
 
   // Handle plans
@@ -1738,15 +1724,24 @@ async function saveSession() {
   const { error } = await sb.from('sessions').insert({user_id:currentUser.id, plan_id:activePlanId, date, day_id:selectedDay.id, day_name:selectedDay.name, exercises:exercisesData})
   if (error) return toast(t('saveError'), true)
 
-  // Award XP
-  const { sessionXP, newTotal, rankUp } = await awardXP(exercisesData, date)
-  // Check achievements (after sessions are loaded)
-  await loadSessions()
-  const newAchs = await checkAchievements()
-  // Update last_active
-  await sb.from('profiles').update({ last_active: new Date().toISOString() }).eq('user_id', currentUser.id)
+  // Update local sessions array immediately (no reload needed for XP calc)
+  sessions.push({ id: 'pending', date, day_id: selectedDay.id, day_name: selectedDay.name, plan_id: activePlanId, exercises: exercisesData })
 
-  await sb.from('audit_log').insert({ user_id: currentUser.id, action: `Session gespeichert: ${selectedDay.name} (${date})`, details: { day_id: selectedDay.id, date } })
+  // Award XP (uses in-memory sessions — instant, no DB read)
+  const { sessionXP, newTotal, rankUp } = await awardXP(exercisesData, date)
+
+  // Check achievements against updated in-memory sessions
+  const newAchs = await checkAchievements()
+
+  // Fire-and-forget: last_active + audit_log (non-blocking)
+  Promise.all([
+    sb.from('profiles').update({ last_active: new Date().toISOString() }).eq('user_id', currentUser.id),
+    sb.from('audit_log').insert({ user_id: currentUser.id, action: `Session gespeichert: ${selectedDay.name} (${date})`, details: { day_id: selectedDay.id, date } })
+  ])
+
+  // Reload sessions in background to get real ID (replaces 'pending' entry)
+  loadSessions()
+
   clearSessionDraft()
   haptic('success')
   selectedDay = null
@@ -1799,17 +1794,17 @@ async function awardXP(exercisesData, date) {
   const sessionXP = calcSessionXP(exercisesData)
   if (sessionXP === 0) return { sessionXP: 0, newTotal: 0, rankUp: null }
   const exCount = exercisesData.filter(e => (e.sets||[]).some(s => s.reps > 0)).length
-  await sb.from('xp_history').insert({
-    user_id: currentUser.id,
-    amount: sessionXP,
-    reason: `💪 Session: ${exCount} ${lang==='en'?'exercises':'Übungen'} · ${date}`
-  })
-  const { data: prof } = await sb.from('profiles').select('xp').eq('user_id', currentUser.id).single()
-  const oldXP = prof?.xp || 0
+  // Calculate old XP from in-memory sessions (no extra DB call needed)
+  const oldXP = sessions.reduce((sum, s) => sum + calcSessionXP(s.exercises||[]), 0)
   const oldRank = getRank(oldXP)
-  const newTotal = await recalcUserXP()
+  const newTotal = oldXP + sessionXP
   const newRank = getRank(newTotal)
   const rankUp = newRank.name !== oldRank.name ? newRank : null
+  // Fire-and-forget non-critical writes in parallel
+  Promise.all([
+    sb.from('xp_history').insert({ user_id: currentUser.id, amount: sessionXP, reason: `💪 Session: ${exCount} ${lang==='en'?'exercises':'Übungen'} · ${date}` }),
+    sb.from('profiles').update({ xp: newTotal }).eq('user_id', currentUser.id)
+  ])
   return { sessionXP, newTotal, rankUp }
 }
 
