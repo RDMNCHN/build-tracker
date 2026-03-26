@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.117</title>
+<title>Grindset v1.118</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -443,11 +443,11 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
 
 <!-- App Tour -->
 <div id="tourOverlay" style="display:none;position:fixed;inset:0;z-index:800;pointer-events:none">
-  <div id="tourBackdrop" style="position:absolute;inset:0;background:rgba(0,0,0,0.75)"></div>
-  <div id="tourHighlight" style="position:absolute;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.75);border:2px solid var(--accent);transition:all 0.35s cubic-bezier(0.34,1.2,0.64,1);pointer-events:none"></div>
+  <div id="tourBackdrop" style="position:absolute;inset:0;background:rgba(0,0,0,0.55)"></div>
+  <div id="tourHighlight" style="position:absolute;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.55);border:2px solid var(--accent);transition:all 0.35s cubic-bezier(0.34,1.2,0.64,1);pointer-events:none"></div>
   <div id="tourPopup" style="position:absolute;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;max-width:280px;width:calc(100vw - 40px);box-shadow:0 8px 32px rgba(0,0,0,0.4);pointer-events:all;transition:all 0.3s ease">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div id="tourStepNum" style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Schritt 1 / 7</div>
+      <div id="tourStepNum" style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Schritt 1 / 8</div>
       <button onclick="endTour()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0;line-height:1">×</button>
     </div>
     <div id="tourTitle" style="font-size:15px;font-weight:800;margin-bottom:6px"></div>
@@ -3231,43 +3231,49 @@ const TOUR_STEPS = [
     tab: 'train',
     selector: '.hero',
     title: '💪 Training',
-    text: 'Hier startest du dein Training. Wähle einen Plan und einen Tag aus um loszulegen.'
+    text: 'Hier startest du dein Training. Aktiviere einen Plan und wähle einen Tag aus um loszulegen.'
   },
   {
     tab: 'train',
     selector: '.day-grid',
-    title: '📅 Tag auswählen',
-    text: 'Tippe auf einen Trainingstag um die Übungen zu sehen. Jeder Tag hat seine eigenen Übungen.'
+    title: '📅 Trainingstag wählen',
+    text: 'Diese Tage gehören zu deinem aktuell aktiven Trainingsplan. Tippe auf einen Tag um die Übungen zu sehen und dein Training zu loggen.'
+  },
+  {
+    tab: 'plans',
+    selector: '#plansTabMy',
+    title: '📋 Trainingspläne',
+    text: 'Hier erstellst und verwaltest du deine Trainingspläne. Erstelle eigene Pläne mit beliebig vielen Tagen und Übungen.'
+  },
+  {
+    tab: 'plans',
+    selector: '#plansTabMarket',
+    title: '🛒 Plan Market',
+    text: 'Im Plan Market findest du Pläne von anderen Grindset Usern. Importiere sie direkt in deine Sammlung und starte sofort.'
   },
   {
     tab: 'analyse',
     selector: '.stat-grid',
     title: '📊 Analyse',
-    text: 'Hier siehst du deine Trainingsstatistiken — Gesamtsessions, Volumen und mehr.'
-  },
-  {
-    tab: 'analyse',
-    selector: '#heatmap',
-    title: '🔥 Heatmap',
-    text: 'Die letzten 4 Wochen auf einen Blick. Je grüner, desto mehr hast du in der Woche trainiert.'
+    text: 'Hier siehst du deine Trainingsstatistiken — Gesamtsessions, Sätze, Tage und mehr auf einen Blick.'
   },
   {
     tab: 'pit',
     selector: '#pitLeaderboard',
     title: '⚔️ The Pit',
-    text: 'Das Leaderboard zeigt alle Grindset User nach XP. Trainiere regelmäßig um aufzusteigen!'
+    text: 'Das Leaderboard zeigt alle Grindset User nach XP sortiert. Trainiere regelmäßig um aufzusteigen und die anderen zu überholen!'
   },
   {
     tab: 'profile',
     selector: '#profileRankBadge',
-    title: '🏆 Dein Rang',
-    text: 'Sammle XP durch Training und steige durch 10 Ränge auf — von Rookie bis The Unchained.'
+    title: '🏆 XP & Rang',
+    text: 'Jede Session bringt dir XP. Sammle genug um durch 10 Ränge aufzusteigen — von Rookie bis The Unchained.'
   },
   {
     tab: 'profile',
     selector: '#profileHero',
-    title: '⚡ Einstellungen',
-    text: 'Hier findest du dein Profil, XP-Info, Themes und den Overdrive Modus für automatische Pause-Timer.'
+    title: '⚙️ Einstellungen & Overdrive',
+    text: 'Unter Einstellungen findest du Themes, Accent-Farben und den Overdrive Modus — ein automatischer Rest-Timer der dich zwischen Sätzen motiviert.'
   }
 ]
 
@@ -3321,7 +3327,7 @@ async function showTourStep() {
   if (el) {
     const rect = el.getBoundingClientRect()
     const pad = 8
-    highlight.style.cssText = `position:absolute;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.75);border:2px solid var(--accent);transition:all 0.35s cubic-bezier(0.34,1.2,0.64,1);pointer-events:none;
+    highlight.style.cssText = `position:absolute;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.55);border:2px solid var(--accent);transition:all 0.35s cubic-bezier(0.34,1.2,0.64,1);pointer-events:none;
       left:${rect.left - pad}px;top:${rect.top - pad}px;width:${rect.width + pad*2}px;height:${rect.height + pad*2}px`
 
     // Position popup below or above element
