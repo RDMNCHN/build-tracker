@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.119</title>
+<title>Grindset v1.120</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -3255,7 +3255,7 @@ const TOUR_STEPS = [
   },
   {
     tab: 'pit',
-    selector: '#pitLeaderboard',
+    selector: '#pitTabLeaderboard',
     title: '⚔️ The Pit',
     text: 'Das Leaderboard zeigt alle Grindset User nach XP sortiert. Trainiere regelmäßig um aufzusteigen!'
   },
@@ -3267,7 +3267,7 @@ const TOUR_STEPS = [
   },
   {
     tab: 'profile',
-    selector: '#page-profile > button',
+    selector: 'button[onclick="openSettings()"]',
     title: '⚙️ Einstellungen',
     text: 'Hier findest du Themes, Accent-Farben, App installieren und den Overdrive Modus mit automatischem Rest-Timer.'
   }
