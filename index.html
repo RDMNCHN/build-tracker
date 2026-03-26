@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.111</title>
+<title>Grindset v1.112</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -3137,8 +3137,9 @@ function startRestTimer() {
     if (remaining <= 0) {
       clearInterval(restTimer)
       restTimer = null
-      navigator.vibrate && navigator.vibrate([1000, 200, 1000, 200, 1000])
+      navigator.vibrate && navigator.vibrate([500, 200, 500, 200, 500])
       focusBonusWindow = true
+      showMotivationToast()
       if (timerLabel) timerLabel.textContent = '⚡ Jetzt! Nächster Satz!'
       if (timerSub) timerSub.textContent = 'Los, du schaffst das! 💪'
       if (circle) circle.style.stroke = 'var(--gold)'
