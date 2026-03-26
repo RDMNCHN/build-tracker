@@ -656,7 +656,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
         </label>
       </div>
       <div id="overdriveInfoBox" style="display:none;background:var(--bg3);border-radius:8px;padding:10px;font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px">
-        🔥 <strong style="color:var(--text)">Overdrive</strong> startet automatisch einen 90-Sek Timer sobald du einen Satz einträgst. Wenn du innerhalb von 10 Sek nach Ablauf den nächsten Satz startest, bekommst du <strong style="color:var(--gold)">+44 XP Focus Bonus!</strong> Das Handy vibriert wenn die Zeit um ist.
+        🔥 <strong style="color:var(--text)">Overdrive</strong> startet automatisch einen 90-Sek Timer sobald du einen Satz einträgst. Wenn der Timer abläuft vibriert das Handy. Wenn du dann innerhalb von 10 Sek den nächsten Satz einträgst, bekommst du eine Motivation-Message! Das hält dich fokussiert zwischen den Sätzen.
       </div>
     </div>
 
@@ -1563,13 +1563,9 @@ function updateBadge(ei) {
 
   if (justCompleted && overdriveActive) {
     if (focusBonusWindow) {
-      sb.from('xp_history').insert({ user_id: currentUser?.id, amount: 44, reason: '⚡ Overdrive Focus Bonus' })
-      sb.from('profiles').select('xp').eq('user_id', currentUser?.id).single().then(({data}) => {
-        if (data) sb.from('profiles').update({ xp: (data.xp||0) + 44 }).eq('user_id', currentUser?.id).then(() => renderProfile())
-      })
-      toast('⚡ Focus Bonus! +44 XP')
       haptic('success')
       cancelRestTimer()
+      showMotivationToast()
     } else {
       startRestTimer()
     }
@@ -3114,7 +3110,7 @@ function startRestTimer() {
     if (remaining <= 0) {
       clearInterval(restTimer)
       restTimer = null
-      haptic('success')
+      navigator.vibrate && navigator.vibrate([300, 100, 300, 100, 300])
       focusBonusWindow = true
       if (timerLabel) timerLabel.textContent = '⚡ Zeit! Nächster Satz jetzt!'
       if (timerSub) timerSub.textContent = 'Noch 10 Sek für +44 XP Focus Bonus!'
@@ -3140,6 +3136,17 @@ function checkFocusBonus() {
   focusBonusWindow = false
   cancelRestTimer()
   return true
+}
+
+const MOTIVATIONS = ["💪 Mega! Weiter so!", "🔥 Du bist on fire!", "⚡ Fokus! Das ist Grindset!", "💥 Beast Mode aktiviert!", "🏆 So wird das gemacht!", "😤 Keine Ausreden. Nur Ergebnisse.", "🚀 Locked in!", "💪 Das Gewicht kennt deinen Namen!"]
+
+function showMotivationToast() {
+  const msg = MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)]
+  const el = document.getElementById('toast')
+  el.textContent = msg
+  el.style.background = 'var(--accent)'
+  el.classList.add('show')
+  setTimeout(() => el.classList.remove('show'), 2500)
 }
 
 function showTab(tab, btn) {
