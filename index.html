@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.112</title>
+<title>Grindset v1.113</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -999,12 +999,14 @@ function setTheme(theme) {
   const customAccent = localStorage.getItem('grindset_accent_custom')
   applyThemeVars(theme, customAccent)
   updateThemeButtons()
+  saveSettingsToDB()
 }
 
 function setCustomAccent(color) {
   document.documentElement.style.setProperty('--accent', color)
   localStorage.setItem('grindset_accent', color)
   localStorage.setItem('grindset_accent_custom', color)
+  saveSettingsToDB()
 }
 
 function resetAccent() {
@@ -1015,6 +1017,30 @@ function resetAccent() {
   const picker = document.getElementById('customAccent')
   if (picker) picker.value = accent
   toast('Farbe zurückgesetzt')
+}
+
+async function saveSettingsToDB() {
+  if (!currentUser) return
+  const settings = {
+    theme: localStorage.getItem('grindset_theme') || 'dark',
+    accent: localStorage.getItem('grindset_accent_custom') || null,
+    overdrive: localStorage.getItem('grindset_overdrive') || '0',
+    overdrive_duration: localStorage.getItem('grindset_overdrive_duration') || '90'
+  }
+  await sb.from('profiles').update({ settings }).eq('user_id', currentUser.id)
+}
+
+async function loadSettingsFromDB() {
+  if (!currentUser) return
+  const { data } = await sb.from('profiles').select('settings').eq('user_id', currentUser.id).single()
+  if (!data?.settings) return
+  const s = data.settings
+  if (s.theme) localStorage.setItem('grindset_theme', s.theme)
+  if (s.accent) { localStorage.setItem('grindset_accent_custom', s.accent); localStorage.setItem('grindset_accent', s.accent) }
+  if (s.overdrive) localStorage.setItem('grindset_overdrive', s.overdrive)
+  if (s.overdrive_duration) localStorage.setItem('grindset_overdrive_duration', s.overdrive_duration)
+  overdriveActive = s.overdrive === '1'
+  applyStoredTheme()
 }
 
 function applyStoredTheme() {
@@ -1362,7 +1388,7 @@ async function showApp() {
   document.getElementById('loginPage').style.display = 'none'
   document.getElementById('appShell').style.display = 'block'
   checkUpdateBadge()
-  overdriveActive = localStorage.getItem('grindset_overdrive') === '1'
+  await loadSettingsFromDB()
   document.getElementById('trainDate').value = today()
   // Ensure profile row exists
   const { data: prof, error: profErr } = await sb.from('profiles').select('*').eq('user_id', currentUser.id).single()
@@ -3077,6 +3103,7 @@ let focusBonusWindow = false
 function toggleOverdrive(enabled) {
   localStorage.setItem('grindset_overdrive', enabled ? '1' : '0')
   overdriveActive = enabled
+  saveSettingsToDB()
   const slider = document.getElementById('overdriveSlider')
   const knob = document.getElementById('overdriveKnob')
   if (slider) slider.style.background = enabled ? 'var(--accent)' : 'var(--bg3)'
@@ -3105,6 +3132,7 @@ function initOverdriveToggle() {
 
 function saveOverdriveDuration(val) {
   localStorage.setItem('grindset_overdrive_duration', val)
+  saveSettingsToDB()
 }
 
 function getOverdriveDuration() {
@@ -3170,12 +3198,22 @@ const MOTIVATIONS = ["💪 Du Macher! Weiter so!", "⚡ Und direkt den nächsten
 
 function showMotivationToast() {
   const msg = MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)]
-  const el = document.getElementById('toast')
-  if (!el) return
-  el.textContent = msg
-  el.style.background = 'var(--accent)'
-  el.classList.add('show')
-  setTimeout(() => el.classList.remove('show'), 2500)
+  // Show big centered overlay
+  let overlay = document.getElementById('motivationOverlay')
+  if (!overlay) {
+    overlay = document.createElement('div')
+    overlay.id = 'motivationOverlay'
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:900;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px)'
+    overlay.innerHTML = `<div style="text-align:center;padding:32px;max-width:300px">
+      <div style="font-size:48px;margin-bottom:16px">💪</div>
+      <div id="motivationText" style="font-size:28px;font-weight:900;color:#fff;line-height:1.2;letter-spacing:-0.5px"></div>
+    </div>`
+    overlay.addEventListener('click', () => overlay.style.display = 'none')
+    document.body.appendChild(overlay)
+  }
+  document.getElementById('motivationText').textContent = msg
+  overlay.style.display = 'flex'
+  setTimeout(() => { if (overlay) overlay.style.display = 'none' }, 3000)
 }
 
 function showTab(tab, btn) {
