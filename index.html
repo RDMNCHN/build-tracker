@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.122</title>
+<title>Grindset v1.123</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -289,7 +289,10 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
           <div style="position:absolute;bottom:0;right:0;width:22px;height:22px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid var(--bg2);cursor:pointer">📷</div>
         </div>
         <div style="flex:1;min-width:0">
-          <div id="profileName" style="font-size:18px;font-weight:700">...</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div id="profileName" style="font-size:18px;font-weight:700">...</div>
+            <div id="profilePinnedAch" style="display:flex;gap:4px;align-items:center"></div>
+          </div>
           <div id="profileEmail" style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
           <div id="profileJoined" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px"></div>
         </div>
@@ -332,11 +335,22 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
       </div>
     </div>
 
-    <div class="card" style="margin-bottom:10px">
-      <div style="font-size:13px;color:var(--muted);margin-bottom:8px" id="badgesL">Badges</div>
-      <div id="badgesList" style="display:flex;flex-wrap:wrap;gap:8px">
-        <div style="color:var(--muted);font-size:13px" id="noBadgesL">Noch keine Badges verdient 💪</div>
+    <!-- Achievements Card -->
+    <div class="card" style="margin-bottom:10px" id="achievementsCard">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <div style="font-size:14px;font-weight:700">🏅 Achievements</div>
+          <div id="achCountSub" style="font-size:11px;color:var(--muted);margin-top:2px">0 / 0 freigeschaltet</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);text-align:right;line-height:1.5">Max. 3 pinnen →<br>erscheinen beim Namen</div>
       </div>
+      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap" id="achFilterRow">
+        <button onclick="filterAchievements('all')" id="achFilterAll" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer">Alle</button>
+        <button onclick="filterAchievements('sessions')" id="achFilterSessions" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer">💪 Sessions</button>
+        <button onclick="filterAchievements('volume')" id="achFilterVolume" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer">🏋️ Volumen</button>
+        <button onclick="filterAchievements('streak')" id="achFilterStreak" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer">🔥 Streak</button>
+      </div>
+      <div id="achievementsList" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
     </div>
 
     <!-- Update Log Card -->
@@ -497,6 +511,26 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
       </div>
 
       <button onclick="closeXPAnimation()" style="background:var(--accent);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;width:100%;cursor:pointer">Weiter 💪</button>
+    </div>
+  </div>
+
+  <!-- Achievement Unlock Modal -->
+  <div id="achievementModal" style="display:none;position:fixed;inset:0;z-index:1001;background:rgba(0,0,0,0.93);flex-direction:column;align-items:center;justify-content:center">
+    <div style="text-align:center;padding:32px;max-width:320px;width:100%">
+      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--gold);margin-bottom:16px;opacity:0.8">Achievement freigeschaltet!</div>
+      <!-- Sprite / Emoji -->
+      <div id="achModalSprite" style="width:96px;height:96px;margin:0 auto 16px;border-radius:16px;overflow:hidden;border:2px solid var(--gold);background:var(--card2);display:flex;align-items:center;justify-content:center;animation:popIn 0.5s cubic-bezier(0.34,1.6,0.64,1)">
+        <img id="achModalImg" src="" alt="" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated;display:none">
+        <span id="achModalEmoji" style="font-size:48px">🏆</span>
+      </div>
+      <div id="achModalName" style="font-size:22px;font-weight:900;letter-spacing:-0.5px;margin-bottom:6px"></div>
+      <div id="achModalDesc" style="font-size:14px;color:var(--muted);margin-bottom:28px;line-height:1.5"></div>
+      <div id="achModalCategory" style="display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:4px 12px;border-radius:20px;margin-bottom:24px;background:rgba(245,166,35,0.15);color:var(--gold);border:1px solid rgba(245,166,35,0.3)"></div>
+      <div style="display:flex;gap:10px">
+        <button id="achModalNextBtn" onclick="achModalNext()" style="background:var(--card);border:1px solid var(--border);color:var(--muted);border-radius:14px;padding:16px;font-size:14px;font-weight:600;flex:1;cursor:pointer;display:none">Nächstes →</button>
+        <button onclick="achModalClose()" style="background:var(--accent);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;flex:2;cursor:pointer">Let's go! 💪</button>
+      </div>
+      <div id="achModalDots" style="display:flex;justify-content:center;gap:6px;margin-top:14px"></div>
     </div>
   </div>
 
@@ -1052,7 +1086,9 @@ async function saveSettingsToDB() {
     theme: localStorage.getItem('grindset_theme') || 'dark',
     accent: localStorage.getItem('grindset_accent_custom') || null,
     overdrive: localStorage.getItem('grindset_overdrive') || '0',
-    overdrive_duration: localStorage.getItem('grindset_overdrive_duration') || '90'
+    overdrive_duration: localStorage.getItem('grindset_overdrive_duration') || '90',
+    unlocked_achievements: unlockedAchievements,
+    pinned_achievements: pinnedAchievements
   }
   await sb.from('profiles').update({ settings }).eq('user_id', currentUser.id)
 }
@@ -1067,6 +1103,8 @@ async function loadSettingsFromDB() {
   if (s.overdrive) localStorage.setItem('grindset_overdrive', s.overdrive)
   if (s.overdrive_duration) localStorage.setItem('grindset_overdrive_duration', s.overdrive_duration)
   overdriveActive = s.overdrive === '1'
+  if (Array.isArray(s.unlocked_achievements)) unlockedAchievements = s.unlocked_achievements
+  if (Array.isArray(s.pinned_achievements)) pinnedAchievements = s.pinned_achievements
   applyStoredTheme()
 }
 
@@ -1256,9 +1294,9 @@ async function renderProfile() {
   }
 
   applyLang()
-}
-
-function openAvatarPicker() {
+  renderAchievements()
+  renderPinnedAchievements()
+} {
   document.getElementById('avatarModal').classList.add('open')
   // populate color opts inside modal
   const row = document.getElementById('colorOptsRow')
@@ -1651,21 +1689,26 @@ async function saveSession() {
 
   // Award XP
   const { sessionXP, newTotal, rankUp } = await awardXP(exercisesData, date)
+  // Check achievements (after sessions are loaded)
+  await loadSessions()
+  const newAchs = await checkAchievements()
   // Update last_active
   await sb.from('profiles').update({ last_active: new Date().toISOString() }).eq('user_id', currentUser.id)
 
   await sb.from('audit_log').insert({ user_id: currentUser.id, action: `Session gespeichert: ${selectedDay.name} (${date})`, details: { day_id: selectedDay.id, date } })
   clearSessionDraft()
   haptic('success')
-  await loadSessions()
   selectedDay = null
   document.getElementById('exerciseSection').style.display = 'none'
   renderTrainPage()
-  showXPAnimation(sessionXP, newTotal, rankUp)
-  await loadSessions()
-  selectedDay = null
-  document.getElementById('exerciseSection').style.display = 'none'
-  renderTrainPage()
+
+  // If achievements unlocked, XP modal shows after closing achievement modal
+  if (newAchs.length > 0) {
+    const origClose = window._achOrigClose
+    window._pendingXPAnim = () => showXPAnimation(sessionXP, newTotal, rankUp)
+  } else {
+    showXPAnimation(sessionXP, newTotal, rankUp)
+  }
 }
 
 function calcSessionXP(exercisesData) {
@@ -3223,6 +3266,265 @@ function showMotivationToast() {
   document.getElementById('motivationText').textContent = msg
   overlay.style.display = 'flex'
   setTimeout(() => { if (overlay) overlay.style.display = 'none' }, 3000)
+}
+
+// ── Achievement System ──
+const ACHIEVEMENTS = [
+  // Sessions
+  { id:'session_1',   cat:'sessions', emoji:'🌱', name:'First Rep',       name_en:'First Rep',       desc:'Erste Session geloggt',              desc_en:'First session logged',              threshold:1 },
+  { id:'session_10',  cat:'sessions', emoji:'🔥', name:'Getting Serious', name_en:'Getting Serious', desc:'10 Sessions abgeschlossen',           desc_en:'Completed 10 sessions',             threshold:10 },
+  { id:'session_25',  cat:'sessions', emoji:'💪', name:'Quarter Century', name_en:'Quarter Century', desc:'25 Sessions — kein Zufall mehr',       desc_en:'25 sessions — no coincidence',      threshold:25 },
+  { id:'session_50',  cat:'sessions', emoji:'⚡', name:'Habitual',        name_en:'Habitual',         desc:'50 Sessions. Das ist ein Lifestyle.',  desc_en:'50 sessions. This is a lifestyle.', threshold:50 },
+  { id:'session_100', cat:'sessions', emoji:'💯', name:'Centurion',       name_en:'Centurion',        desc:'100 Sessions. Legende.',               desc_en:'100 sessions. Legend.',             threshold:100 },
+  { id:'session_250', cat:'sessions', emoji:'👑', name:'Grind Machine',   name_en:'Grind Machine',    desc:'250 Sessions. Unaufhaltbar.',          desc_en:'250 sessions. Unstoppable.',        threshold:250 },
+  { id:'session_500', cat:'sessions', emoji:'🏆', name:'The Unchained',   name_en:'The Unchained',    desc:'500 Sessions. Absolute Ikone.',        desc_en:'500 sessions. Absolute icon.',      threshold:500 },
+  // Volume
+  { id:'vol_1k',   cat:'volume', emoji:'🪨', name:'Stone Mover',    name_en:'Stone Mover',    desc:'1.000 kg Gesamtvolumen bewegt',      desc_en:'1,000 kg total volume moved',     threshold:1000 },
+  { id:'vol_5k',   cat:'volume', emoji:'🔩', name:'Iron Will',       name_en:'Iron Will',       desc:'5.000 kg — du meinst das ernst',     desc_en:'5,000 kg — you mean business',    threshold:5000 },
+  { id:'vol_10k',  cat:'volume', emoji:'🏗️', name:'Heavy Duty',      name_en:'Heavy Duty',      desc:'10.000 kg bewegt',                   desc_en:'10,000 kg moved',                 threshold:10000 },
+  { id:'vol_50k',  cat:'volume', emoji:'🚛', name:'Freight Train',   name_en:'Freight Train',   desc:'50.000 kg — ein halber Truck',        desc_en:'50,000 kg — half a truck',        threshold:50000 },
+  { id:'vol_100k', cat:'volume', emoji:'🏋️', name:'Six Figures',     name_en:'Six Figures',     desc:'100.000 kg Lebensvolumen',            desc_en:'100,000 kg lifetime volume',      threshold:100000 },
+  { id:'vol_250k', cat:'volume', emoji:'🌋', name:'Moving Mountains', name_en:'Moving Mountains', desc:'250.000 kg. Wahnsinn.',             desc_en:'250,000 kg. Insane.',             threshold:250000 },
+  { id:'vol_500k', cat:'volume', emoji:'🌍', name:'World Class',     name_en:'World Class',     desc:'500.000 kg. Weltklasse.',             desc_en:'500,000 kg. World class.',        threshold:500000 },
+  // Streak
+  { id:'week_3',   cat:'streak', emoji:'📅', name:'Three-Peat',      name_en:'Three-Peat',      desc:'3 Tage in einer Woche trainiert',     desc_en:'3 days trained in one week',      threshold:3 },
+  { id:'week_4',   cat:'streak', emoji:'🗓️', name:'Quad Week',       name_en:'Quad Week',       desc:'4 Tage in einer Woche trainiert',     desc_en:'4 days trained in one week',      threshold:4 },
+  { id:'week_5',   cat:'streak', emoji:'💥', name:'Five Days Strong', name_en:'Five Days Strong','desc':'5 Tage in einer Woche',            desc_en:'5 days in one week',              threshold:5 },
+  { id:'week_6',   cat:'streak', emoji:'🌪️', name:'Six Pack Week',   name_en:'Six Pack Week',   desc:'6 Tage in einer Woche trainiert',     desc_en:'6 days trained in one week',      threshold:6 },
+  { id:'week_7',   cat:'streak', emoji:'🔱', name:'Full Week',       name_en:'Full Week',       desc:'Jeden Tag einer Woche trainiert!',    desc_en:'Trained every day of a week!',    threshold:7 },
+  { id:'month_8',  cat:'streak', emoji:'📈', name:'Consistent',      name_en:'Consistent',      desc:'8 Sessions in einem Monat',           desc_en:'8 sessions in one month',         threshold:8, monthly:true },
+  { id:'month_12', cat:'streak', emoji:'🎯', name:'Dedicated',       name_en:'Dedicated',       desc:'12 Sessions in einem Monat',          desc_en:'12 sessions in one month',        threshold:12, monthly:true },
+  { id:'month_16', cat:'streak', emoji:'⚙️', name:'Machine Mode',    name_en:'Machine Mode',    desc:'16 Sessions in einem Monat',          desc_en:'16 sessions in one month',        threshold:16, monthly:true },
+  { id:'month_20', cat:'streak', emoji:'🤖', name:'No Days Off',     name_en:'No Days Off',     desc:'20 Sessions in einem Monat',          desc_en:'20 sessions in one month',        threshold:20, monthly:true },
+]
+
+// In-memory achievement state (loaded from settings)
+let unlockedAchievements = []  // array of IDs
+let pinnedAchievements = []    // array of up to 3 IDs
+let achFilterActive = 'all'
+let achUnlockQueue = []
+let achUnlockIndex = 0
+
+function calcTotalVolume(sessionsData) {
+  let total = 0
+  for (const s of sessionsData) {
+    for (const ex of (s.exercises || [])) {
+      for (const set of (ex.sets || [])) {
+        if (set.kg > 0 && set.reps > 0) total += set.kg * set.reps
+      }
+    }
+  }
+  return total
+}
+
+function calcMaxDaysInWeek(sessionsData) {
+  // Group session dates by ISO week (Mon-Sun)
+  const weekMap = {}
+  for (const s of sessionsData) {
+    if (!s.date) continue
+    const d = new Date(s.date)
+    // ISO week: Monday = 0
+    const day = d.getDay() === 0 ? 6 : d.getDay() - 1
+    const monday = new Date(d)
+    monday.setDate(d.getDate() - day)
+    const key = monday.toISOString().slice(0, 10)
+    if (!weekMap[key]) weekMap[key] = new Set()
+    weekMap[key].add(s.date)
+  }
+  let max = 0
+  for (const wk of Object.values(weekMap)) max = Math.max(max, wk.size)
+  return max
+}
+
+function calcMaxSessionsInMonth(sessionsData) {
+  const monthMap = {}
+  for (const s of sessionsData) {
+    if (!s.date) continue
+    const key = s.date.slice(0, 7) // YYYY-MM
+    monthMap[key] = (monthMap[key] || 0) + 1
+  }
+  return Math.max(0, ...Object.values(monthMap))
+}
+
+async function checkAchievements() {
+  if (!currentUser || !sessions) return []
+  const totalSessions = sessions.length
+  const totalVolume = calcTotalVolume(sessions)
+  const maxDaysInWeek = calcMaxDaysInWeek(sessions)
+  const maxSessionsInMonth = calcMaxSessionsInMonth(sessions)
+
+  const newlyUnlocked = []
+  for (const ach of ACHIEVEMENTS) {
+    if (unlockedAchievements.includes(ach.id)) continue
+    let earned = false
+    if (ach.cat === 'sessions') earned = totalSessions >= ach.threshold
+    else if (ach.cat === 'volume') earned = totalVolume >= ach.threshold
+    else if (ach.cat === 'streak' && ach.monthly) earned = maxSessionsInMonth >= ach.threshold
+    else if (ach.cat === 'streak') earned = maxDaysInWeek >= ach.threshold
+    if (earned) newlyUnlocked.push(ach)
+  }
+
+  if (newlyUnlocked.length > 0) {
+    unlockedAchievements = [...unlockedAchievements, ...newlyUnlocked.map(a => a.id)]
+    await saveAchievementsToDB()
+    showAchievementUnlock(newlyUnlocked)
+  }
+  return newlyUnlocked
+}
+
+async function saveAchievementsToDB() {
+  if (!currentUser) return
+  const { data } = await sb.from('profiles').select('settings').eq('user_id', currentUser.id).single()
+  const existing = data?.settings || {}
+  const settings = {
+    ...existing,
+    unlocked_achievements: unlockedAchievements,
+    pinned_achievements: pinnedAchievements
+  }
+  await sb.from('profiles').update({ settings }).eq('user_id', currentUser.id)
+}
+
+// --- Achievement Unlock Modal ---
+function showAchievementUnlock(achievements) {
+  achUnlockQueue = achievements
+  achUnlockIndex = 0
+  renderAchUnlockStep()
+  document.getElementById('achievementModal').style.display = 'flex'
+  startConfetti()
+  haptic('success')
+}
+
+function renderAchUnlockStep() {
+  const ach = achUnlockQueue[achUnlockIndex]
+  if (!ach) return
+  const isLast = achUnlockIndex === achUnlockQueue.length - 1
+  const isMulti = achUnlockQueue.length > 1
+
+  // Sprite or emoji
+  const img = document.getElementById('achModalImg')
+  const emoji = document.getElementById('achModalEmoji')
+  img.src = `achievements/${ach.id}.png`
+  img.style.display = 'block'
+  img.onerror = () => { img.style.display = 'none'; emoji.style.display = 'block'; emoji.textContent = ach.emoji }
+  emoji.style.display = 'none'
+
+  document.getElementById('achModalName').textContent = lang === 'en' ? ach.name_en : ach.name
+  document.getElementById('achModalDesc').textContent = lang === 'en' ? ach.desc_en : ach.desc
+  const catLabels = { sessions: '💪 Sessions', volume: '🏋️ Volumen', streak: '🔥 Streak' }
+  document.getElementById('achModalCategory').textContent = catLabels[ach.cat] || ach.cat
+
+  const nextBtn = document.getElementById('achModalNextBtn')
+  nextBtn.style.display = isMulti && !isLast ? 'block' : 'none'
+
+  // Dots
+  const dots = document.getElementById('achModalDots')
+  dots.innerHTML = achUnlockQueue.length > 1
+    ? achUnlockQueue.map((_, i) => `<div style="width:6px;height:6px;border-radius:50%;background:${i===achUnlockIndex?'var(--gold)':'var(--border)'}"></div>`).join('')
+    : ''
+
+  // Re-trigger animation
+  const sprite = document.getElementById('achModalSprite')
+  sprite.style.animation = 'none'
+  void sprite.offsetWidth
+  sprite.style.animation = 'popIn 0.5s cubic-bezier(0.34,1.6,0.64,1)'
+}
+
+function achModalNext() {
+  achUnlockIndex++
+  if (achUnlockIndex < achUnlockQueue.length) renderAchUnlockStep()
+  else achModalClose()
+}
+
+function achModalClose() {
+  document.getElementById('achievementModal').style.display = 'none'
+  document.getElementById('confettiCanvas').style.display = 'none'
+  renderAchievements()
+  renderPinnedAchievements()
+  if (window._pendingXPAnim) {
+    const fn = window._pendingXPAnim
+    window._pendingXPAnim = null
+    setTimeout(fn, 300)
+  }
+}
+
+// --- Achievement Grid in Profile ---
+function renderAchievements() {
+  const list = document.getElementById('achievementsList')
+  const sub = document.getElementById('achCountSub')
+  if (!list) return
+
+  const filter = achFilterActive
+  const filtered = ACHIEVEMENTS.filter(a => filter === 'all' || a.cat === filter)
+  const unlockedCount = ACHIEVEMENTS.filter(a => unlockedAchievements.includes(a.id)).length
+  if (sub) sub.textContent = `${unlockedCount} / ${ACHIEVEMENTS.length} freigeschaltet`
+
+  list.innerHTML = filtered.map(ach => {
+    const unlocked = unlockedAchievements.includes(ach.id)
+    const pinned = pinnedAchievements.includes(ach.id)
+    const name = lang === 'en' ? ach.name_en : ach.name
+    const desc = lang === 'en' ? ach.desc_en : ach.desc
+    const pinnedRing = pinned ? `border:2px solid var(--gold);` : `border:2px solid ${unlocked ? 'var(--accent)' : 'var(--border)'};`
+    const opacity = unlocked ? '1' : '0.35'
+    const pinBadge = pinned ? `<div style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:var(--gold);border-radius:50%;font-size:9px;display:flex;align-items:center;justify-content:center;border:1px solid var(--bg)">📌</div>` : ''
+    return `
+      <div onclick="togglePinAchievement('${ach.id}')" style="cursor:${unlocked?'pointer':'default'};opacity:${opacity};text-align:center;padding:8px 4px;border-radius:12px;background:var(--card2);${unlocked?'':'filter:grayscale(1)'}">
+        <div style="position:relative;width:52px;height:52px;margin:0 auto 6px;border-radius:10px;overflow:hidden;${pinnedRing}background:var(--bg3);display:flex;align-items:center;justify-content:center">
+          <img src="achievements/${ach.id}.png" alt="" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" onerror="this.style.display='none';this.nextSibling.style.display='flex'">
+          <span style="display:none;font-size:26px;align-items:center;justify-content:center;width:100%;height:100%">${ach.emoji}</span>
+          ${pinBadge}
+        </div>
+        <div style="font-size:9px;font-weight:700;line-height:1.3;color:${unlocked?'var(--text)':'var(--muted)'}">${name}</div>
+      </div>`
+  }).join('')
+}
+
+function filterAchievements(cat) {
+  achFilterActive = cat
+  ;['all','sessions','volume','streak'].forEach(c => {
+    const btn = document.getElementById('achFilter' + c.charAt(0).toUpperCase() + c.slice(1))
+    if (!btn) return
+    if (c === cat) {
+      btn.style.background = 'var(--accent)'
+      btn.style.color = '#fff'
+      btn.style.borderColor = 'var(--accent)'
+    } else {
+      btn.style.background = 'none'
+      btn.style.color = 'var(--muted)'
+      btn.style.borderColor = 'var(--border)'
+    }
+  })
+  renderAchievements()
+}
+
+async function togglePinAchievement(id) {
+  if (!unlockedAchievements.includes(id)) return
+  if (pinnedAchievements.includes(id)) {
+    pinnedAchievements = pinnedAchievements.filter(p => p !== id)
+    haptic('light')
+  } else {
+    if (pinnedAchievements.length >= 3) {
+      toast(lang === 'en' ? 'Max. 3 Achievements pinnbar' : 'Max. 3 Achievements pinnen', true)
+      return
+    }
+    pinnedAchievements.push(id)
+    haptic('medium')
+  }
+  await saveAchievementsToDB()
+  renderAchievements()
+  renderPinnedAchievements()
+}
+
+function renderPinnedAchievements() {
+  const container = document.getElementById('profilePinnedAch')
+  if (!container) return
+  container.innerHTML = pinnedAchievements.map(id => {
+    const ach = ACHIEVEMENTS.find(a => a.id === id)
+    if (!ach) return ''
+    return `<div title="${lang==='en'?ach.name_en:ach.name}" style="width:24px;height:24px;border-radius:6px;overflow:hidden;border:1.5px solid var(--gold);background:var(--card2);display:flex;align-items:center;justify-content:center">
+      <img src="achievements/${ach.id}.png" alt="${ach.emoji}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" onerror="this.style.display='none';this.nextSibling.style.display='block'">
+      <span style="display:none;font-size:13px">${ach.emoji}</span>
+    </div>`
+  }).join('')
 }
 
 // ── App Tour ──
