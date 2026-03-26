@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.125</title>
+<title>Grindset v1.126</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2385,6 +2385,7 @@ async function renderAdmin() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <button class="btn btn-card btn-sm" onclick="adminViewHistory('${p.user_id}','${p.username||'Anonym'}')">📋 Verlauf</button>
         <button class="btn btn-card btn-sm" onclick="adminViewXP('${p.user_id}','${p.username||'Anonym'}')">⚡ XP History</button>
+        <button class="btn btn-card btn-sm" onclick="adminViewAchievements('${p.user_id}','${p.username||'Anonym'}')">🏅 Achievements</button>
         <button class="btn btn-card btn-sm" onclick="adminRecalcXP('${p.user_id}','${p.username||'Anonym'}')">🔄 XP neu</button>
         <button class="btn btn-danger btn-sm" onclick="adminResetXP('${p.user_id}','${p.username||'Anonym'}')">🗑️ XP reset</button>
       </div>
@@ -2421,6 +2422,57 @@ async function adminViewHistory(userId, username) {
     </div>`
   }).join('')
   modal.classList.add('open')
+}
+
+async function adminViewAchievements(userId, username) {
+  const modal = document.getElementById('adminModal')
+  document.getElementById('adminModalTitle').textContent = '🏅 Achievements: ' + username
+  const body = document.getElementById('adminModalBody')
+  body.innerHTML = '<div class="spinner"></div>'
+  modal.classList.add('open')
+
+  const { data } = await sb.from('profiles').select('settings').eq('user_id', userId).single()
+  const unlocked = data?.settings?.unlocked_achievements || []
+  const pinned = data?.settings?.pinned_achievements || []
+
+  if (!unlocked.length) {
+    body.innerHTML = '<p style="color:var(--muted);padding:20px;text-align:center">Keine Achievements freigeschaltet</p>'
+    return
+  }
+
+  const catLabels = { sessions: '💪 Sessions', volume: '🏋️ Volumen', streak: '🔥 Streak' }
+  body.innerHTML = unlocked.map(id => {
+    const ach = ACHIEVEMENTS.find(a => a.id === id)
+    const name = ach ? ach.name : id
+    const emoji = ach ? ach.emoji : '🏅'
+    const cat = ach ? catLabels[ach.cat] : ''
+    const isPinned = pinned.includes(id)
+    return `<div style="background:var(--bg3);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
+      <div style="width:36px;height:36px;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--card2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <img src="achievements/${id}.png" alt="${emoji}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" onerror="this.style.display='none';this.nextSibling.style.display='block'">
+        <span style="display:none;font-size:20px">${emoji}</span>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700">${name}</div>
+        <div style="font-size:11px;color:var(--muted)">${cat}${isPinned ? ' · 📌 gepinnt' : ''}</div>
+      </div>
+      <button onclick="adminDeleteAchievement('${userId}','${username}','${id}')" style="font-size:11px;color:var(--accent);background:none;border:1px solid var(--accent);border-radius:6px;padding:4px 8px;cursor:pointer;flex-shrink:0">Löschen</button>
+    </div>`
+  }).join('')
+}
+
+async function adminDeleteAchievement(userId, username, achId) {
+  if (!confirm(`Achievement "${achId}" von ${username} wirklich entfernen?`)) return
+  const { data } = await sb.from('profiles').select('settings').eq('user_id', userId).single()
+  const existing = data?.settings || {}
+  const newUnlocked = (existing.unlocked_achievements || []).filter(id => id !== achId)
+  const newPinned = (existing.pinned_achievements || []).filter(id => id !== achId)
+  const settings = { ...existing, unlocked_achievements: newUnlocked, pinned_achievements: newPinned }
+  const { error } = await sb.from('profiles').update({ settings }).eq('user_id', userId)
+  if (error) return toast('Fehler: ' + error.message, true)
+  await sb.from('audit_log').insert({ user_id: ADMIN_ID, action: `Admin entfernte Achievement "${achId}" von ${username}`, details: { target_user: userId, achievement: achId } })
+  toast(`Achievement entfernt ✓`)
+  adminViewAchievements(userId, username)
 }
 
 async function adminRecalcXP(userId, username) {
