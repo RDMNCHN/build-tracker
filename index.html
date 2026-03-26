@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.103</title>
+<title>Grindset v1.104</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1559,6 +1559,7 @@ function updateBadge(ei) {
   const prev = updateBadge._prev[ei] || 0
   const justCompleted = filled > prev
   updateBadge._prev[ei] = filled
+  console.log('updateBadge', ei, 'filled:', filled, 'prev:', prev, 'justCompleted:', justCompleted, 'overdriveActive:', overdriveActive)
 
   if (justCompleted && overdriveActive) {
     if (focusBonusWindow) {
