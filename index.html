@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.100</title>
+<title>Grindset v1.101</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -423,6 +423,22 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
     <button class="btn btn-card" style="margin-top:16px" onclick="document.getElementById('updateLogModal').classList.remove('open')">Schließen</button>
   </div>
 </div>
+
+<!-- Rest Timer Overlay -->
+  <div id="restTimerOverlay" style="display:none;position:fixed;top:0;left:0;right:0;z-index:200;padding:10px 16px;background:rgba(11,12,17,0.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)">
+    <div style="display:flex;align-items:center;gap:12px">
+      <svg width="44" height="44" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="19" fill="none" stroke="var(--border)" stroke-width="3"/>
+        <circle id="timerCircle" cx="22" cy="22" r="19" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="119.4" stroke-dashoffset="0" stroke-linecap="round" style="transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset 1s linear,stroke 0.5s"/>
+        <text id="timerText" x="22" y="27" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">90</text>
+      </svg>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700" id="timerLabel">⚡ Overdrive — Pause läuft</div>
+        <div style="font-size:11px;color:var(--muted)" id="timerSub">Nächster Satz in der Zeit = +44 XP Bonus!</div>
+      </div>
+      <button onclick="cancelRestTimer()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">×</button>
+    </div>
+  </div>
 
 <!-- XP Animation Modal -->
   <div id="xpAnimModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.92);flex-direction:column;align-items:center;justify-content:center">
