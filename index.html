@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.130</title>
+<title>Grindset v1.131</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -940,6 +940,7 @@ const DEFAULT_PLAN = {
 }
 
 let currentUser = null
+let currentProfile = null
 let plans = []
 let activePlanId = null
 let selectedDay = null
@@ -970,6 +971,7 @@ async function saveUsername() {
   const username = document.getElementById('usernameInput').value.trim()
   if (!username) return toast(t('enterUsername'), true)
   await sb.from('profiles').update({ username }).eq('user_id', currentUser.id)
+  if (currentProfile) currentProfile.username = username
   renderProfile()
   toast(t('usernameSaved'))
 }
@@ -1231,9 +1233,9 @@ function getXpProgress(xp) {
   return Math.min(100, Math.round((progress / range) * 100))
 }
 
-async function renderProfile() {
+function renderProfile() {
   if (!currentUser) return
-  const { data: prof } = await sb.from('profiles').select('*').eq('user_id', currentUser.id).single()
+  const prof = currentProfile || {}
   const username = prof?.username || ''
   const xp = prof?.xp || 0
   const color = prof?.avatar_color || '#e94560'
@@ -1339,6 +1341,7 @@ async function uploadAvatar(input) {
   const avatarUrl = data.publicUrl.replace('/object/p/', '/object/public/') + '?t=' + Date.now()
 
   await sb.from('profiles').update({ avatar_url: avatarUrl }).eq('user_id', currentUser.id)
+  if (currentProfile) currentProfile.avatar_url = avatarUrl
   renderProfile()
   toast('Profilbild gespeichert!')
 }
@@ -1363,6 +1366,7 @@ function resizeImage(file, maxSize) {
 
 async function setAvatarColor(color) {
   await sb.from('profiles').update({ avatar_color: color }).eq('user_id', currentUser.id)
+  if (currentProfile) currentProfile.avatar_color = color
   renderProfile()
   toast(t('colorSaved'))
 }
@@ -1370,6 +1374,7 @@ async function setAvatarColor(color) {
 async function saveStatus() {
   const status = document.getElementById('statusInput').value.trim()
   await sb.from('profiles').update({ status }).eq('user_id', currentUser.id)
+  if (currentProfile) currentProfile.status = status
   renderProfile()
   toast(t('statusSaved'))
 }
@@ -1478,7 +1483,9 @@ async function showApp() {
   const prof = profResult.data
   if (profResult.error || !prof) {
     await sb.from('profiles').insert({ user_id: currentUser.id, lang: localStorage.getItem('lang')||'de', xp: 0 })
+    currentProfile = { user_id: currentUser.id, xp: 0 }
   } else {
+    currentProfile = prof
     if (prof.username) currentUser.username = prof.username
     if (prof.lang) { lang = prof.lang; localStorage.setItem('lang', lang) }
     applySettings(prof.settings)
@@ -1801,6 +1808,7 @@ async function awardXP(exercisesData, date) {
   const newRank = getRank(newTotal)
   const rankUp = newRank.name !== oldRank.name ? newRank : null
   // Fire-and-forget non-critical writes in parallel
+  if (currentProfile) currentProfile.xp = newTotal
   Promise.all([
     sb.from('xp_history').insert({ user_id: currentUser.id, amount: sessionXP, reason: `💪 Session: ${exCount} ${lang==='en'?'exercises':'Übungen'} · ${date}` }),
     sb.from('profiles').update({ xp: newTotal }).eq('user_id', currentUser.id)
