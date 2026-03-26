@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.131</title>
+<title>Grindset v1.132</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1422,7 +1422,13 @@ async function loadExercises() {
 }
 
 function getExercises() {
-  return dbExercises.length > 0 ? dbExercises : EXERCISES
+  if (dbExercises.length > 0) return dbExercises
+  // Cache may have expired - try restoring from localStorage before falling back
+  try {
+    const cached = localStorage.getItem('grindset_exercises_v2')
+    if (cached) { dbExercises = JSON.parse(cached); return dbExercises }
+  } catch(e) {}
+  return EXERCISES
 }
 
 async function init() {
@@ -1789,10 +1795,10 @@ function timeAgo(dateStr) {
 }
 
 async function recalcUserXP() {
-  const { data: allSessions } = await sb.from('sessions').select('exercises').eq('user_id', currentUser.id)
-  if (!allSessions?.length) { await sb.from('profiles').update({ xp: 0 }).eq('user_id', currentUser.id); return 0 }
-  let totalXP = 0
-  for (const session of allSessions) { totalXP += calcSessionXP(session.exercises || []) }
+  // Use in-memory sessions — no extra DB call needed
+  const allSessions = sessions.length ? sessions : (await sb.from('sessions').select('exercises').eq('user_id', currentUser.id)).data || []
+  const totalXP = allSessions.reduce((sum, s) => sum + calcSessionXP(s.exercises || []), 0)
+  if (currentProfile) currentProfile.xp = totalXP
   await sb.from('profiles').update({ xp: totalXP }).eq('user_id', currentUser.id)
   return totalXP
 }
@@ -2372,11 +2378,24 @@ async function deleteExerciseRequest(requestId) {
   renderExerciseRequests()
 }
 
-async function renderPit() {
+let pitCache = null
+let pitCacheTs = 0
+async function renderPit(force = false) {
   const list = document.getElementById('pitList')
+  const STALE = 2 * 60 * 1000 // 2 minutes
+  if (!force && pitCache && Date.now() - pitCacheTs < STALE) {
+    renderPitList(pitCache); return
+  }
   list.innerHTML = '<div class="spinner"></div>'
-  const { data: profiles } = await sb.from('profiles').select('*').order('xp', { ascending: false })
+  const { data: profiles } = await sb.from('profiles').select('user_id,username,xp,avatar_color,avatar_url,status,last_active,settings').order('xp', { ascending: false })
   if (!profiles?.length) { list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Noch keine anderen Nutzer</div>'; return }
+  pitCache = profiles
+  pitCacheTs = Date.now()
+  renderPitList(profiles)
+}
+
+function renderPitList(profiles) {
+  const list = document.getElementById('pitList')
   list.innerHTML = profiles.map((p, idx) => {
     const rank = getRank(p.xp || 0)
     const initial = (p.username || p.user_id || '?')[0].toUpperCase()
