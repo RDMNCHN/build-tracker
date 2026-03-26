@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.115</title>
+<title>Grindset v1.116</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -3092,6 +3092,7 @@ function haptic(type = 'light') {
 let restTimer = null
 let restTimerStart = null
 let overdriveActive = false
+let autoCloseTimeout = null
 
 function toggleOverdrive(enabled) {
   localStorage.setItem('grindset_overdrive', enabled ? '1' : '0')
@@ -3163,13 +3164,14 @@ function startRestTimer() {
       if (timerSub) timerSub.textContent = 'Los, du schaffst das! 💪'
       if (circle) circle.style.stroke = 'var(--gold)'
       // Auto-close timer after 10s
-      setTimeout(() => cancelRestTimer(), 10000)
+      autoCloseTimeout = setTimeout(() => cancelRestTimer(), 10000)
     }
   }, 200)
 }
 
 function cancelRestTimer() {
   if (restTimer) { clearInterval(restTimer); restTimer = null }
+  if (autoCloseTimeout) { clearTimeout(autoCloseTimeout); autoCloseTimeout = null }
   const overlay = document.getElementById('restTimerOverlay')
   if (overlay) overlay.style.display = 'none'
 }
