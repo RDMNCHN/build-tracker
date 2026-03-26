@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.101</title>
+<title>Grindset v1.102</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -429,7 +429,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
     <div style="display:flex;align-items:center;gap:12px">
       <svg width="44" height="44" viewBox="0 0 44 44">
         <circle cx="22" cy="22" r="19" fill="none" stroke="var(--border)" stroke-width="3"/>
-        <circle id="timerCircle" cx="22" cy="22" r="19" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="119.4" stroke-dashoffset="0" stroke-linecap="round" style="transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset 1s linear,stroke 0.5s"/>
+        <circle id="timerCircle" cx="22" cy="22" r="19" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="119.4" stroke-dashoffset="0" stroke-linecap="round" style="transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset 0.2s linear,stroke 0.5s"/>
         <text id="timerText" x="22" y="27" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">90</text>
       </svg>
       <div style="flex:1">
@@ -1545,25 +1545,35 @@ function renumberRows(ei) {
 function updateBadge(ei) {
   const rows = document.querySelectorAll(`#setrows_${ei} tr`)
   let filled = 0
-  let lastFilled = false
+  let justFinishedASet = false
+
   rows.forEach(r => {
     const ins = r.querySelectorAll('input')
-    if (ins[0]?.value && ins[1]?.value) { filled++; lastFilled = true }
-    else lastFilled = false
+    if (parseFloat(ins[0]?.value) > 0 && parseInt(ins[1]?.value) > 0) {
+      filled++
+      if (document.activeElement === ins[0] || document.activeElement === ins[1]) {
+        justFinishedASet = true
+      }
+    }
   })
+
   const badge = document.getElementById('badge_'+ei)
   badge.textContent = filled > 0 ? `${filled}/${rows.length} Sätze` : 'Eintragen'
   badge.style.color = filled > 0 ? 'var(--green)' : 'var(--muted)'
-  // Check focus bonus or start timer
-  if (lastFilled) {
-    if (checkFocusBonus()) {
-      // Award focus bonus XP
-      sb.from('xp_history').insert({ user_id: currentUser?.id, amount: 44, reason: '⚡ Overdrive Focus Bonus' })
+
+  if (justFinishedASet && overdriveActive) {
+    if (focusBonusWindow) {
+      const bonusXP = 44
+      sb.from('xp_history').insert({ user_id: currentUser?.id, amount: bonusXP, reason: '⚡ Overdrive Focus Bonus' })
       sb.from('profiles').select('xp').eq('user_id', currentUser?.id).single().then(({data}) => {
-        if (data) sb.from('profiles').update({ xp: (data.xp||0) + 44 }).eq('user_id', currentUser?.id)
+        if (data) {
+          const newXP = (data.xp||0) + bonusXP
+          sb.from('profiles').update({ xp: newXP }).eq('user_id', currentUser?.id).then(() => renderProfile())
+        }
       })
-      toast('⚡ Focus Bonus! +44 XP', false)
+      toast('⚡ Focus Bonus! +44 XP')
       haptic('success')
+      cancelRestTimer()
     } else {
       startRestTimer()
     }
