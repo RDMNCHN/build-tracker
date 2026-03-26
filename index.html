@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.104</title>
+<title>Grindset v1.105</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1532,8 +1532,8 @@ function addSetRow(ei) {
   const n = tbody.rows.length + 1
   const tr = document.createElement('tr')
   tr.innerHTML = `<td style="color:var(--muted);font-size:13px;font-weight:600;padding:5px 4px;text-align:center">${n}</td>
-    <td style="padding:5px 4px"><input type="number" inputmode="decimal" placeholder="0" min="0" step="0.5" onchange="updateBadge(${ei})"></td>
-    <td style="padding:5px 4px"><input type="number" inputmode="numeric" placeholder="0" min="0" step="1" onchange="updateBadge(${ei})"></td>
+    <td style="padding:5px 4px"><input type="number" inputmode="decimal" placeholder="0" min="0" step="0.5" oninput="updateBadge(${ei})"></td>
+    <td style="padding:5px 4px"><input type="number" inputmode="numeric" placeholder="0" min="0" step="1" oninput="updateBadge(${ei})"></td>
     <td style="padding:5px 4px;text-align:center"><button onclick="this.closest('tr').remove();renumberRows(${ei})" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer">×</button></td>`
   tbody.appendChild(tr)
 }
