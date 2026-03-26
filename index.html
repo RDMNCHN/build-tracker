@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.124</title>
+<title>Grindset v1.125</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1299,7 +1299,9 @@ async function renderProfile() {
   applyLang()
   renderAchievements()
   renderPinnedAchievements()
-} {
+}
+
+function openAvatarPicker() {
   document.getElementById('avatarModal').classList.add('open')
   // populate color opts inside modal
   const row = document.getElementById('colorOptsRow')
