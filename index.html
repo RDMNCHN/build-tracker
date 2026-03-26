@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.116</title>
+<title>Grindset v1.117</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -441,6 +441,26 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
     </div>
   </div>
 
+<!-- App Tour -->
+<div id="tourOverlay" style="display:none;position:fixed;inset:0;z-index:800;pointer-events:none">
+  <div id="tourBackdrop" style="position:absolute;inset:0;background:rgba(0,0,0,0.75)"></div>
+  <div id="tourHighlight" style="position:absolute;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.75);border:2px solid var(--accent);transition:all 0.35s cubic-bezier(0.34,1.2,0.64,1);pointer-events:none"></div>
+  <div id="tourPopup" style="position:absolute;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;max-width:280px;width:calc(100vw - 40px);box-shadow:0 8px 32px rgba(0,0,0,0.4);pointer-events:all;transition:all 0.3s ease">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div id="tourStepNum" style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Schritt 1 / 7</div>
+      <button onclick="endTour()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0;line-height:1">×</button>
+    </div>
+    <div id="tourTitle" style="font-size:15px;font-weight:800;margin-bottom:6px"></div>
+    <div id="tourText" style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:14px"></div>
+    <div style="display:flex;gap:8px">
+      <button onclick="endTour()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;flex:1">Überspringen</button>
+      <button id="tourNextBtn" onclick="tourNext()" style="background:var(--accent);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;flex:2">Weiter →</button>
+    </div>
+    <!-- Progress dots -->
+    <div id="tourDots" style="display:flex;justify-content:center;gap:5px;margin-top:12px"></div>
+  </div>
+</div>
+
 <!-- XP Animation Modal -->
   <div id="xpAnimModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.92);flex-direction:column;align-items:center;justify-content:center">
     <div style="text-align:center;padding:32px;max-width:320px;width:100%">
@@ -706,6 +726,13 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
       <button onclick="triggerXPRecalc()" style="background:var(--card2);border:1px solid var(--border);color:var(--gold);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">⚡ Reset</button>
     </div>
 
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--border);margin-top:4px">
+      <div>
+        <div style="font-size:14px;font-weight:600">App-Tour</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Schritt für Schritt durch Grindset</div>
+      </div>
+      <button onclick="document.getElementById('settingsModal').classList.remove('open');setTimeout(startTour,300)" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">🎯 Starten</button>
+    </div>
     <button class="btn btn-card" style="margin-top:8px" onclick="document.getElementById('settingsModal').classList.remove('open')">Schließen</button>
   </div>
 </div>
@@ -3196,6 +3223,120 @@ function showMotivationToast() {
   document.getElementById('motivationText').textContent = msg
   overlay.style.display = 'flex'
   setTimeout(() => { if (overlay) overlay.style.display = 'none' }, 3000)
+}
+
+// ── App Tour ──
+const TOUR_STEPS = [
+  {
+    tab: 'train',
+    selector: '.hero',
+    title: '💪 Training',
+    text: 'Hier startest du dein Training. Wähle einen Plan und einen Tag aus um loszulegen.'
+  },
+  {
+    tab: 'train',
+    selector: '.day-grid',
+    title: '📅 Tag auswählen',
+    text: 'Tippe auf einen Trainingstag um die Übungen zu sehen. Jeder Tag hat seine eigenen Übungen.'
+  },
+  {
+    tab: 'analyse',
+    selector: '.stat-grid',
+    title: '📊 Analyse',
+    text: 'Hier siehst du deine Trainingsstatistiken — Gesamtsessions, Volumen und mehr.'
+  },
+  {
+    tab: 'analyse',
+    selector: '#heatmap',
+    title: '🔥 Heatmap',
+    text: 'Die letzten 4 Wochen auf einen Blick. Je grüner, desto mehr hast du in der Woche trainiert.'
+  },
+  {
+    tab: 'pit',
+    selector: '#pitLeaderboard',
+    title: '⚔️ The Pit',
+    text: 'Das Leaderboard zeigt alle Grindset User nach XP. Trainiere regelmäßig um aufzusteigen!'
+  },
+  {
+    tab: 'profile',
+    selector: '#profileRankBadge',
+    title: '🏆 Dein Rang',
+    text: 'Sammle XP durch Training und steige durch 10 Ränge auf — von Rookie bis The Unchained.'
+  },
+  {
+    tab: 'profile',
+    selector: '#profileHero',
+    title: '⚡ Einstellungen',
+    text: 'Hier findest du dein Profil, XP-Info, Themes und den Overdrive Modus für automatische Pause-Timer.'
+  }
+]
+
+let tourStep = 0
+let tourActive = false
+
+function startTour() {
+  tourStep = 0
+  tourActive = true
+  document.getElementById('tourOverlay').style.display = 'block'
+  showTourStep()
+}
+
+function endTour() {
+  tourActive = false
+  document.getElementById('tourOverlay').style.display = 'none'
+}
+
+function tourNext() {
+  tourStep++
+  if (tourStep >= TOUR_STEPS.length) { endTour(); toast('Tour abgeschlossen! 🎉'); return }
+  showTourStep()
+}
+
+async function showTourStep() {
+  const step = TOUR_STEPS[tourStep]
+  if (!step) return
+
+  // Switch tab if needed
+  const tabBtn = document.querySelector(`[onclick*="showTab('${step.tab}'"]`)
+  if (tabBtn) showTab(step.tab, tabBtn)
+
+  // Wait for render
+  await new Promise(r => setTimeout(r, 350))
+
+  const el = document.querySelector(step.selector)
+  const popup = document.getElementById('tourPopup')
+  const highlight = document.getElementById('tourHighlight')
+
+  document.getElementById('tourTitle').textContent = step.title
+  document.getElementById('tourText').textContent = step.text
+  document.getElementById('tourStepNum').textContent = `Schritt ${tourStep + 1} / ${TOUR_STEPS.length}`
+  document.getElementById('tourNextBtn').textContent = tourStep === TOUR_STEPS.length - 1 ? 'Fertig 🎉' : 'Weiter →'
+
+  // Progress dots
+  const dots = document.getElementById('tourDots')
+  dots.innerHTML = TOUR_STEPS.map((_, i) =>
+    `<div style="width:6px;height:6px;border-radius:50%;background:${i === tourStep ? 'var(--accent)' : 'var(--border)'}"></div>`
+  ).join('')
+
+  if (el) {
+    const rect = el.getBoundingClientRect()
+    const pad = 8
+    highlight.style.cssText = `position:absolute;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.75);border:2px solid var(--accent);transition:all 0.35s cubic-bezier(0.34,1.2,0.64,1);pointer-events:none;
+      left:${rect.left - pad}px;top:${rect.top - pad}px;width:${rect.width + pad*2}px;height:${rect.height + pad*2}px`
+
+    // Position popup below or above element
+    const popupH = 200
+    const spaceBelow = window.innerHeight - rect.bottom - 20
+    const popupTop = spaceBelow > popupH
+      ? rect.bottom + pad + 10
+      : rect.top - popupH - pad - 10
+
+    popup.style.cssText = `position:absolute;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;max-width:280px;width:calc(100vw - 40px);box-shadow:0 8px 32px rgba(0,0,0,0.4);pointer-events:all;transition:all 0.3s ease;
+      left:50%;transform:translateX(-50%);top:${Math.max(10, Math.min(popupTop, window.innerHeight - popupH - 10))}px`
+
+    // Scroll element into view
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
 }
 
 function showTab(tab, btn) {
