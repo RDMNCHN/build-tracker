@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.121</title>
+<title>Grindset v1.122</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -3306,11 +3306,17 @@ async function showTourStep() {
   await new Promise(r => setTimeout(r, 350))
 
   // Call beforeShow hook if exists
-  if (step.beforeShow) { step.beforeShow(); await new Promise(r => setTimeout(r, 200)) }
+  if (step.beforeShow) { step.beforeShow(); await new Promise(r => setTimeout(r, 300)) }
 
   const el = document.querySelector(step.selector)
   const popup = document.getElementById('tourPopup')
   const highlight = document.getElementById('tourHighlight')
+
+  // Scroll into view FIRST so getBoundingClientRect() returns correct viewport coords
+  if (el) {
+    el.scrollIntoView({ behavior: 'instant', block: 'center' })
+    await new Promise(r => setTimeout(r, 60))
+  }
 
   document.getElementById('tourTitle').textContent = step.title
   document.getElementById('tourText').textContent = step.text
@@ -3338,9 +3344,6 @@ async function showTourStep() {
 
     popup.style.cssText = `position:absolute;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;max-width:280px;width:calc(100vw - 40px);box-shadow:0 8px 32px rgba(0,0,0,0.4);pointer-events:all;transition:all 0.3s ease;
       left:50%;transform:translateX(-50%);top:${Math.max(10, Math.min(popupTop, window.innerHeight - popupH - 10))}px`
-
-    // Scroll element into view
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 }
 
