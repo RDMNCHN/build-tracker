@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.107</title>
+<title>Grindset v1.111</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -425,18 +425,19 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
 </div>
 
 <!-- Rest Timer Overlay -->
-  <div id="restTimerOverlay" style="display:none;position:fixed;top:0;left:0;right:0;z-index:200;padding:10px 16px;background:rgba(11,12,17,0.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)">
-    <div style="display:flex;align-items:center;gap:12px">
-      <svg width="44" height="44" viewBox="0 0 44 44">
-        <circle cx="22" cy="22" r="19" fill="none" stroke="var(--border)" stroke-width="3"/>
-        <circle id="timerCircle" cx="22" cy="22" r="19" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="119.4" stroke-dashoffset="0" stroke-linecap="round" style="transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset 0.2s linear,stroke 0.5s"/>
-        <text id="timerText" x="22" y="27" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">90</text>
-      </svg>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:700" id="timerLabel">⚡ Overdrive — Pause läuft</div>
-        <div style="font-size:11px;color:var(--muted)" id="timerSub">Nächster Satz jetzt = Motivation Boost!</div>
+  <div id="restTimerOverlay" style="display:none;position:fixed;top:0;left:0;right:0;z-index:200;padding:16px;background:rgba(11,12,17,0.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+        <div style="font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">⚡ Overdrive</div>
+        <button onclick="cancelRestTimer()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:0;line-height:1">×</button>
       </div>
-      <button onclick="cancelRestTimer()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">×</button>
+      <svg width="80" height="80" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="34" fill="none" stroke="var(--border)" stroke-width="4"/>
+        <circle id="timerCircle" cx="40" cy="40" r="34" fill="none" stroke="var(--accent)" stroke-width="4" stroke-dasharray="213.6" stroke-dashoffset="0" stroke-linecap="round" style="transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset 0.2s linear,stroke 0.5s"/>
+        <text id="timerText" x="40" y="48" text-anchor="middle" fill="var(--text)" font-size="24" font-weight="800">90</text>
+      </svg>
+      <div id="timerLabel" style="font-size:16px;font-weight:700;text-align:center">Pause läuft</div>
+      <div id="timerSub" style="font-size:12px;color:var(--muted);text-align:center">Nächster Satz startet den Timer neu</div>
     </div>
   </div>
 
@@ -656,7 +657,22 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
         </label>
       </div>
       <div id="overdriveInfoBox" style="display:none;background:var(--bg3);border-radius:8px;padding:10px;font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px">
-        🔥 <strong style="color:var(--text)">Overdrive</strong> startet automatisch einen 90-Sek Timer sobald du einen Satz einträgst. Wenn der Timer abläuft vibriert das Handy. Wenn du dann innerhalb von 10 Sek den nächsten Satz einträgst bekommst du eine Motivation Message!
+        🔥 <strong style="color:var(--text)">Overdrive</strong> startet automatisch einen Timer sobald du einen Satz einträgst. Wenn der Timer abläuft vibriert das Handy. Wenn du dann innerhalb von 10 Sek den nächsten Satz einträgst bekommst du eine Motivation Message!
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+        <div style="font-size:12px;color:var(--muted)">Pausenzeit:</div>
+        <select id="overdriveTimer" onchange="saveOverdriveDuration(this.value)" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600;margin-bottom:0;width:auto">
+          <option value="15">15 Sek</option>
+          <option value="30">30 Sek</option>
+          <option value="45">45 Sek</option>
+          <option value="60">60 Sek</option>
+          <option value="90" selected>90 Sek</option>
+          <option value="120">120 Sek</option>
+          <option value="150">150 Sek</option>
+          <option value="180">3 Min</option>
+          <option value="240">4 Min</option>
+          <option value="300">5 Min</option>
+        </select>
       </div>
     </div>
 
@@ -1346,6 +1362,7 @@ async function showApp() {
   document.getElementById('loginPage').style.display = 'none'
   document.getElementById('appShell').style.display = 'block'
   checkUpdateBadge()
+  overdriveActive = localStorage.getItem('grindset_overdrive') === '1'
   document.getElementById('trainDate').value = today()
   // Ensure profile row exists
   const { data: prof, error: profErr } = await sb.from('profiles').select('*').eq('user_id', currentUser.id).single()
@@ -3081,6 +3098,17 @@ function initOverdriveToggle() {
   const knob = document.getElementById('overdriveKnob')
   if (slider) slider.style.background = enabled ? 'var(--accent)' : 'var(--bg3)'
   if (knob) knob.style.transform = enabled ? 'translateX(22px)' : 'none'
+  const dur = localStorage.getItem('grindset_overdrive_duration') || '90'
+  const sel = document.getElementById('overdriveTimer')
+  if (sel) sel.value = dur
+}
+
+function saveOverdriveDuration(val) {
+  localStorage.setItem('grindset_overdrive_duration', val)
+}
+
+function getOverdriveDuration() {
+  return parseInt(localStorage.getItem('grindset_overdrive_duration') || '90')
 }
 
 function startRestTimer() {
@@ -3089,13 +3117,13 @@ function startRestTimer() {
   focusBonusWindow = false
   const overlay = document.getElementById('restTimerOverlay')
   if (overlay) overlay.style.display = 'block'
-  const duration = 90
+  const duration = getOverdriveDuration()
   restTimerStart = Date.now()
   const circle = document.getElementById('timerCircle')
   const timerText = document.getElementById('timerText')
   const timerLabel = document.getElementById('timerLabel')
   const timerSub = document.getElementById('timerSub')
-  const circumference = 119.4
+  const circumference = 213.6
 
   restTimer = setInterval(() => {
     const elapsed = (Date.now() - restTimerStart) / 1000
@@ -3109,10 +3137,10 @@ function startRestTimer() {
     if (remaining <= 0) {
       clearInterval(restTimer)
       restTimer = null
-      navigator.vibrate && navigator.vibrate([300, 100, 300, 100, 300])
+      navigator.vibrate && navigator.vibrate([1000, 200, 1000, 200, 1000])
       focusBonusWindow = true
-      if (timerLabel) timerLabel.textContent = '⚡ Zeit! Nächster Satz jetzt!'
-      if (timerSub) timerSub.textContent = '⚡ Zeit! Nächster Satz jetzt!'
+      if (timerLabel) timerLabel.textContent = '⚡ Jetzt! Nächster Satz!'
+      if (timerSub) timerSub.textContent = 'Los, du schaffst das! 💪'
       if (circle) circle.style.stroke = 'var(--gold)'
       // End focus bonus window after 10s
       setTimeout(() => {
@@ -3137,7 +3165,7 @@ function checkFocusBonus() {
   return true
 }
 
-const MOTIVATIONS = ["💪 Mega! Weiter so!", "🔥 Du bist on fire!", "⚡ Fokus! Das ist Grindset!", "💥 Beast Mode aktiviert!", "🏆 So wird das gemacht!", "😤 Keine Ausreden. Nur Ergebnisse.", "🚀 Locked in!", "💪 Das Gewicht kennt deinen Namen!"]
+const MOTIVATIONS = ["💪 Du Macher! Weiter so!", "⚡ Und direkt den nächsten!", "😤 No pain no gain!", "🏋️ Ran an die Eisen!", "🔥 Jetzt wird weiter geschuftet!"]
 
 function showMotivationToast() {
   const msg = MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)]
