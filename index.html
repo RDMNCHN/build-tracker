@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.136</title>
+<title>Grindset v1.137</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2534,16 +2534,15 @@ async function submitCustomAsRequest(exId) {
 
   // Check for duplicate request
   const { data: existing } = await sb.from('exercise_requests')
-    .select('id').ilike('name_de', ex.name).limit(1)
+    .select('id').ilike('name', ex.name).limit(1)
   if (existing?.length) return toast('Anfrage für diese Übung existiert bereits', true)
 
   const { error } = await sb.from('exercise_requests').insert({
     user_id: currentUser.id,
-    name_de: ex.name,
+    name: ex.name,
     name_en: '',
     muscle,
     description: note || `Custom Übung von ${currentProfile?.username||'User'}`,
-    status: 'pending',
     votes: 0
   })
   if (error) return toast('Fehler: ' + error.message, true)
