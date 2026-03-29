@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.134</title>
+<title>Grindset v1.135</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -757,9 +757,30 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
     <div class="modal-handle"></div>
     <div style="font-size:15px;font-weight:700;margin-bottom:12px" id="selectExTitle">Übungen auswählen</div>
     <input type="text" id="exSearch" id="exSearchInput" placeholder="Suchen..." oninput="filterExercises()" style="margin-bottom:8px">
+
+    <!-- Custom exercises -->
+    <div id="exPickerCustomRow" style="display:none;margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">⭐ Deine Übungen</div>
+      <div id="exPickerCustomList"></div>
+    </div>
+
     <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:10px" id="muscleFilters"></div>
-    <div id="exPickerList" style="max-height:300px;overflow-y:auto"></div>
+    <div id="exPickerList" style="max-height:260px;overflow-y:auto"></div>
     <button class="btn btn-accent" style="margin-top:12px" id="doneBtn" onclick="closeExPicker()">Fertig</button>
+  </div>
+</div>
+
+<!-- Exercise Detail Modal (Plan Builder) -->
+<div class="modal-overlay" id="exDetailModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="font-size:16px;font-weight:800;margin-bottom:4px" id="exDetailName"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px" id="exDetailMuscle"></div>
+    <div id="exDetailBody"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button id="exDetailAddBtn" onclick="exDetailConfirm()" style="flex:2;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer">✓ Hinzufügen</button>
+      <button onclick="document.getElementById('exDetailModal').classList.remove('open')" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--muted);border-radius:12px;padding:13px;font-size:14px;font-weight:600;cursor:pointer">Zurück</button>
+    </div>
   </div>
 </div>
 
@@ -1562,13 +1583,25 @@ async function loadExercises() {
 }
 
 function getExercises() {
-  if (dbExercises.length > 0) return dbExercises
+  if (dbExercises.length > 0) {
+    // Merge custom exercises on top
+    const customs = getCustomExercises().map(e => ({ ...e, fromDB: false, en: e.name, search: e.name.toLowerCase() }))
+    return dbExercises
+  }
   // Cache may have expired - try restoring from localStorage before falling back
   try {
     const cached = localStorage.getItem('grindset_exercises_v2')
     if (cached) { dbExercises = JSON.parse(cached); return dbExercises }
   } catch(e) {}
   return EXERCISES
+}
+
+function getAllExercisesWithCustom() {
+  const base = dbExercises.length > 0 ? dbExercises : EXERCISES
+  const customs = getCustomExercises().map(e => ({ ...e, fromDB: false, en: e.name, search: e.name.toLowerCase() }))
+  // Only add customs not already in base (avoid duplicates by id)
+  const baseIds = new Set(base.map(e => e.id))
+  return [...base, ...customs.filter(e => !baseIds.has(e.id))]
 }
 
 async function init() {
@@ -1773,7 +1806,7 @@ const MUSCLE_COLORS = {
 function buildExerciseList() {
   const list = document.getElementById('exerciseList')
   list.innerHTML = selectedDay.exercises.map((exId, ei) => {
-    const ex = getExercises().find(e => e.id === exId) || {id:exId, name:exId, muscle:''}
+    const ex = getAllExercisesWithCustom().find(e => e.id === exId) || {id:exId, name:exId, muscle:''}
     const mColor = MUSCLE_COLORS[ex.muscle] || 'var(--accent)'
     return `<div class="ex-block" style="animation-delay:${ei * 0.05}s">
       <div class="ex-header" onclick="toggleEx(${ei})">
@@ -2385,11 +2418,142 @@ function filterExercises() {
   })
   document.getElementById('exPickerList').innerHTML = filtered.map(ex => {
     const sel = day.exercises.includes(ex.id)
-    return `<div onclick="togglePickerEx('${ex.id}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;margin-bottom:4px;background:${sel?'var(--card2)':'var(--bg3)'};border:1px solid ${sel?'var(--accent)':'var(--border)'};cursor:pointer">
-      <div><div style="font-size:13px;font-weight:600">${exName(ex)}</div><div style="font-size:11px;color:var(--muted)">${ex.muscle}</div></div>
-      <div style="width:22px;height:22px;border-radius:50%;background:${sel?'var(--accent)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;flex-shrink:0">${sel?'✓':'+'}</div>
+    return `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:8px;margin-bottom:4px;background:${sel?'var(--card2)':'var(--bg3)'};border:1px solid ${sel?'var(--accent)':'var(--border)'}">
+      <div onclick="togglePickerEx('${ex.id}')" style="flex:1;cursor:pointer;min-width:0">
+        <div style="font-size:13px;font-weight:600">${exName(ex)}</div>
+        <div style="font-size:11px;color:var(--muted)">${ex.muscle}</div>
+      </div>
+      <button onclick="openExDetail('${ex.id}',false)" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:20px;padding:3px 9px;cursor:pointer;flex-shrink:0">Info</button>
+      <div onclick="togglePickerEx('${ex.id}')" style="width:22px;height:22px;border-radius:50%;background:${sel?'var(--accent)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;flex-shrink:0;cursor:pointer">${sel?'✓':'+'}</div>
     </div>`
   }).join('')
+
+  // Custom exercises
+  const customs = getCustomExercises()
+  const customRow  = document.getElementById('exPickerCustomRow')
+  const customList = document.getElementById('exPickerCustomList')
+  const customFiltered = customs.filter(ex =>
+    !search || ex.name.toLowerCase().includes(search)
+  )
+  if (customFiltered.length > 0) {
+    customRow.style.display = 'block'
+    customList.innerHTML = customFiltered.map(ex => {
+      const sel = day.exercises.includes(ex.id)
+      return `<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:8px;margin-bottom:4px;background:${sel?'rgba(245,166,35,0.1)':'var(--bg3)'};border:1px solid ${sel?'var(--gold)':'rgba(245,166,35,0.3)'}">
+        <div onclick="togglePickerEx('${ex.id}')" style="flex:1;cursor:pointer;min-width:0">
+          <div style="font-size:13px;font-weight:600">⭐ ${ex.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${ex.muscle||'Eigene Übung'}</div>
+        </div>
+        <button onclick="openExDetail('${ex.id}',true)" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:20px;padding:3px 9px;cursor:pointer;flex-shrink:0">Info</button>
+        <div onclick="togglePickerEx('${ex.id}')" style="width:22px;height:22px;border-radius:50%;background:${sel?'var(--gold)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;flex-shrink:0;cursor:pointer">${sel?'✓':'+'}</div>
+      </div>`
+    }).join('')
+  } else {
+    customRow.style.display = 'none'
+  }
+}
+
+// ── Exercise Detail Modal ──
+let exDetailCurrentId = null
+let exDetailIsCustom = false
+
+function openExDetail(exId, isCustom) {
+  exDetailCurrentId = exId
+  exDetailIsCustom = isCustom
+  const ex = isCustom
+    ? getCustomExercises().find(e => e.id === exId)
+    : getExercises().find(e => e.id === exId)
+  if (!ex) return
+
+  document.getElementById('exDetailName').textContent = ex.name
+  document.getElementById('exDetailMuscle').textContent = ex.muscle || 'Eigene Übung'
+
+  const day = builderDays[currentPickerDayIdx]
+  const isAdded = day?.exercises.includes(exId)
+  const addBtn = document.getElementById('exDetailAddBtn')
+  addBtn.textContent = isAdded ? '✓ Entfernen' : '✓ Hinzufügen'
+  addBtn.style.background = isAdded ? 'var(--bg3)' : 'var(--accent)'
+  addBtn.style.color = isAdded ? 'var(--muted)' : '#fff'
+
+  let body = ''
+  if (isCustom) {
+    // Editable muscle + submit as request
+    body = `
+      <div style="margin-bottom:12px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">Muskelgruppe</div>
+        <select id="exDetailMuscleEdit" style="margin-bottom:0;width:100%">
+          ${MUSCLES_DE.filter(m=>m!=='Alle').map(m=>`<option value="${m}" ${ex.muscle===m?'selected':''}>${m}</option>`).join('')}
+        </select>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">Notiz (optional)</div>
+        <textarea id="exDetailNote" placeholder="z.B. Ausführungshinweise, Equipment..." style="height:70px;resize:none;margin-bottom:0">${ex.note||''}</textarea>
+      </div>
+      <button onclick="submitCustomAsRequest('${exId}')" style="width:100%;padding:11px;border-radius:10px;border:1px solid var(--accent);background:rgba(233,69,96,0.08);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:4px">
+        📬 Als Community-Anfrage einreichen
+      </button>
+      <div style="font-size:11px;color:var(--muted);text-align:center">Andere User können dann dafür voten</div>`
+  } else {
+    // DB exercise: show tips if available
+    const tips = ex.tips || []
+    body = tips.length
+      ? `<div style="margin-bottom:4px;font-size:12px;color:var(--muted);font-weight:600">Tipps</div>` +
+        tips.map(tip => `<div style="font-size:13px;padding:8px 0;border-bottom:1px solid var(--bg3);color:var(--text)">${tip}</div>`).join('')
+      : `<div style="font-size:13px;color:var(--muted);padding:12px 0;text-align:center">Keine weiteren Infos verfügbar</div>`
+  }
+  document.getElementById('exDetailBody').innerHTML = body
+  document.getElementById('exDetailModal').classList.add('open')
+}
+
+function exDetailConfirm() {
+  if (!exDetailCurrentId) return
+  // Save muscle/note edits for custom exercises
+  if (exDetailIsCustom) {
+    const muscleEdit = document.getElementById('exDetailMuscleEdit')
+    const noteEdit   = document.getElementById('exDetailNote')
+    const customs    = getCustomExercises()
+    const ex         = customs.find(e => e.id === exDetailCurrentId)
+    if (ex && muscleEdit) {
+      ex.muscle = muscleEdit.value
+      ex.note   = noteEdit?.value || ''
+      if (currentProfile) currentProfile.settings = { ...(currentProfile.settings||{}), custom_exercises: customs }
+      sb.from('profiles').select('settings').eq('user_id', currentUser.id).single().then(({data}) => {
+        const s = { ...(data?.settings||{}), custom_exercises: customs }
+        sb.from('profiles').update({ settings: s }).eq('user_id', currentUser.id)
+      })
+    }
+  }
+  togglePickerEx(exDetailCurrentId)
+  document.getElementById('exDetailModal').classList.remove('open')
+}
+
+async function submitCustomAsRequest(exId) {
+  const customs = getCustomExercises()
+  const ex = customs.find(e => e.id === exId)
+  if (!ex) return
+
+  const muscleEl = document.getElementById('exDetailMuscleEdit')
+  const muscle = muscleEl?.value || ex.muscle || ''
+  const note   = document.getElementById('exDetailNote')?.value || ''
+
+  // Check for duplicate request
+  const { data: existing } = await sb.from('exercise_requests')
+    .select('id').ilike('name_de', ex.name).limit(1)
+  if (existing?.length) return toast('Anfrage für diese Übung existiert bereits', true)
+
+  const { error } = await sb.from('exercise_requests').insert({
+    user_id: currentUser.id,
+    name_de: ex.name,
+    name_en: '',
+    muscle,
+    description: note || `Custom Übung von ${currentProfile?.username||'User'}`,
+    status: 'pending',
+    votes: 0
+  })
+  if (error) return toast('Fehler: ' + error.message, true)
+  toast('Anfrage eingereicht! 📬')
+  haptic('success')
+  await sb.from('audit_log').insert({ user_id: currentUser.id, action: `Custom Übung als Anfrage eingereicht: ${ex.name}`, details: { exercise: ex.name, muscle } })
 }
 
 function togglePickerEx(exId) {
