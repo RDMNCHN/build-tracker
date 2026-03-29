@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.138</title>
+<title>Grindset v1.139</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -343,6 +343,23 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
       </div>
     </div>
 
+    <!-- Custom Exercises Card -->
+    <div class="card" style="margin-bottom:10px" id="customExCard">
+      <div onclick="toggleCustomExCard()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none">
+        <div>
+          <div style="font-size:14px;font-weight:700">⭐ Eigene Übungen</div>
+          <div id="customExSub" style="font-size:11px;color:var(--muted);margin-top:2px">0 gespeichert</div>
+        </div>
+        <span id="customExChevron" style="font-size:20px;color:var(--muted);transition:transform .25s">›</span>
+      </div>
+      <div id="customExBody" style="display:none;margin-top:12px">
+        <div id="customExList"></div>
+        <div id="customExEmpty" style="display:none;text-align:center;padding:20px;color:var(--muted);font-size:13px">
+          Noch keine eigenen Übungen — füge welche per Freestyle oder Plan Builder hinzu
+        </div>
+      </div>
+    </div>
+
     <!-- Achievements Card -->
     <div class="card" style="margin-bottom:10px" id="achievementsCard">
       <div onclick="toggleAchievementsCard()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none">
@@ -540,6 +557,25 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
       </div>
 
       <button onclick="closeXPAnimation()" style="background:var(--accent);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;width:100%;cursor:pointer">Weiter 💪</button>
+    </div>
+  </div>
+
+  <!-- Custom Exercise Edit Modal -->
+  <div class="modal-overlay" id="customExEditModal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div style="font-size:16px;font-weight:800;margin-bottom:14px">⭐ Übung bearbeiten</div>
+      <input type="hidden" id="customExEditId">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">Name</div>
+      <input type="text" id="customExEditName" placeholder="Übungsname" style="margin-bottom:12px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">Muskelgruppe</div>
+      <select id="customExEditMuscle" style="margin-bottom:12px;width:100%">
+        <option value="">Keine Angabe</option>
+      </select>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">Notiz (optional)</div>
+      <textarea id="customExEditNote" placeholder="z.B. Ausführungshinweise, Equipment..." style="height:80px;resize:none;margin-bottom:16px"></textarea>
+      <button onclick="saveCustomExEdit()" style="background:var(--accent);color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;width:100%;cursor:pointer;margin-bottom:8px">Speichern</button>
+      <button onclick="document.getElementById('customExEditModal').classList.remove('open')" class="btn btn-card">Abbrechen</button>
     </div>
   </div>
 
@@ -1453,6 +1489,9 @@ function renderProfile() {
   applyLang()
   renderAchievements()
   renderPinnedAchievements()
+  // Custom exercises count
+  const customSub = document.getElementById('customExSub')
+  if (customSub) customSub.textContent = `${getCustomExercises().length} gespeichert`
   // Flair
   const flairEl = document.getElementById('profileFlair')
   if (flairEl) {
@@ -3782,6 +3821,103 @@ function showMotivationToast() {
   document.getElementById('motivationText').textContent = msg
   overlay.style.display = 'flex'
   setTimeout(() => { if (overlay) overlay.style.display = 'none' }, 3000)
+}
+
+// ── Custom Exercise Management ──
+function toggleCustomExCard() {
+  const body    = document.getElementById('customExBody')
+  const chevron = document.getElementById('customExChevron')
+  if (!body) return
+  const open = body.style.display !== 'none'
+  body.style.display = open ? 'none' : 'block'
+  if (chevron) chevron.style.transform = open ? '' : 'rotate(90deg)'
+  if (!open) renderCustomExList()
+}
+
+function renderCustomExList() {
+  const customs = getCustomExercises()
+  const sub     = document.getElementById('customExSub')
+  const list    = document.getElementById('customExList')
+  const empty   = document.getElementById('customExEmpty')
+  if (sub) sub.textContent = `${customs.length} gespeichert`
+  if (!list) return
+  if (!customs.length) {
+    list.innerHTML = ''
+    if (empty) empty.style.display = 'block'
+    return
+  }
+  if (empty) empty.style.display = 'none'
+  list.innerHTML = customs.map(ex => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bg3)">
+      <div style="width:36px;height:36px;border-radius:8px;background:var(--bg3);border:1px solid rgba(245,166,35,0.3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">⭐</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ex.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:1px">${ex.muscle||'Keine Muskelgruppe'}${ex.note?` · ${ex.note.slice(0,30)}${ex.note.length>30?'…':''}`:''}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button onclick="openCustomExEdit('${ex.id}')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer">✏️</button>
+        <button onclick="deleteCustomEx('${ex.id}','${ex.name.replace(/'/g,"&#39;")}')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:1px solid var(--accent);background:none;color:var(--accent);cursor:pointer">🗑</button>
+      </div>
+    </div>`).join('')
+}
+
+function openCustomExEdit(id) {
+  const ex = getCustomExercises().find(e => e.id === id)
+  if (!ex) return
+  document.getElementById('customExEditId').value = id
+  document.getElementById('customExEditName').value = ex.name
+  document.getElementById('customExEditNote').value = ex.note || ''
+
+  // Populate muscle select
+  const sel = document.getElementById('customExEditMuscle')
+  if (sel.options.length <= 1) {
+    MUSCLES_DE.filter(m => m !== 'Alle').forEach(m => {
+      const opt = document.createElement('option')
+      opt.value = m; opt.textContent = m
+      sel.appendChild(opt)
+    })
+  }
+  sel.value = ex.muscle || ''
+  document.getElementById('customExEditModal').classList.add('open')
+}
+
+async function saveCustomExEdit() {
+  const id     = document.getElementById('customExEditId').value
+  const name   = document.getElementById('customExEditName').value.trim()
+  const muscle = document.getElementById('customExEditMuscle').value
+  const note   = document.getElementById('customExEditNote').value.trim()
+  if (!name) return toast('Name darf nicht leer sein', true)
+
+  const customs = getCustomExercises()
+  const idx = customs.findIndex(e => e.id === id)
+  if (idx === -1) return toast('Übung nicht gefunden', true)
+  customs[idx] = { ...customs[idx], name, muscle, note }
+
+  if (currentProfile) {
+    if (!currentProfile.settings) currentProfile.settings = {}
+    currentProfile.settings.custom_exercises = customs
+  }
+  const { data } = await sb.from('profiles').select('settings').eq('user_id', currentUser.id).single()
+  await sb.from('profiles').update({ settings: { ...(data?.settings||{}), custom_exercises: customs } }).eq('user_id', currentUser.id)
+
+  document.getElementById('customExEditModal').classList.remove('open')
+  renderCustomExList()
+  toast('Gespeichert ✓')
+  haptic('light')
+}
+
+async function deleteCustomEx(id, name) {
+  if (!confirm(`"${name}" wirklich löschen?`)) return
+  const customs = getCustomExercises().filter(e => e.id !== id)
+  if (currentProfile) {
+    if (!currentProfile.settings) currentProfile.settings = {}
+    currentProfile.settings.custom_exercises = customs
+  }
+  const { data } = await sb.from('profiles').select('settings').eq('user_id', currentUser.id).single()
+  await sb.from('profiles').update({ settings: { ...(data?.settings||{}), custom_exercises: customs } }).eq('user_id', currentUser.id)
+  renderCustomExList()
+  toast(`"${name}" gelöscht`)
+  haptic('medium')
 }
 
 // ── Freestyle Session ──
