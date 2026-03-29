@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.135</title>
+<title>Grindset v1.136</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1583,25 +1583,21 @@ async function loadExercises() {
 }
 
 function getExercises() {
-  if (dbExercises.length > 0) {
-    // Merge custom exercises on top
-    const customs = getCustomExercises().map(e => ({ ...e, fromDB: false, en: e.name, search: e.name.toLowerCase() }))
-    return dbExercises
-  }
-  // Cache may have expired - try restoring from localStorage before falling back
-  try {
-    const cached = localStorage.getItem('grindset_exercises_v2')
-    if (cached) { dbExercises = JSON.parse(cached); return dbExercises }
-  } catch(e) {}
-  return EXERCISES
+  const base = dbExercises.length > 0 ? dbExercises : (() => {
+    try {
+      const cached = localStorage.getItem('grindset_exercises_v2')
+      if (cached) { dbExercises = JSON.parse(cached); return dbExercises }
+    } catch(e) {}
+    return EXERCISES
+  })()
+  return base
 }
 
 function getAllExercisesWithCustom() {
-  const base = dbExercises.length > 0 ? dbExercises : EXERCISES
+  const base = getExercises()
   const customs = getCustomExercises().map(e => ({ ...e, fromDB: false, en: e.name, search: e.name.toLowerCase() }))
-  // Only add customs not already in base (avoid duplicates by id)
   const baseIds = new Set(base.map(e => e.id))
-  return [...base, ...customs.filter(e => !baseIds.has(e.id))]
+  return [...customs.filter(e => !baseIds.has(e.id)), ...base]
 }
 
 async function init() {
@@ -3745,12 +3741,12 @@ async function saveCustomExercise(ex) {
   if (existing.find(e => e.id === ex.id)) return
   const updated = [...existing, ex]
   if (currentProfile) {
-    currentProfile.settings = { ...(currentProfile.settings || {}), custom_exercises: updated }
+    if (!currentProfile.settings) currentProfile.settings = {}
+    currentProfile.settings.custom_exercises = updated
   }
-  // fire-and-forget
   const { data } = await sb.from('profiles').select('settings').eq('user_id', currentUser.id).single()
   const s = { ...(data?.settings || {}), custom_exercises: updated }
-  sb.from('profiles').update({ settings: s }).eq('user_id', currentUser.id)
+  await sb.from('profiles').update({ settings: s }).eq('user_id', currentUser.id)
 }
 
 function startFreestyle() {
