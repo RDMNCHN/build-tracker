@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.137</title>
+<title>Grindset v1.138</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -3259,6 +3259,15 @@ async function loadAdminExercises(status) {
         <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600">CODE ZUM EINFÜGEN:</div>
         <div style="font-size:11px;font-family:monospace;color:var(--green);word-break:break-all;line-height:1.6">${copyCode}</div>
         <button onclick="navigator.clipboard.writeText(\`${copyCode.replace(/`/g,"'")}\`).then(()=>toast('Kopiert!'))" style="margin-top:8px;font-size:11px;color:var(--blue);background:none;border:1px solid var(--blue);border-radius:6px;padding:4px 10px;cursor:pointer">📋 Kopieren</button>
+      </div>
+      <div style="background:rgba(245,166,35,0.07);border:1px solid rgba(245,166,35,0.3);border-radius:8px;padding:10px;margin-top:8px">
+        <div style="font-size:11px;color:var(--gold);margin-bottom:8px;font-weight:700">🔄 Session-Migration (Custom → DB)</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Wenn User diese Übung vorher als Custom hatten, hier die neue DB-ID eintragen um alle Sessions zu migrieren.</div>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="migrateOldId_${ex.id}" placeholder="custom_... (alte ID)" style="flex:1;margin-bottom:0;font-size:12px;padding:8px">
+          <input type="text" id="migrateNewId_${ex.id}" placeholder="Neue DB-UUID" style="flex:1;margin-bottom:0;font-size:12px;padding:8px">
+          <button onclick="adminMigrateSessions('${ex.id}','${ex.name}')" style="font-size:11px;padding:8px 12px;border-radius:8px;border:1px solid var(--gold);color:var(--gold);background:none;cursor:pointer;flex-shrink:0;font-weight:700">Migrieren</button>
+        </div>
       </div>` : ''}
       ${status === 'pending' ? `
       <div style="display:flex;gap:8px;margin-top:10px">
@@ -3380,6 +3389,54 @@ async function adminRejectExercise(reqId) {
   toast('Anfrage abgelehnt')
   if (currentAdminTab === 'exercises') loadAdminExercises('pending')
   else renderAdmin()
+}
+
+async function adminMigrateSessions(reqId, exName) {
+  const oldId = document.getElementById('migrateOldId_' + reqId)?.value.trim()
+  const newId = document.getElementById('migrateNewId_' + reqId)?.value.trim()
+  if (!oldId || !newId) return toast('Alte ID und neue DB-ID eintragen', true)
+  if (!oldId.startsWith('custom_')) return toast('Alte ID muss mit "custom_" beginnen', true)
+
+  // Load all sessions that contain the old exercise ID
+  const { data: allSessions, error } = await sb.from('sessions').select('id,user_id,exercises')
+  if (error) return toast('Fehler beim Laden: ' + error.message, true)
+
+  const toUpdate = []
+  for (const s of (allSessions||[])) {
+    const exs = s.exercises || []
+    const hasOld = exs.some(e => e.id === oldId)
+    if (!hasOld) continue
+    const updated = exs.map(e => e.id === oldId ? { ...e, id: newId, name: exName } : e)
+    toUpdate.push({ id: s.id, exercises: updated, userId: s.user_id })
+  }
+
+  if (!toUpdate.length) return toast('Keine Sessions mit dieser Custom-ID gefunden', true)
+
+  // Update all sessions
+  let successCount = 0
+  for (const s of toUpdate) {
+    const { error } = await sb.from('sessions').update({ exercises: s.exercises }).eq('id', s.id)
+    if (!error) successCount++
+  }
+
+  // Also clean up custom_exercises from affected users' profiles
+  const affectedUsers = [...new Set(toUpdate.map(s => s.userId))]
+  for (const userId of affectedUsers) {
+    const { data: prof } = await sb.from('profiles').select('settings').eq('user_id', userId).single()
+    if (!prof?.settings?.custom_exercises) continue
+    const cleaned = prof.settings.custom_exercises.filter(e => e.id !== oldId)
+    await sb.from('profiles').update({
+      settings: { ...prof.settings, custom_exercises: cleaned }
+    }).eq('user_id', userId)
+  }
+
+  await sb.from('audit_log').insert({
+    user_id: ADMIN_ID,
+    action: `Session-Migration: ${oldId} → ${newId} (${exName})`,
+    details: { old_id: oldId, new_id: newId, sessions_updated: successCount, users_affected: affectedUsers.length }
+  })
+
+  toast(`✅ ${successCount} Sessions migriert, ${affectedUsers.length} User bereinigt`)
 }
 
 function showXPAnimation(sessionXP, newTotal, rankUp) {
