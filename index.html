@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.139</title>
+<title>Grindset v1.140</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -3855,6 +3855,7 @@ function renderCustomExList() {
         <div style="font-size:11px;color:var(--muted);margin-top:1px">${ex.muscle||'Keine Muskelgruppe'}${ex.note?` · ${ex.note.slice(0,30)}${ex.note.length>30?'…':''}`:''}</div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
+        <button onclick="submitCustomExFromProfile('${ex.id}')" title="Als Community-Anfrage einreichen" style="font-size:11px;padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer">📬</button>
         <button onclick="openCustomExEdit('${ex.id}')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer">✏️</button>
         <button onclick="deleteCustomEx('${ex.id}','${ex.name.replace(/'/g,"&#39;")}')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:1px solid var(--accent);background:none;color:var(--accent);cursor:pointer">🗑</button>
       </div>
@@ -3879,6 +3880,25 @@ function openCustomExEdit(id) {
   }
   sel.value = ex.muscle || ''
   document.getElementById('customExEditModal').classList.add('open')
+}
+
+async function submitCustomExFromProfile(id) {
+  const ex = getCustomExercises().find(e => e.id === id)
+  if (!ex) return
+  const { data: existing } = await sb.from('exercise_requests').select('id').ilike('name', ex.name).limit(1)
+  if (existing?.length) return toast('Anfrage existiert bereits für diese Übung', true)
+  const { error } = await sb.from('exercise_requests').insert({
+    user_id: currentUser.id,
+    name: ex.name,
+    name_en: '',
+    muscle: ex.muscle || '',
+    description: ex.note || `Custom Übung von ${currentProfile?.username||'User'}`,
+    votes: 0
+  })
+  if (error) return toast('Fehler: ' + error.message, true)
+  await sb.from('audit_log').insert({ user_id: currentUser.id, action: `Custom Übung als Anfrage eingereicht: ${ex.name}`, details: { exercise: ex.name } })
+  toast('📬 Als Community-Anfrage eingereicht!')
+  haptic('success')
 }
 
 async function saveCustomExEdit() {
