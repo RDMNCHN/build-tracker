@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.141</title>
+<title>Grindset v1.142</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -4114,7 +4114,7 @@ function freestylePickEx(id, name, muscle, isCustom) {
     }
     freestyleExercises.push({ id, name, muscle, custom: isCustom })
     document.getElementById('freestylePickerModal').classList.remove('open')
-    renderFreestyleList()
+    renderFreestyleList(true) // append only — no flicker
   } else {
     // Normal plan-day mode — add to selectedDay.exercises
     if (selectedDay.exercises.includes(id)) {
@@ -4139,7 +4139,7 @@ async function freestyleAddCustomExercise() {
   toast(`"${q}" gespeichert ⭐`)
   if (freestyleMode) {
     freestyleExercises.push(ex)
-    renderFreestyleList()
+    renderFreestyleList(true)
   } else {
     selectedDay.exercises.push(id)
     autoSaveSession()
@@ -4147,45 +4147,61 @@ async function freestyleAddCustomExercise() {
   }
 }
 
-function renderFreestyleList() {
+function renderFreestyleList(appendOnly = false) {
   const hint = document.getElementById('freestyleEmptyHint')
   if (hint) hint.style.display = freestyleExercises.length ? 'none' : 'block'
 
-  // Save current sets before re-rendering
-  autoSaveSession()
-
   const list = document.getElementById('freestyleExList')
   if (!list) return
+
+  if (appendOnly && freestyleExercises.length > 0) {
+    // Only render the last exercise, append to existing list
+    const ei = freestyleExercises.length - 1
+    const ex = freestyleExercises[ei]
+    const mColor = MUSCLE_COLORS[ex.muscle] || 'var(--accent)'
+    const div = document.createElement('div')
+    div.className = 'ex-block'
+    div.innerHTML = buildFreestyleExBlock(ex, ei, mColor)
+    list.appendChild(div)
+    addSetRow(ei); addSetRow(ei); addSetRow(ei)
+    setTimeout(loadFreestylePRs, 150)
+    document.getElementById('exerciseSection').addEventListener('input', autoSaveSession)
+    return
+  }
+
+  // Full rebuild (on start or remove)
+  autoSaveSession()
   list.innerHTML = freestyleExercises.map((ex, ei) => {
     const mColor = MUSCLE_COLORS[ex.muscle] || 'var(--accent)'
-    return `<div class="ex-block" style="animation-delay:${ei*0.05}s">
-      <div class="ex-header" onclick="toggleEx(${ei})">
-        <div style="width:7px;height:7px;border-radius:50%;background:${mColor};flex-shrink:0"></div>
-        <div style="flex:1;min-width:0;margin-left:2px">
-          <div style="font-size:14px;font-weight:700">${ex.name}</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">${ex.muscle||'Custom'}</div>
-          <div id="pr_${ei}" style="font-size:10px;color:var(--gold);margin-top:2px"></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          <button onclick="event.stopPropagation();freestyleRemoveEx(${ei})" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:20px;padding:3px 9px;cursor:pointer">✕</button>
-          <div id="badge_${ei}" style="font-size:11px;background:var(--bg3);color:var(--muted);padding:3px 8px;border-radius:20px;white-space:nowrap">Eintragen</div>
-        </div>
-      </div>
-      <div class="ex-body" id="exbody_${ei}">
-        <table class="sets-table">
-          <thead><tr><th>#</th><th>kg</th><th>Wdh</th><th></th></tr></thead>
-          <tbody id="setrows_${ei}"></tbody>
-        </table>
-        <button onclick="addSetRow(${ei})" style="font-size:12px;color:var(--blue);background:none;border:1px dashed var(--blue);border-radius:6px;padding:6px 12px;cursor:pointer;width:100%;margin-top:4px">+ Satz</button>
-        <textarea id="note_${ei}" placeholder="Notiz..." style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;resize:none;margin-top:8px;height:56px;margin-bottom:0"></textarea>
-      </div>
-    </div>`
+    return `<div class="ex-block">${buildFreestyleExBlock(ex, ei, mColor)}</div>`
   }).join('')
-
   freestyleExercises.forEach((_, ei) => { addSetRow(ei); addSetRow(ei); addSetRow(ei) })
-  // Restore previously entered sets
   setTimeout(() => { restoreFreestyleDraft(); loadFreestylePRs() }, 100)
   document.getElementById('exerciseSection').addEventListener('input', autoSaveSession)
+}
+
+function buildFreestyleExBlock(ex, ei, mColor) {
+  return `
+    <div class="ex-header" onclick="toggleEx(${ei})">
+      <div style="width:7px;height:7px;border-radius:50%;background:${mColor};flex-shrink:0"></div>
+      <div style="flex:1;min-width:0;margin-left:2px">
+        <div style="font-size:14px;font-weight:700">${ex.name}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">${ex.muscle||'Custom'}</div>
+        <div id="pr_${ei}" style="font-size:10px;color:var(--gold);margin-top:2px"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <button onclick="event.stopPropagation();freestyleRemoveEx(${ei})" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:20px;padding:3px 9px;cursor:pointer">✕</button>
+        <div id="badge_${ei}" style="font-size:11px;background:var(--bg3);color:var(--muted);padding:3px 8px;border-radius:20px;white-space:nowrap">Eintragen</div>
+      </div>
+    </div>
+    <div class="ex-body" id="exbody_${ei}">
+      <table class="sets-table">
+        <thead><tr><th>#</th><th>kg</th><th>Wdh</th><th></th></tr></thead>
+        <tbody id="setrows_${ei}"></tbody>
+      </table>
+      <button onclick="addSetRow(${ei})" style="font-size:12px;color:var(--blue);background:none;border:1px dashed var(--blue);border-radius:6px;padding:6px 12px;cursor:pointer;width:100%;margin-top:4px">+ Satz</button>
+      <textarea id="note_${ei}" placeholder="Notiz..." style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;resize:none;margin-top:8px;height:56px;margin-bottom:0"></textarea>
+    </div>`
 }
 
 function freestyleRemoveEx(ei) {
