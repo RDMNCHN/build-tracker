@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.143</title>
+<title>Grindset v1.144</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1853,41 +1853,60 @@ const MUSCLE_COLORS = {
   'Core':'#f39c12',
 }
 
-function buildExerciseList() {
+function buildExBlock(exId, ei, isExtra) {
+  const ex = getAllExercisesWithCustom().find(e => e.id === exId) || {id:exId, name:exId, muscle:''}
+  const mColor = MUSCLE_COLORS[ex.muscle] || 'var(--accent)'
+  const rightBtn = isExtra
+    ? `<button onclick="event.stopPropagation();removeExtraEx('${exId}')" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:20px;padding:3px 9px;cursor:pointer">✕</button>`
+    : `<button onclick="event.stopPropagation();openTutorial('${exId}')" style="font-size:11px;color:var(--gold);background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);border-radius:20px;padding:3px 9px;cursor:pointer;font-weight:600">Tutorial</button>`
+  return `
+    <div class="ex-header" onclick="toggleEx(${ei})">
+      <div style="width:7px;height:7px;border-radius:50%;background:${mColor};flex-shrink:0"></div>
+      <div style="flex:1;min-width:0;margin-left:2px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:14px;font-weight:700">${exName(ex)}</span>
+          ${isExtra ? '<span style="font-size:9px;font-weight:700;background:rgba(233,69,96,0.15);color:var(--accent);padding:2px 6px;border-radius:20px;letter-spacing:.3px">TEMP</span>' : ''}
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">${ex.muscle}</div>
+        <div id="pr_${ei}" style="font-size:10px;color:var(--gold);margin-top:2px"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        ${rightBtn}
+        <div id="badge_${ei}" style="font-size:11px;background:var(--bg3);color:var(--muted);padding:3px 8px;border-radius:20px;white-space:nowrap">Eintragen</div>
+      </div>
+    </div>
+    <div class="ex-body" id="exbody_${ei}">
+      <table class="sets-table">
+        <thead><tr><th>#</th><th>kg</th><th>Wdh</th><th></th></tr></thead>
+        <tbody id="setrows_${ei}"></tbody>
+      </table>
+      <button onclick="addSetRow(${ei})" style="font-size:12px;color:var(--blue);background:none;border:1px dashed var(--blue);border-radius:6px;padding:6px 12px;cursor:pointer;width:100%;margin-top:4px">+ Satz</button>
+      <textarea id="note_${ei}" placeholder="Notiz..." style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;resize:none;margin-top:8px;height:56px;margin-bottom:0"></textarea>
+    </div>`
+}
+
+function buildExerciseList(appendOnly = false) {
   const extraIds = new Set(selectedDay._extraExIds || [])
   const list = document.getElementById('exerciseList')
+
+  if (appendOnly && selectedDay.exercises.length > 0) {
+    // Only append the last exercise — no flicker
+    const ei = selectedDay.exercises.length - 1
+    const exId = selectedDay.exercises[ei]
+    const div = document.createElement('div')
+    div.className = 'ex-block'
+    div.style.cssText = 'border-left:2px solid var(--accent)'
+    div.innerHTML = buildExBlock(exId, ei, true)
+    list.appendChild(div)
+    addSetRow(ei); addSetRow(ei); addSetRow(ei)
+    setTimeout(loadPRPreviews, 150)
+    return
+  }
+
+  // Full rebuild
   list.innerHTML = selectedDay.exercises.map((exId, ei) => {
-    const ex = getAllExercisesWithCustom().find(e => e.id === exId) || {id:exId, name:exId, muscle:''}
-    const mColor = MUSCLE_COLORS[ex.muscle] || 'var(--accent)'
     const isExtra = extraIds.has(exId)
-    const rightBtn = isExtra
-      ? `<button onclick="event.stopPropagation();removeExtraEx('${exId}')" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:20px;padding:3px 9px;cursor:pointer">✕</button>`
-      : `<button onclick="event.stopPropagation();openTutorial('${exId}')" style="font-size:11px;color:var(--gold);background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);border-radius:20px;padding:3px 9px;cursor:pointer;font-weight:600">Tutorial</button>`
-    return `<div class="ex-block" style="animation-delay:${ei * 0.05}s${isExtra?';border-left:2px solid var(--accent)':''}">
-      <div class="ex-header" onclick="toggleEx(${ei})">
-        <div style="width:7px;height:7px;border-radius:50%;background:${mColor};flex-shrink:0"></div>
-        <div style="flex:1;min-width:0;margin-left:2px">
-          <div style="display:flex;align-items:center;gap:6px">
-            <span style="font-size:14px;font-weight:700">${exName(ex)}</span>
-            ${isExtra ? '<span style="font-size:9px;font-weight:700;background:rgba(233,69,96,0.15);color:var(--accent);padding:2px 6px;border-radius:20px;letter-spacing:.3px">TEMP</span>' : ''}
-          </div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">${ex.muscle}</div>
-          <div id="pr_${ei}" style="font-size:10px;color:var(--gold);margin-top:2px"></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          ${rightBtn}
-          <div id="badge_${ei}" style="font-size:11px;background:var(--bg3);color:var(--muted);padding:3px 8px;border-radius:20px;white-space:nowrap">Eintragen</div>
-        </div>
-      </div>
-      <div class="ex-body" id="exbody_${ei}">
-        <table class="sets-table">
-          <thead><tr><th>#</th><th>kg</th><th>Wdh</th><th></th></tr></thead>
-          <tbody id="setrows_${ei}"></tbody>
-        </table>
-        <button onclick="addSetRow(${ei})" style="font-size:12px;color:var(--blue);background:none;border:1px dashed var(--blue);border-radius:6px;padding:6px 12px;cursor:pointer;width:100%;margin-top:4px">+ Satz</button>
-        <textarea id="note_${ei}" placeholder="Notiz..." style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;resize:none;margin-top:8px;height:56px;margin-bottom:0"></textarea>
-      </div>
-    </div>`
+    return `<div class="ex-block" style="${isExtra ? 'border-left:2px solid var(--accent)' : ''}">${buildExBlock(exId, ei, isExtra)}</div>`
   }).join('')
   selectedDay.exercises.forEach((_,ei) => { addSetRow(ei); addSetRow(ei); addSetRow(ei) })
   setTimeout(restoreSessionDraft, 100)
@@ -4215,7 +4234,7 @@ function freestylePickEx(id, name, muscle, isCustom) {
     selectedDay._extraExIds.push(id)
     document.getElementById('freestylePickerModal').classList.remove('open')
     autoSaveSession()
-    buildExerciseList()
+    buildExerciseList(true)
   }
 }
 
@@ -4235,7 +4254,7 @@ async function freestyleAddCustomExercise() {
     if (!selectedDay._extraExIds) selectedDay._extraExIds = []
     selectedDay._extraExIds.push(id)
     autoSaveSession()
-    buildExerciseList()
+    buildExerciseList(true)
   }
 }
 
