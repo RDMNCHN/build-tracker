@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.140</title>
+<title>Grindset v1.146</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,31 +17,21 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root{
-  --bg:#090b12;--bg2:#121524;--bg3:#1a1f32;--card:#1a2133;--card2:#232b40;
-  --border:rgba(255,255,255,0.1);--text:#f4f7ff;--muted:#99a2ba;
-  --accent:#ff4f73;--gold:#f5b23a;--green:#2cc36b;--blue:#4a90e2;--purple:#a56dff;
-  --radius:18px;--radius-sm:12px;--shadow:0 18px 48px rgba(0,0,0,0.35)
+  --bg:#0b0c11;--bg2:#12141f;--bg3:#1a1c2a;--card:#1e2030;--card2:#252840;
+  --border:rgba(255,255,255,0.08);--text:#f0f0f0;--muted:#6b7080;
+  --accent:#e94560;--gold:#f5a623;--green:#27ae60;--blue:#3d7ebf;--purple:#9b59b6;
+  --radius:16px;--radius-sm:10px
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{
-  background:
-    radial-gradient(1200px 420px at 12% -10%, rgba(255,79,115,0.18), transparent 55%),
-    radial-gradient(900px 380px at 90% 8%, rgba(74,144,226,0.15), transparent 58%),
-    linear-gradient(160deg, #090b12 0%, #0f1220 42%, #111831 100%);
-  color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  font-size:15px;
-  min-height:100vh;
-  line-height:1.45
-}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;min-height:100vh}
 input,select,textarea,button{font-family:inherit}
 
 /* ── Pages ── */
-.page{display:none;padding:16px;padding-bottom:96px;max-width:860px;margin:0 auto}
+.page{display:none;padding:16px;padding-bottom:96px}
 .page.active{display:block;animation:fadeSlideUp 0.3s cubic-bezier(0.34,1.4,0.64,1) both}
 
 /* ── Tab Bar ── */
-.tab-bar{display:flex;background:rgba(10,12,20,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid var(--border);position:fixed;bottom:0;left:0;right:0;z-index:100;padding:6px 4px 10px;box-shadow:0 -14px 36px rgba(0,0,0,0.35)}
+.tab-bar{display:flex;background:rgba(11,12,17,0.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);position:fixed;bottom:0;left:0;right:0;z-index:100;padding:6px 4px 10px}
 .tab-btn{flex:1;padding:4px 2px;font-size:9px;font-weight:700;color:var(--muted);background:none;border:none;border-top:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:color 0.2s,transform 0.12s;text-transform:uppercase;letter-spacing:.3px}
 .tab-btn:active{transform:scale(0.88)}
 .tab-btn.active{color:var(--accent)}
@@ -50,14 +40,7 @@ input,select,textarea,button{font-family:inherit}
 .tab-icon{font-size:18px}
 
 /* ── Hero ── */
-.hero{
-  padding:22px 16px 18px;
-  border:1px solid var(--border);
-  background:linear-gradient(135deg, rgba(255,79,115,0.14), rgba(74,144,226,0.09) 46%, rgba(255,255,255,0.03));
-  border-radius:var(--radius);
-  margin:0 0 12px;
-  box-shadow:var(--shadow)
-}
+.hero{padding:22px 16px 18px;border-bottom:1px solid var(--border);margin-bottom:0}
 .hero-greeting{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
 .hero h1{font-size:24px;font-weight:800;letter-spacing:-0.5px;margin-bottom:12px;line-height:1.1}
 .hero h1 .accent{color:var(--accent)}
@@ -74,21 +57,21 @@ input,select,textarea,button{font-family:inherit}
 .page.active .section-header{animation:staggerFade 0.28s ease both}
 
 /* ── Cards ── */
-.card{background:linear-gradient(170deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));border-radius:var(--radius);border:1px solid var(--border);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:14px;margin-bottom:10px}
 .page.active .card{animation:bounceIn 0.38s cubic-bezier(0.34,1.5,0.64,1) both}
 
 /* ── Buttons ── */
-.btn{border:none;border-radius:var(--radius-sm);padding:14px 16px;font-size:14px;font-weight:700;cursor:pointer;display:block;width:100%;text-align:center;transition:transform 0.12s cubic-bezier(0.34,1.6,0.64,1),opacity 0.15s,box-shadow .2s}
+.btn{border:none;border-radius:var(--radius-sm);padding:14px 16px;font-size:14px;font-weight:700;cursor:pointer;display:block;width:100%;text-align:center;transition:transform 0.12s cubic-bezier(0.34,1.6,0.64,1),opacity 0.15s}
 .btn:active{transform:scale(0.93)!important}
-.btn-accent{background:linear-gradient(135deg, #ff4f73, #ff6a8a);color:#fff;box-shadow:0 10px 24px rgba(255,79,115,0.34)}
-.btn-green{background:linear-gradient(135deg, #29b867, #38d77e);color:#fff}
-.btn-card{background:var(--card2);color:var(--text);border:1px solid var(--border);box-shadow:0 8px 20px rgba(0,0,0,0.2)}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-card{background:var(--card2);color:var(--text);border:1px solid var(--border)}
 .btn-danger{background:none;color:var(--accent);border:1px solid rgba(233,69,96,0.4)}
 .btn-sm{padding:7px 12px;font-size:12px;width:auto;display:inline-block}
 
 /* ── Inputs ── */
-input[type=text],input[type=email],input[type=password],input[type=date],select,textarea{width:100%;background:rgba(255,255,255,0.02);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:12px 14px;font-size:14px;margin-bottom:10px;transition:border-color 0.2s,box-shadow .2s,background .2s}
-input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(255,79,115,0.55);background:var(--card2);box-shadow:0 0 0 4px rgba(255,79,115,0.15)}
+input[type=text],input[type=email],input[type=password],input[type=date],select,textarea{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:12px 14px;font-size:14px;margin-bottom:10px;transition:border-color 0.2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(233,69,96,0.5);background:var(--card2)}
 input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1)}
 select option{background:var(--card)}
 
@@ -109,16 +92,17 @@ select option{background:var(--card)}
 
 /* ── Day Grid ── */
 .day-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.day-card{background:rgba(255,255,255,0.02);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 12px;cursor:pointer;transition:transform 0.18s cubic-bezier(0.34,1.6,0.64,1),border-color 0.2s,background 0.2s,box-shadow .2s}
+.day-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 12px;cursor:pointer;transition:transform 0.18s cubic-bezier(0.34,1.6,0.64,1),border-color 0.2s,background 0.2s}
 .day-card:active{transform:scale(0.95)}
-.day-card.selected{background:rgba(255,79,115,0.12);border-color:rgba(255,79,115,0.58);box-shadow:0 8px 20px rgba(255,79,115,0.2)}
+.day-card.selected{background:rgba(233,69,96,0.08);border-color:rgba(233,69,96,0.5)}
 .day-card .day-title{font-size:13px;font-weight:800;margin-bottom:3px}
 .day-card .day-sub{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
 .day-dot-indicator{width:8px;height:8px;border-radius:50%;margin-bottom:8px}
 .day-ex-badge{font-size:10px;color:var(--muted);background:rgba(255,255,255,0.07);border-radius:6px;padding:2px 7px;display:inline-block;margin-top:6px}
 
 /* ── Exercise Blocks ── */
-.ex-block{background:var(--card);border-radius:var(--radius);margin-bottom:10px;border:1px solid var(--border);overflow:hidden;animation:bounceIn 0.35s cubic-bezier(0.34,1.5,0.64,1) both;transition:transform 0.15s}
+.ex-block{background:var(--card);border-radius:var(--radius);margin-bottom:10px;border:1px solid var(--border);overflow:hidden;transition:transform 0.15s}
+.ex-block-new{animation:bounceIn 0.35s cubic-bezier(0.34,1.5,0.64,1) both}
 .ex-header{padding:13px 15px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:10px}
 .ex-muscle-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .ex-name-label{font-size:13px;font-weight:700;flex:1}
@@ -159,27 +143,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
 .color-opt:active{transform:scale(0.85)}
 #profileAvatar{transition:transform 0.2s cubic-bezier(0.34,1.6,0.64,1)}
 #profileAvatar:active{transform:scale(0.9)}
-#xpBar{transition:width 0.9s cubic-bezier(0.34,1.2,0.64,1)}
-
-@media (hover:hover){
-  .btn:hover{transform:translateY(-1px)}
-  .btn-accent:hover{box-shadow:0 14px 28px rgba(255,79,115,0.42)}
-  .card:hover,.day-card:hover{border-color:rgba(255,255,255,0.18)}
-}
-
-@media (min-width:900px){
-  .tab-bar{left:50%;transform:translateX(-50%);width:min(860px,100%);border-radius:16px 16px 0 0}
-}
-
-@media (prefers-reduced-motion: reduce){
-  *,*::before,*::after{
-    animation-duration:0.01ms !important;
-    animation-iteration-count:1 !important;
-    transition-duration:0.01ms !important;
-    scroll-behavior:auto !important
-  }
-}
-</style>
+#xpBar{transition:width 0.9s cubic-bezier(0.34,1.2,0.64,1)}</style>
 </head>
 <body>
 
@@ -242,15 +206,18 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
     <div class="section-header">Welcher Tag?</div>
     <div class="day-grid" id="dayGrid"></div>
     <!-- Freestyle button -->
-    <button onclick="startFreestyle()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;border-radius:var(--radius);border:1.5px dashed var(--border);background:none;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px;transition:all .2s" id="freestyleBtn" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-      ⚡ Freestyle Session starten
+    <button onclick="startFreestyle()" id="freestyleBtn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:var(--radius);border:1.5px dashed var(--border);background:none;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:16px;transition:border-color .2s,color .2s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+      ⚡ Freestyle Session
     </button>
-    <input type="date" id="trainDate" style="margin-bottom:16px">
+
     <div id="exerciseSection" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <!-- Session header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div class="section-header" id="exSectionTitle" style="margin-bottom:0">Übungen</div>
         <button id="addFreestyleExBtn" onclick="openFreestyleExPicker()" style="display:none;font-size:12px;color:var(--accent);background:rgba(233,69,96,0.1);border:1px solid var(--accent);border-radius:20px;padding:5px 12px;cursor:pointer;font-weight:700">+ Übung</button>
       </div>
+      <!-- Date inside session -->
+      <input type="date" id="trainDate" style="margin-bottom:12px">
       <div id="exerciseList"></div>
       <button class="btn btn-accent" style="margin-top:8px" onclick="saveSession()" id="saveSessionBtn">Session speichern</button>
     </div>
@@ -624,6 +591,9 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
 
       <input type="text" id="freestyleSearch" placeholder="Suchen oder eigene eingeben..." oninput="freestyleSearchEx(this.value)" style="margin-bottom:8px" autocomplete="off">
 
+      <!-- Muscle filter -->
+      <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:8px;-webkit-overflow-scrolling:touch" id="freestyleMuscleFilters"></div>
+
       <!-- Custom exercises quick access -->
       <div id="freestyleCustomRow" style="display:none;margin-bottom:8px">
         <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">⭐ Deine Übungen</div>
@@ -631,7 +601,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
       </div>
 
       <!-- Search results -->
-      <div id="freestyleResults" style="max-height:280px;overflow-y:auto;border-radius:10px;background:var(--bg3)"></div>
+      <div id="freestyleResults" style="max-height:260px;overflow-y:auto;border-radius:10px;background:var(--bg3)"></div>
 
       <!-- Add as custom if no match -->
       <div id="freestyleAddCustomBtn" style="display:none;margin-top:10px">
@@ -1720,7 +1690,6 @@ function showLogin() {
 async function showApp() {
   document.getElementById('loginPage').style.display = 'none'
   document.getElementById('appShell').style.display = 'block'
-  document.getElementById('trainDate').value = today()
 
   // Fetch profile + settings + plans + sessions + exercises all in parallel
   const [profResult, , plansResult, sessionsResult] = await Promise.all([
@@ -1761,6 +1730,8 @@ async function showApp() {
   if (isAdmin()) document.getElementById('adminTab').style.display = 'flex'
   renderProfile()
   renderTrainPage()
+  // Restore any active session draft (freestyle or plan day)
+  restoreTrainTabIfActive()
   renderPlansList()
   renderHistory()
   renderAnalyse()
@@ -1854,11 +1825,24 @@ function renderTrainPage() {
 
 function selectDay(id) {
   const plan = getActivePlan()
-  selectedDay = plan.days.find(d => d.id === id)
+  const baseDay = plan.days.find(d => d.id === id)
+  freestyleMode = false
+  freestyleExercises = []
+
+  // Check if there's a saved draft for this day (with extra exercises)
+  const saved = loadTrainDraft()
+  const extraExIds = (saved && saved.dayId === id) ? (saved.extraExercises || []) : []
+
+  selectedDay = { ...baseDay, exercises: [...baseDay.exercises, ...extraExIds.map(e => e.id)] }
+  selectedDay._extraExIds = extraExIds.map(e => e.id) // track which are "extra"
+
   renderTrainPage()
   buildExerciseList()
+  document.getElementById('trainDate').value = document.getElementById('trainDate').value || today()
   document.getElementById('exerciseSection').style.display = 'block'
   document.getElementById('exSectionTitle').textContent = 'Übungen — ' + selectedDay.name
+  document.getElementById('addFreestyleExBtn').style.display = 'block'
+  document.getElementById('addFreestyleExBtn').textContent = '+ Übung'
   setTimeout(() => document.getElementById('exerciseSection').scrollIntoView({behavior:'smooth'}), 100)
 }
 
@@ -1875,39 +1859,73 @@ const MUSCLE_COLORS = {
   'Core':'#f39c12',
 }
 
-function buildExerciseList() {
-  const list = document.getElementById('exerciseList')
-  list.innerHTML = selectedDay.exercises.map((exId, ei) => {
-    const ex = getAllExercisesWithCustom().find(e => e.id === exId) || {id:exId, name:exId, muscle:''}
-    const mColor = MUSCLE_COLORS[ex.muscle] || 'var(--accent)'
-    return `<div class="ex-block" style="animation-delay:${ei * 0.05}s">
-      <div class="ex-header" onclick="toggleEx(${ei})">
-        <div style="width:7px;height:7px;border-radius:50%;background:${mColor};flex-shrink:0"></div>
-        <div style="flex:1;min-width:0;margin-left:2px">
-          <div style="font-size:14px;font-weight:700">${exName(ex)}</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">${ex.muscle}</div>
-          <div id="pr_${ei}" style="font-size:10px;color:var(--gold);margin-top:2px"></div>
+function buildExBlock(exId, ei, isExtra) {
+  const ex = getAllExercisesWithCustom().find(e => e.id === exId) || {id:exId, name:exId, muscle:''}
+  const mColor = MUSCLE_COLORS[ex.muscle] || 'var(--accent)'
+  const rightBtn = isExtra
+    ? `<button onclick="event.stopPropagation();removeExtraEx('${exId}')" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:20px;padding:3px 9px;cursor:pointer">✕</button>`
+    : `<button onclick="event.stopPropagation();openTutorial('${exId}')" style="font-size:11px;color:var(--gold);background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);border-radius:20px;padding:3px 9px;cursor:pointer;font-weight:600">Tutorial</button>`
+  return `
+    <div class="ex-header" onclick="toggleEx(${ei})">
+      <div style="width:7px;height:7px;border-radius:50%;background:${mColor};flex-shrink:0"></div>
+      <div style="flex:1;min-width:0;margin-left:2px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:14px;font-weight:700">${exName(ex)}</span>
+          ${isExtra ? '<span style="font-size:9px;font-weight:700;background:rgba(233,69,96,0.15);color:var(--accent);padding:2px 6px;border-radius:20px;letter-spacing:.3px">TEMP</span>' : ''}
         </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          <button onclick="event.stopPropagation();openTutorial('${exId}')" style="font-size:11px;color:var(--gold);background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);border-radius:20px;padding:3px 9px;cursor:pointer;font-weight:600">Tutorial</button>
-          <div id="badge_${ei}" style="font-size:11px;background:var(--bg3);color:var(--muted);padding:3px 8px;border-radius:20px;white-space:nowrap">Eintragen</div>
-        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">${ex.muscle}</div>
+        <div id="pr_${ei}" style="font-size:10px;color:var(--gold);margin-top:2px"></div>
       </div>
-      <div class="ex-body" id="exbody_${ei}">
-        <table class="sets-table">
-          <thead><tr><th>#</th><th>kg</th><th>Wdh</th><th></th></tr></thead>
-          <tbody id="setrows_${ei}"></tbody>
-        </table>
-        <button onclick="addSetRow(${ei})" style="font-size:12px;color:var(--blue);background:none;border:1px dashed var(--blue);border-radius:6px;padding:6px 12px;cursor:pointer;width:100%;margin-top:4px">+ Satz</button>
-        <textarea id="note_${ei}" placeholder="Notiz..." style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;resize:none;margin-top:8px;height:56px;margin-bottom:0"></textarea>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        ${rightBtn}
+        <div id="badge_${ei}" style="font-size:11px;background:var(--bg3);color:var(--muted);padding:3px 8px;border-radius:20px;white-space:nowrap">Eintragen</div>
       </div>
+    </div>
+    <div class="ex-body" id="exbody_${ei}">
+      <table class="sets-table">
+        <thead><tr><th>#</th><th>kg</th><th>Wdh</th><th></th></tr></thead>
+        <tbody id="setrows_${ei}"></tbody>
+      </table>
+      <button onclick="addSetRow(${ei})" style="font-size:12px;color:var(--blue);background:none;border:1px dashed var(--blue);border-radius:6px;padding:6px 12px;cursor:pointer;width:100%;margin-top:4px">+ Satz</button>
+      <textarea id="note_${ei}" placeholder="Notiz..." style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;resize:none;margin-top:8px;height:56px;margin-bottom:0"></textarea>
     </div>`
+}
+
+function buildExerciseList(appendOnly = false) {
+  const extraIds = new Set(selectedDay._extraExIds || [])
+  const list = document.getElementById('exerciseList')
+
+  if (appendOnly && selectedDay.exercises.length > 0) {
+    // Only append the last exercise — no flicker
+    const ei = selectedDay.exercises.length - 1
+    const exId = selectedDay.exercises[ei]
+    const div = document.createElement('div')
+    div.className = 'ex-block ex-block-new'
+    div.style.cssText = 'border-left:2px solid var(--accent)'
+    div.innerHTML = buildExBlock(exId, ei, true)
+    list.appendChild(div)
+    addSetRow(ei); addSetRow(ei); addSetRow(ei)
+    setTimeout(loadPRPreviews, 150)
+    return
+  }
+
+  // Full rebuild
+  list.innerHTML = selectedDay.exercises.map((exId, ei) => {
+    const isExtra = extraIds.has(exId)
+    return `<div class="ex-block" style="${isExtra ? 'border-left:2px solid var(--accent)' : ''}">${buildExBlock(exId, ei, isExtra)}</div>`
   }).join('')
   selectedDay.exercises.forEach((_,ei) => { addSetRow(ei); addSetRow(ei); addSetRow(ei) })
   setTimeout(restoreSessionDraft, 100)
   setTimeout(loadPRPreviews, 150)
-  // Auto-save on any input change
   document.getElementById('exerciseSection').addEventListener('input', autoSaveSession)
+}
+
+function removeExtraEx(exId) {
+  if (!selectedDay) return
+  selectedDay.exercises = selectedDay.exercises.filter(id => id !== exId)
+  selectedDay._extraExIds = (selectedDay._extraExIds || []).filter(id => id !== exId)
+  autoSaveSession()
+  buildExerciseList()
 }
 
 async function loadPRPreviews() {
@@ -2017,6 +2035,7 @@ async function saveSession() {
   haptic('success')
   freestyleMode = false
   freestyleExercises = []
+  if (selectedDay) selectedDay._extraExIds = []
   selectedDay = null
   document.getElementById('addFreestyleExBtn').style.display = 'none'
   freestyleMode = false
@@ -3676,8 +3695,23 @@ function toggleLoginUpdates() {
 // ── Auto-Save session to localStorage ──
 function autoSaveSession() {
   if (!selectedDay) return
-  const data = { dayId: selectedDay.id, date: document.getElementById('trainDate').value, exercises: [] }
-  selectedDay.exercises.forEach((exId, ei) => {
+  const exIds = freestyleMode
+    ? freestyleExercises.map(e => e.id)
+    : selectedDay.exercises
+  const extraExercises = freestyleMode ? [] : (selectedDay._extraExIds || []).map(exId => {
+    const ex = getAllExercisesWithCustom().find(e => e.id === exId) || { id: exId, name: exId, muscle: '' }
+    return { id: ex.id, name: ex.name, muscle: ex.muscle || '' }
+  })
+  const data = {
+    dayId: selectedDay.id,
+    dayName: selectedDay.name,
+    date: document.getElementById('trainDate').value,
+    exercises: [],
+    freestyleMode,
+    freestyleExercises: freestyleMode ? freestyleExercises : [],
+    extraExercises
+  }
+  exIds.forEach((exId, ei) => {
     const rows = document.querySelectorAll(`#setrows_${ei} tr`)
     const sets = []
     rows.forEach(r => { const ins = r.querySelectorAll('input'); sets.push({kg: ins[0]?.value||'', reps: ins[1]?.value||''}) })
@@ -3685,6 +3719,48 @@ function autoSaveSession() {
     data.exercises.push({ exId, sets, note })
   })
   localStorage.setItem('grindset_session_draft', JSON.stringify(data))
+}
+
+function restoreTrainTabIfActive() {
+  const draft = loadTrainDraft()
+  if (!draft || !draft.dayId) return
+
+  if (draft.freestyleMode) {
+    // Restore freestyle session silently (no picker popup)
+    freestyleMode = true
+    freestyleExercises = draft.freestyleExercises || []
+    selectedDay = { id: 'freestyle', name: 'Freestyle', exercises: [], color: 'var(--accent)', label: '⚡', focus: '' }
+    document.getElementById('exerciseSection').style.display = 'block'
+    document.getElementById('exSectionTitle').textContent = '⚡ Freestyle Session'
+    document.getElementById('addFreestyleExBtn').style.display = 'block'
+    initFreestyleSection()
+    if (freestyleExercises.length) renderFreestyleList()
+    if (draft.date) document.getElementById('trainDate').value = draft.date
+  } else {
+    // Restore normal day with extra exercises
+    const plan = getActivePlan()
+    if (!plan) return
+    const baseDay = plan.days.find(d => d.id === draft.dayId)
+    if (!baseDay) return
+    const extraExIds = (draft.extraExercises || []).map(e => e.id)
+    freestyleMode = false
+    freestyleExercises = []
+    selectedDay = { ...baseDay, exercises: [...baseDay.exercises, ...extraExIds] }
+    selectedDay._extraExIds = extraExIds
+    renderTrainPage()
+    document.getElementById('exerciseSection').style.display = 'block'
+    document.getElementById('exSectionTitle').textContent = 'Übungen — ' + selectedDay.name
+    document.getElementById('addFreestyleExBtn').style.display = 'block'
+    buildExerciseList()
+    if (draft.date) document.getElementById('trainDate').value = draft.date
+  }
+}
+
+function loadTrainDraft() {
+  try {
+    const s = localStorage.getItem('grindset_session_draft')
+    return s ? JSON.parse(s) : null
+  } catch(e) { return null }
 }
 
 function restoreSessionDraft() {
@@ -3710,6 +3786,38 @@ function restoreSessionDraft() {
     })
     toast('📋 Letzte Eingaben wiederhergestellt')
   } catch(e) {}
+}
+
+function restoreFreestyleDraft() {
+  const saved = localStorage.getItem('grindset_session_draft')
+  if (!saved) return false
+  try {
+    const data = JSON.parse(saved)
+    if (!data.freestyleMode || data.dayId !== 'freestyle') return false
+    if (data.date) document.getElementById('trainDate').value = data.date
+    if (data.freestyleExercises?.length) {
+      freestyleExercises = data.freestyleExercises
+      renderFreestyleList()
+      // Restore sets after DOM is built
+      setTimeout(() => {
+        data.exercises.forEach((ex, ei) => {
+          const tbody = document.getElementById('setrows_'+ei)
+          if (!tbody) return
+          ex.sets.forEach((set, si) => {
+            const rows = tbody.querySelectorAll('tr')
+            if (rows[si]) {
+              const ins = rows[si].querySelectorAll('input')
+              if (ins[0]) ins[0].value = set.kg
+              if (ins[1]) ins[1].value = set.reps
+            }
+          })
+          const noteEl = document.getElementById('note_'+ei)
+          if (noteEl && ex.note) noteEl.value = ex.note
+        })
+      }, 150)
+    }
+    return true
+  } catch(e) { return false }
 }
 
 function clearSessionDraft() {
@@ -3999,25 +4107,51 @@ async function saveCustomExercise(ex) {
 }
 
 function startFreestyle() {
+  // Check if there's an existing freestyle draft to restore
+  const saved = loadTrainDraft()
+  if (saved && saved.freestyleMode) {
+    freestyleMode = true
+    freestyleExercises = saved.freestyleExercises || []
+    selectedDay = { id: 'freestyle', name: 'Freestyle', exercises: [], color: 'var(--accent)', label: '⚡', focus: '' }
+    document.getElementById('exerciseSection').style.display = 'block'
+    document.getElementById('exSectionTitle').textContent = '⚡ Freestyle Session'
+    document.getElementById('addFreestyleExBtn').style.display = 'block'
+    initFreestyleSection()
+    renderFreestyleList()
+    setTimeout(() => document.getElementById('exerciseSection').scrollIntoView({behavior:'smooth'}), 100)
+    return
+  }
   freestyleMode = true
   freestyleExercises = []
   selectedDay = { id: 'freestyle', name: 'Freestyle', exercises: [], color: 'var(--accent)', label: '⚡', focus: '' }
   document.getElementById('exerciseSection').style.display = 'block'
+  document.getElementById('trainDate').value = document.getElementById('trainDate').value || today()
   document.getElementById('exSectionTitle').textContent = '⚡ Freestyle Session'
   document.getElementById('addFreestyleExBtn').style.display = 'block'
-  document.getElementById('exerciseList').innerHTML = `
-    <div id="freestyleExList"></div>
-    <div style="text-align:center;padding:24px;color:var(--muted);font-size:13px" id="freestyleEmptyHint">
-      Noch keine Übungen — tippe auf <strong>+ Übung</strong> um loszulegen
-    </div>`
-  document.getElementById('exerciseSection').scrollIntoView({ behavior: 'smooth' })
-  openFreestyleExPicker()
+  initFreestyleSection()
+  setTimeout(() => document.getElementById('exerciseSection').scrollIntoView({behavior:'smooth'}), 100)
 }
 
+function initFreestyleSection() {
+  const list = document.getElementById('exerciseList')
+  if (!list.querySelector('#freestyleExList')) {
+    list.innerHTML = `<div id="freestyleExList"></div>
+      <div style="text-align:center;padding:24px;color:var(--muted);font-size:13px" id="freestyleEmptyHint">
+        Noch keine Übungen — tippe auf <strong>+ Übung</strong> um loszulegen
+      </div>`
+  }
+}
+
+let freestylePickerMuscle = 'Alle'
+
 function openFreestyleExPicker() {
+  freestylePickerMuscle = 'Alle'
   document.getElementById('freestyleSearch').value = ''
   document.getElementById('freestyleResults').innerHTML = ''
   document.getElementById('freestyleAddCustomBtn').style.display = 'none'
+
+  // Muscle filters
+  renderFreestyleMuscleFilters()
 
   // Show custom exercises
   const customs = getCustomExercises()
@@ -4034,10 +4168,16 @@ function openFreestyleExPicker() {
     customRow.style.display = 'none'
   }
 
-  // Show popular suggestions initially
   freestyleSearchEx('')
   document.getElementById('freestylePickerModal').classList.add('open')
   setTimeout(() => document.getElementById('freestyleSearch').focus(), 300)
+}
+
+function renderFreestyleMuscleFilters() {
+  const muscles = ['Alle', ...MUSCLES_DE.filter(m => m !== 'Alle')]
+  document.getElementById('freestyleMuscleFilters').innerHTML = muscles.map(m =>
+    `<button onclick="freestylePickerMuscle='${m}';renderFreestyleMuscleFilters();freestyleSearchEx(document.getElementById('freestyleSearch').value)" style="white-space:nowrap;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:${freestylePickerMuscle===m?'var(--accent)':'var(--card)'};color:${freestylePickerMuscle===m?'#fff':'var(--muted)'};font-size:12px;cursor:pointer;flex-shrink:0">${m}</button>`
+  ).join('')
 }
 
 function freestyleSearchEx(q) {
@@ -4045,25 +4185,32 @@ function freestyleSearchEx(q) {
   const addBtn  = document.getElementById('freestyleAddCustomBtn')
   const addName = document.getElementById('freestyleAddCustomName')
   const allEx   = getExercises()
+  const muscleAll = 'Alle'
 
-  const matches = q.length < 1
-    ? allEx.slice(0, 30)  // show first 30 as suggestions
-    : allEx.filter(e => e.name.toLowerCase().includes(q.toLowerCase()) || (e.muscle||'').toLowerCase().includes(q.toLowerCase())).slice(0, 30)
+  const alreadyAdded = freestyleMode
+    ? freestyleExercises.map(e => e.id)
+    : (selectedDay?.exercises || [])
+
+  const matches = allEx.filter(e => {
+    const matchM = freestylePickerMuscle === muscleAll || e.muscle === freestylePickerMuscle
+    const matchS = !q || q.length < 1 || e.name.toLowerCase().includes(q.toLowerCase()) ||
+                   (e.en && e.en.toLowerCase().includes(q.toLowerCase()))
+    return matchM && matchS
+  }).slice(0, 40)
 
   results.innerHTML = matches.map(e => {
     const mColor = MUSCLE_COLORS[e.muscle] || 'var(--muted)'
-    const alreadyAdded = freestyleExercises.find(fe => fe.id === e.id)
-    return `<div onclick="${alreadyAdded ? '' : `freestylePickEx('${e.id}','${e.name.replace(/'/g,"&#39;")}','${e.muscle||''}',false)`}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.05);cursor:${alreadyAdded?'default':'pointer'};opacity:${alreadyAdded?'0.4':'1'}">
+    const added = alreadyAdded.includes(e.id)
+    return `<div onclick="${added ? '' : `freestylePickEx('${e.id}','${e.name.replace(/'/g,"&#39;")}','${e.muscle||''}',false)`}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.05);cursor:${added?'default':'pointer'};opacity:${added?'0.4':'1'}">
       <div style="width:8px;height:8px;border-radius:50%;background:${mColor};flex-shrink:0"></div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600">${e.name}</div>
         <div style="font-size:11px;color:var(--muted)">${e.muscle||''}</div>
       </div>
-      ${alreadyAdded ? '<span style="font-size:10px;color:var(--muted)">✓</span>' : ''}
+      ${added ? '<span style="font-size:10px;color:var(--muted)">✓</span>' : ''}
     </div>`
   }).join('')
 
-  // Show "add as custom" if typed something not in DB and not in custom
   const exactMatch = allEx.find(e => e.name.toLowerCase() === q.toLowerCase()) ||
                      getCustomExercises().find(e => e.name.toLowerCase() === q.toLowerCase())
   if (q.length >= 2 && !exactMatch) {
@@ -4075,10 +4222,27 @@ function freestyleSearchEx(q) {
 }
 
 function freestylePickEx(id, name, muscle, isCustom) {
-  if (freestyleExercises.find(e => e.id === id)) return
-  freestyleExercises.push({ id, name, muscle, custom: isCustom })
-  document.getElementById('freestylePickerModal').classList.remove('open')
-  renderFreestyleList()
+  if (freestyleMode) {
+    if (freestyleExercises.find(e => e.id === id)) {
+      document.getElementById('freestylePickerModal').classList.remove('open')
+      return
+    }
+    freestyleExercises.push({ id, name, muscle, custom: isCustom })
+    document.getElementById('freestylePickerModal').classList.remove('open')
+    renderFreestyleList(true) // append only — no flicker
+  } else {
+    // Normal plan-day mode — add as temporary extra exercise
+    if (selectedDay.exercises.includes(id)) {
+      document.getElementById('freestylePickerModal').classList.remove('open')
+      return
+    }
+    selectedDay.exercises.push(id)
+    if (!selectedDay._extraExIds) selectedDay._extraExIds = []
+    selectedDay._extraExIds.push(id)
+    document.getElementById('freestylePickerModal').classList.remove('open')
+    autoSaveSession()
+    buildExerciseList(true)
+  }
 }
 
 async function freestyleAddCustomExercise() {
@@ -4086,49 +4250,76 @@ async function freestyleAddCustomExercise() {
   if (!q) return
   const id = 'custom_' + Date.now()
   const ex = { id, name: q, muscle: '', custom: true }
-  freestyleExercises.push(ex)
   await saveCustomExercise({ id, name: q, muscle: '' })
   document.getElementById('freestylePickerModal').classList.remove('open')
-  renderFreestyleList()
   toast(`"${q}" gespeichert ⭐`)
+  if (freestyleMode) {
+    freestyleExercises.push(ex)
+    renderFreestyleList(true)
+  } else {
+    selectedDay.exercises.push(id)
+    if (!selectedDay._extraExIds) selectedDay._extraExIds = []
+    selectedDay._extraExIds.push(id)
+    autoSaveSession()
+    buildExerciseList(true)
+  }
 }
 
-function renderFreestyleList() {
+function renderFreestyleList(appendOnly = false) {
   const hint = document.getElementById('freestyleEmptyHint')
   if (hint) hint.style.display = freestyleExercises.length ? 'none' : 'block'
 
   const list = document.getElementById('freestyleExList')
   if (!list) return
+
+  if (appendOnly && freestyleExercises.length > 0) {
+    // Only render the last exercise, append to existing list
+    const ei = freestyleExercises.length - 1
+    const ex = freestyleExercises[ei]
+    const mColor = MUSCLE_COLORS[ex.muscle] || 'var(--accent)'
+    const div = document.createElement('div')
+    div.className = 'ex-block ex-block-new'
+    div.innerHTML = buildFreestyleExBlock(ex, ei, mColor)
+    list.appendChild(div)
+    addSetRow(ei); addSetRow(ei); addSetRow(ei)
+    setTimeout(loadFreestylePRs, 150)
+    document.getElementById('exerciseSection').addEventListener('input', autoSaveSession)
+    return
+  }
+
+  // Full rebuild (on start or remove)
+  autoSaveSession()
   list.innerHTML = freestyleExercises.map((ex, ei) => {
     const mColor = MUSCLE_COLORS[ex.muscle] || 'var(--accent)'
-    return `<div class="ex-block" style="animation-delay:${ei*0.05}s">
-      <div class="ex-header" onclick="toggleEx(${ei})">
-        <div style="width:7px;height:7px;border-radius:50%;background:${mColor};flex-shrink:0"></div>
-        <div style="flex:1;min-width:0;margin-left:2px">
-          <div style="font-size:14px;font-weight:700">${ex.name}</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">${ex.muscle||'Custom'}</div>
-          <div id="pr_${ei}" style="font-size:10px;color:var(--gold);margin-top:2px"></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          <button onclick="event.stopPropagation();freestyleRemoveEx(${ei})" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:20px;padding:3px 9px;cursor:pointer">✕</button>
-          <div id="badge_${ei}" style="font-size:11px;background:var(--bg3);color:var(--muted);padding:3px 8px;border-radius:20px;white-space:nowrap">Eintragen</div>
-        </div>
-      </div>
-      <div class="ex-body" id="exbody_${ei}">
-        <table class="sets-table">
-          <thead><tr><th>#</th><th>kg</th><th>Wdh</th><th></th></tr></thead>
-          <tbody id="setrows_${ei}"></tbody>
-        </table>
-        <button onclick="addSetRow(${ei})" style="font-size:12px;color:var(--blue);background:none;border:1px dashed var(--blue);border-radius:6px;padding:6px 12px;cursor:pointer;width:100%;margin-top:4px">+ Satz</button>
-        <textarea id="note_${ei}" placeholder="Notiz..." style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;resize:none;margin-top:8px;height:56px;margin-bottom:0"></textarea>
-      </div>
-    </div>`
+    return `<div class="ex-block">${buildFreestyleExBlock(ex, ei, mColor)}</div>`
   }).join('')
-
-  // Add 3 default rows per exercise
   freestyleExercises.forEach((_, ei) => { addSetRow(ei); addSetRow(ei); addSetRow(ei) })
-  setTimeout(loadFreestylePRs, 150)
+  setTimeout(() => { restoreFreestyleDraft(); loadFreestylePRs() }, 100)
   document.getElementById('exerciseSection').addEventListener('input', autoSaveSession)
+}
+
+function buildFreestyleExBlock(ex, ei, mColor) {
+  return `
+    <div class="ex-header" onclick="toggleEx(${ei})">
+      <div style="width:7px;height:7px;border-radius:50%;background:${mColor};flex-shrink:0"></div>
+      <div style="flex:1;min-width:0;margin-left:2px">
+        <div style="font-size:14px;font-weight:700">${ex.name}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">${ex.muscle||'Custom'}</div>
+        <div id="pr_${ei}" style="font-size:10px;color:var(--gold);margin-top:2px"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <button onclick="event.stopPropagation();freestyleRemoveEx(${ei})" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:20px;padding:3px 9px;cursor:pointer">✕</button>
+        <div id="badge_${ei}" style="font-size:11px;background:var(--bg3);color:var(--muted);padding:3px 8px;border-radius:20px;white-space:nowrap">Eintragen</div>
+      </div>
+    </div>
+    <div class="ex-body" id="exbody_${ei}">
+      <table class="sets-table">
+        <thead><tr><th>#</th><th>kg</th><th>Wdh</th><th></th></tr></thead>
+        <tbody id="setrows_${ei}"></tbody>
+      </table>
+      <button onclick="addSetRow(${ei})" style="font-size:12px;color:var(--blue);background:none;border:1px dashed var(--blue);border-radius:6px;padding:6px 12px;cursor:pointer;width:100%;margin-top:4px">+ Satz</button>
+      <textarea id="note_${ei}" placeholder="Notiz..." style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;resize:none;margin-top:8px;height:56px;margin-bottom:0"></textarea>
+    </div>`
 }
 
 function freestyleRemoveEx(ei) {
@@ -5111,6 +5302,7 @@ function showTab(tab, btn) {
   if (tab==='analyse') renderAnalyse()
   if (tab==='history') renderHistory()
   if (tab==='plans') renderPlansList()
+  if (tab==='train') restoreTrainTabIfActive()
   if (tab==='profile') { renderProfile(); setTimeout(updateThemeButtons, 50) }
   if (tab==='pit') {
     renderPit()
