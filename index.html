@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.147</title>
+<title>Grindset v1.148</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -3785,31 +3785,24 @@ function restoreFreestyleDraft() {
     const data = JSON.parse(saved)
     if (!data.freestyleMode || data.dayId !== 'freestyle') return false
     if (data.date) document.getElementById('trainDate').value = data.date
-    if (data.freestyleExercises?.length) {
-      freestyleExercises = data.freestyleExercises
-      renderFreestyleList()
-      // Restore sets after DOM is built
-      setTimeout(() => {
-        data.exercises.forEach((ex, ei) => {
-          const tbody = document.getElementById('setrows_'+ei)
-          if (!tbody) return
-          ex.sets.forEach((set, si) => {
-            const rows = tbody.querySelectorAll('tr')
-            if (rows[si]) {
-              const ins = rows[si].querySelectorAll('input')
-              if (ins[0]) ins[0].value = set.kg
-              if (ins[1]) ins[1].value = set.reps
-            }
-          })
-          const noteEl = document.getElementById('note_'+ei)
-          if (noteEl && ex.note) noteEl.value = ex.note
-        })
-      }, 150)
-    }
+    // Only restore input values — exercises already rendered by caller
+    data.exercises.forEach((ex, ei) => {
+      const tbody = document.getElementById('setrows_'+ei)
+      if (!tbody) return
+      ex.sets.forEach((set, si) => {
+        const rows = tbody.querySelectorAll('tr')
+        if (rows[si]) {
+          const ins = rows[si].querySelectorAll('input')
+          if (ins[0]) ins[0].value = set.kg
+          if (ins[1]) ins[1].value = set.reps
+        }
+      })
+      const noteEl = document.getElementById('note_'+ei)
+      if (noteEl && ex.note) noteEl.value = ex.note
+    })
     return true
   } catch(e) { return false }
 }
-
 function clearSessionDraft() {
   localStorage.removeItem('grindset_session_draft')
 }
@@ -4278,7 +4271,7 @@ function renderFreestyleList(appendOnly = false) {
     const div = document.createElement('div')
     div.className = 'ex-block ex-block-new'
     div.innerHTML = buildFreestyleExBlock(ex, ei, mColor)
-    list.appendChild(div)
+    list.appendChild(div)  // must be in DOM before addSetRow
     addSetRow(ei); addSetRow(ei); addSetRow(ei)
     setTimeout(loadFreestylePRs, 150)
     document.getElementById('exerciseSection').addEventListener('input', autoSaveSession)
@@ -4286,13 +4279,32 @@ function renderFreestyleList(appendOnly = false) {
   }
 
   // Full rebuild
-  autoSaveSession()
   list.innerHTML = freestyleExercises.map((ex, ei) => {
     const mColor = MUSCLE_COLORS[ex.muscle] || 'var(--accent)'
     return `<div class="ex-block">${buildFreestyleExBlock(ex, ei, mColor)}</div>`
   }).join('')
   freestyleExercises.forEach((_, ei) => { addSetRow(ei); addSetRow(ei); addSetRow(ei) })
-  setTimeout(() => { restoreFreestyleDraft(); loadFreestylePRs() }, 100)
+  // Restore saved input values after DOM is ready
+  setTimeout(() => {
+    const draft = loadTrainDraft()
+    if (draft?.freestyleMode) {
+      draft.exercises.forEach((ex, ei) => {
+        const tbody = document.getElementById('setrows_'+ei)
+        if (!tbody) return
+        ex.sets.forEach((set, si) => {
+          const rows = tbody.querySelectorAll('tr')
+          if (rows[si]) {
+            const ins = rows[si].querySelectorAll('input')
+            if (ins[0]) ins[0].value = set.kg
+            if (ins[1]) ins[1].value = set.reps
+          }
+        })
+        const noteEl = document.getElementById('note_'+ei)
+        if (noteEl && ex.note) noteEl.value = ex.note
+      })
+    }
+    loadFreestylePRs()
+  }, 100)
   document.getElementById('exerciseSection').addEventListener('input', autoSaveSession)
 }
 
