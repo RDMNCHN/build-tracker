@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.149</title>
+<title>Grindset v1.150</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -652,6 +652,20 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
 
       <button onclick="submitChallenge()" style="background:var(--accent);color:#fff;border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:700;width:100%;cursor:pointer">⚡ Challenge senden</button>
       <button class="btn btn-card" style="margin-top:8px" onclick="document.getElementById('challengeBuilderModal').classList.remove('open')">Abbrechen</button>
+    </div>
+  </div>
+
+  <!-- Achievement Preview Modal -->
+  <div id="achPreviewModal" onclick="document.getElementById('achPreviewModal').style.display='none'" style="display:none;position:fixed;inset:0;z-index:1002;background:rgba(0,0,0,0.88);flex-direction:column;align-items:center;justify-content:center;cursor:pointer">
+    <div style="text-align:center;padding:24px;max-width:300px;width:100%">
+      <div id="achPreviewSprite" style="width:160px;height:160px;margin:0 auto 16px;border-radius:20px;overflow:hidden;border:2px solid var(--border);background:var(--card2);display:flex;align-items:center;justify-content:center;animation:popIn 0.3s cubic-bezier(0.34,1.5,0.64,1)">
+        <img id="achPreviewImg" src="" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated">
+        <span id="achPreviewEmoji" style="font-size:72px;display:none"></span>
+      </div>
+      <div id="achPreviewName" style="font-size:20px;font-weight:800;margin-bottom:6px"></div>
+      <div id="achPreviewDesc" style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.5"></div>
+      <div id="achPreviewCat" style="display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:4px 12px;border-radius:20px;background:rgba(245,166,35,0.15);color:var(--gold);border:1px solid rgba(245,166,35,0.3);margin-bottom:16px"></div>
+      <div id="achPreviewPinHint" style="font-size:12px;color:var(--muted)"></div>
     </div>
   </div>
 
@@ -5125,7 +5139,7 @@ function renderAchievements() {
     const opacity = unlocked ? '1' : '0.35'
     const pinBadge = pinned ? `<div style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:var(--gold);border-radius:50%;font-size:9px;display:flex;align-items:center;justify-content:center;border:1px solid var(--bg)">📌</div>` : ''
     return `
-      <div onclick="togglePinAchievement('${ach.id}')" style="cursor:${unlocked?'pointer':'default'};opacity:${opacity};text-align:center;padding:8px 4px;border-radius:12px;background:var(--card2);${unlocked?'':'filter:grayscale(1)'}">
+      <div onclick="previewAchievement('${ach.id}')" oncontextmenu="event.preventDefault();togglePinAchievement('${ach.id}')" style="cursor:${unlocked?'pointer':'default'};opacity:${opacity};text-align:center;padding:8px 4px;border-radius:12px;background:var(--card2);${unlocked?'':'filter:grayscale(1)'}">
         <div style="position:relative;width:52px;height:52px;margin:0 auto 6px;border-radius:10px;overflow:hidden;${pinnedRing}background:var(--bg3);display:flex;align-items:center;justify-content:center">
           <img src="achievements/${ach.id}.png" alt="" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
           <span style="display:none;font-size:26px;align-items:center;justify-content:center;width:100%;height:100%">${ach.emoji}</span>
@@ -5134,6 +5148,40 @@ function renderAchievements() {
         <div style="font-size:9px;font-weight:700;line-height:1.3;color:${unlocked?'var(--text)':'var(--muted)'}">${name}</div>
       </div>`
   }).join('')
+}
+
+function previewAchievement(id) {
+  const ach = ACHIEVEMENTS.find(a => a.id === id)
+  if (!ach) return
+  const unlocked = unlockedAchievements.includes(id)
+  const pinned = pinnedAchievements.includes(id)
+  const name = lang === 'en' ? ach.name_en : ach.name
+  const desc = lang === 'en' ? ach.desc_en : ach.desc
+  const catLabels = { sessions: '💪 Sessions', volume: '🏋️ Volumen', streak: '🔥 Streak' }
+
+  const img = document.getElementById('achPreviewImg')
+  const emoji = document.getElementById('achPreviewEmoji')
+  img.src = `achievements/${ach.id}.png`
+  img.style.display = 'block'
+  img.onerror = () => { img.style.display = 'none'; emoji.style.display = 'block'; emoji.textContent = ach.emoji }
+  emoji.style.display = 'none'
+
+  document.getElementById('achPreviewName').textContent = name
+  document.getElementById('achPreviewDesc').textContent = unlocked ? desc : '???'
+  document.getElementById('achPreviewCat').textContent = catLabels[ach.cat] || ach.cat
+
+  const hint = document.getElementById('achPreviewHint')
+  const sprite = document.getElementById('achPreviewSprite')
+  sprite.style.borderColor = unlocked ? (pinned ? 'var(--gold)' : 'var(--accent)') : 'var(--border)'
+  sprite.style.opacity = unlocked ? '1' : '0.4'
+  sprite.style.filter = unlocked ? 'none' : 'grayscale(1)'
+
+  document.getElementById('achPreviewPinHint').textContent = unlocked
+    ? (pinned ? '📌 Gepinnt — lang halten zum Entpinnen' : 'Lang halten zum Pinnen (max. 3)')
+    : '🔒 Noch nicht freigeschaltet'
+
+  const modal = document.getElementById('achPreviewModal')
+  modal.style.display = 'flex'
 }
 
 function toggleAchievementsCard() {
