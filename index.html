@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.148</title>
+<title>Grindset v1.149</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1830,7 +1830,7 @@ function selectDay(id) {
   freestyleExercises = []
 
   // Check if there's a saved draft for this day (with extra exercises)
-  const saved = loadTrainDraft()
+  const saved = loadTrainDraft('day')
   const extraExIds = (saved && saved.dayId === id) ? (saved.extraExercises || []) : []
 
   selectedDay = { ...baseDay, exercises: [...baseDay.exercises, ...extraExIds.map(e => e.id)] }
@@ -3718,11 +3718,15 @@ function autoSaveSession() {
     const note = document.getElementById('note_'+ei)?.value || ''
     data.exercises.push({ exId, sets, note })
   })
-  localStorage.setItem('grindset_session_draft', JSON.stringify(data))
+  const draftKey = freestyleMode ? 'grindset_draft_freestyle' : 'grindset_draft_day'
+  localStorage.setItem(draftKey, JSON.stringify(data))
 }
 
 function restoreTrainTabIfActive() {
-  const draft = loadTrainDraft()
+  // Check freestyle draft first, then normal day draft
+  const fsDraft = loadTrainDraft('freestyle')
+  const dayDraft = loadTrainDraft('day')
+  const draft = fsDraft || dayDraft
   if (!draft || !draft.dayId) return
 
   if (draft.freestyleMode) {
@@ -3746,15 +3750,27 @@ function restoreTrainTabIfActive() {
   }
 }
 
-function loadTrainDraft() {
+function loadTrainDraft(type) {
   try {
-    const s = localStorage.getItem('grindset_session_draft')
-    return s ? JSON.parse(s) : null
+    if (type === 'freestyle') {
+      const s = localStorage.getItem('grindset_draft_freestyle')
+      return s ? JSON.parse(s) : null
+    }
+    if (type === 'day') {
+      const s = localStorage.getItem('grindset_draft_day')
+      return s ? JSON.parse(s) : null
+    }
+    // No type: return whichever exists (freestyle takes priority if both somehow exist)
+    const fs = localStorage.getItem('grindset_draft_freestyle')
+    const day = localStorage.getItem('grindset_draft_day')
+    if (fs) return JSON.parse(fs)
+    if (day) return JSON.parse(day)
+    return null
   } catch(e) { return null }
 }
 
 function restoreSessionDraft() {
-  const saved = localStorage.getItem('grindset_session_draft')
+  const saved = localStorage.getItem('grindset_draft_day')
   if (!saved || !selectedDay) return
   try {
     const data = JSON.parse(saved)
@@ -3779,7 +3795,7 @@ function restoreSessionDraft() {
 }
 
 function restoreFreestyleDraft() {
-  const saved = localStorage.getItem('grindset_session_draft')
+  const saved = localStorage.getItem('grindset_draft_freestyle')
   if (!saved) return false
   try {
     const data = JSON.parse(saved)
@@ -3804,7 +3820,8 @@ function restoreFreestyleDraft() {
   } catch(e) { return false }
 }
 function clearSessionDraft() {
-  localStorage.removeItem('grindset_session_draft')
+  localStorage.removeItem('grindset_draft_freestyle')
+  localStorage.removeItem('grindset_draft_day')
 }
 
 // ── Haptic Feedback ──
@@ -4090,7 +4107,7 @@ async function saveCustomExercise(ex) {
 }
 
 function startFreestyle() {
-  const saved = loadTrainDraft()
+  const saved = loadTrainDraft('freestyle')
   if (saved && saved.freestyleMode) {
     freestyleMode = true
     freestyleExercises = saved.freestyleExercises || []
@@ -4286,7 +4303,7 @@ function renderFreestyleList(appendOnly = false) {
   freestyleExercises.forEach((_, ei) => { addSetRow(ei); addSetRow(ei); addSetRow(ei) })
   // Restore saved input values after DOM is ready
   setTimeout(() => {
-    const draft = loadTrainDraft()
+    const draft = loadTrainDraft('freestyle')
     if (draft?.freestyleMode) {
       draft.exercises.forEach((ex, ei) => {
         const tbody = document.getElementById('setrows_'+ei)
