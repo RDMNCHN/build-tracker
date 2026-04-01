@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.146</title>
+<title>Grindset v1.147</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -3726,18 +3726,8 @@ function restoreTrainTabIfActive() {
   if (!draft || !draft.dayId) return
 
   if (draft.freestyleMode) {
-    // Restore freestyle session silently (no picker popup)
-    freestyleMode = true
-    freestyleExercises = draft.freestyleExercises || []
-    selectedDay = { id: 'freestyle', name: 'Freestyle', exercises: [], color: 'var(--accent)', label: '⚡', focus: '' }
-    document.getElementById('exerciseSection').style.display = 'block'
-    document.getElementById('exSectionTitle').textContent = '⚡ Freestyle Session'
-    document.getElementById('addFreestyleExBtn').style.display = 'block'
-    initFreestyleSection()
-    if (freestyleExercises.length) renderFreestyleList()
-    if (draft.date) document.getElementById('trainDate').value = draft.date
+    startFreestyle()
   } else {
-    // Restore normal day with extra exercises
     const plan = getActivePlan()
     if (!plan) return
     const baseDay = plan.days.find(d => d.id === draft.dayId)
@@ -3749,10 +3739,10 @@ function restoreTrainTabIfActive() {
     selectedDay._extraExIds = extraExIds
     renderTrainPage()
     document.getElementById('exerciseSection').style.display = 'block'
+    document.getElementById('trainDate').value = draft.date || today()
     document.getElementById('exSectionTitle').textContent = 'Übungen — ' + selectedDay.name
     document.getElementById('addFreestyleExBtn').style.display = 'block'
     buildExerciseList()
-    if (draft.date) document.getElementById('trainDate').value = draft.date
   }
 }
 
@@ -4107,16 +4097,15 @@ async function saveCustomExercise(ex) {
 }
 
 function startFreestyle() {
-  // Check if there's an existing freestyle draft to restore
   const saved = loadTrainDraft()
   if (saved && saved.freestyleMode) {
     freestyleMode = true
     freestyleExercises = saved.freestyleExercises || []
     selectedDay = { id: 'freestyle', name: 'Freestyle', exercises: [], color: 'var(--accent)', label: '⚡', focus: '' }
     document.getElementById('exerciseSection').style.display = 'block'
+    document.getElementById('trainDate').value = saved.date || today()
     document.getElementById('exSectionTitle').textContent = '⚡ Freestyle Session'
     document.getElementById('addFreestyleExBtn').style.display = 'block'
-    initFreestyleSection()
     renderFreestyleList()
     setTimeout(() => document.getElementById('exerciseSection').scrollIntoView({behavior:'smooth'}), 100)
     return
@@ -4128,7 +4117,7 @@ function startFreestyle() {
   document.getElementById('trainDate').value = document.getElementById('trainDate').value || today()
   document.getElementById('exSectionTitle').textContent = '⚡ Freestyle Session'
   document.getElementById('addFreestyleExBtn').style.display = 'block'
-  initFreestyleSection()
+  renderFreestyleList()
   setTimeout(() => document.getElementById('exerciseSection').scrollIntoView({behavior:'smooth'}), 100)
 }
 
@@ -4266,6 +4255,16 @@ async function freestyleAddCustomExercise() {
 }
 
 function renderFreestyleList(appendOnly = false) {
+  // Always ensure the freestyle container exists inside exerciseList
+  const exerciseList = document.getElementById('exerciseList')
+  if (!exerciseList) return
+  if (!exerciseList.querySelector('#freestyleExList')) {
+    exerciseList.innerHTML = `<div id="freestyleExList"></div>
+      <div style="text-align:center;padding:24px;color:var(--muted);font-size:13px" id="freestyleEmptyHint">
+        Noch keine Übungen — tippe auf <strong>+ Übung</strong> um loszulegen
+      </div>`
+  }
+
   const hint = document.getElementById('freestyleEmptyHint')
   if (hint) hint.style.display = freestyleExercises.length ? 'none' : 'block'
 
@@ -4273,7 +4272,6 @@ function renderFreestyleList(appendOnly = false) {
   if (!list) return
 
   if (appendOnly && freestyleExercises.length > 0) {
-    // Only render the last exercise, append to existing list
     const ei = freestyleExercises.length - 1
     const ex = freestyleExercises[ei]
     const mColor = MUSCLE_COLORS[ex.muscle] || 'var(--accent)'
@@ -4287,7 +4285,7 @@ function renderFreestyleList(appendOnly = false) {
     return
   }
 
-  // Full rebuild (on start or remove)
+  // Full rebuild
   autoSaveSession()
   list.innerHTML = freestyleExercises.map((ex, ei) => {
     const mColor = MUSCLE_COLORS[ex.muscle] || 'var(--accent)'
