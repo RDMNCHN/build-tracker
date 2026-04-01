@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.144</title>
+<title>Grindset v1.145</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -205,15 +205,18 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
     <div class="section-header">Welcher Tag?</div>
     <div class="day-grid" id="dayGrid"></div>
     <!-- Freestyle button -->
-    <button onclick="startFreestyle()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;border-radius:var(--radius);border:1.5px dashed var(--border);background:none;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px;transition:all .2s" id="freestyleBtn" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+    <button onclick="startFreestyle()" id="freestyleBtn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:var(--radius);border:1.5px dashed var(--border);background:none;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:16px;transition:border-color .2s,color .2s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
       ⚡ Freestyle Session
     </button>
-    <input type="date" id="trainDate" style="margin-bottom:16px">
+
     <div id="exerciseSection" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <!-- Session header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div class="section-header" id="exSectionTitle" style="margin-bottom:0">Übungen</div>
         <button id="addFreestyleExBtn" onclick="openFreestyleExPicker()" style="display:none;font-size:12px;color:var(--accent);background:rgba(233,69,96,0.1);border:1px solid var(--accent);border-radius:20px;padding:5px 12px;cursor:pointer;font-weight:700">+ Übung</button>
       </div>
+      <!-- Date inside session -->
+      <input type="date" id="trainDate" style="margin-bottom:12px">
       <div id="exerciseList"></div>
       <button class="btn btn-accent" style="margin-top:8px" onclick="saveSession()" id="saveSessionBtn">Session speichern</button>
     </div>
@@ -1686,7 +1689,6 @@ function showLogin() {
 async function showApp() {
   document.getElementById('loginPage').style.display = 'none'
   document.getElementById('appShell').style.display = 'block'
-  document.getElementById('trainDate').value = today()
 
   // Fetch profile + settings + plans + sessions + exercises all in parallel
   const [profResult, , plansResult, sessionsResult] = await Promise.all([
@@ -1727,6 +1729,8 @@ async function showApp() {
   if (isAdmin()) document.getElementById('adminTab').style.display = 'flex'
   renderProfile()
   renderTrainPage()
+  // Restore any active session draft (freestyle or plan day)
+  restoreTrainTabIfActive()
   renderPlansList()
   renderHistory()
   renderAnalyse()
@@ -1833,6 +1837,7 @@ function selectDay(id) {
 
   renderTrainPage()
   buildExerciseList()
+  document.getElementById('trainDate').value = document.getElementById('trainDate').value || today()
   document.getElementById('exerciseSection').style.display = 'block'
   document.getElementById('exSectionTitle').textContent = 'Übungen — ' + selectedDay.name
   document.getElementById('addFreestyleExBtn').style.display = 'block'
@@ -4119,6 +4124,7 @@ function startFreestyle() {
   freestyleExercises = []
   selectedDay = { id: 'freestyle', name: 'Freestyle', exercises: [], color: 'var(--accent)', label: '⚡', focus: '' }
   document.getElementById('exerciseSection').style.display = 'block'
+  document.getElementById('trainDate').value = document.getElementById('trainDate').value || today()
   document.getElementById('exSectionTitle').textContent = '⚡ Freestyle Session'
   document.getElementById('addFreestyleExBtn').style.display = 'block'
   initFreestyleSection()
