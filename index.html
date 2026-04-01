@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.140</title>
+<title>Grindset v1.141</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -587,6 +587,9 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
 
       <input type="text" id="freestyleSearch" placeholder="Suchen oder eigene eingeben..." oninput="freestyleSearchEx(this.value)" style="margin-bottom:8px" autocomplete="off">
 
+      <!-- Muscle filter -->
+      <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:8px;-webkit-overflow-scrolling:touch" id="freestyleMuscleFilters"></div>
+
       <!-- Custom exercises quick access -->
       <div id="freestyleCustomRow" style="display:none;margin-bottom:8px">
         <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">⭐ Deine Übungen</div>
@@ -594,7 +597,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
       </div>
 
       <!-- Search results -->
-      <div id="freestyleResults" style="max-height:280px;overflow-y:auto;border-radius:10px;background:var(--bg3)"></div>
+      <div id="freestyleResults" style="max-height:260px;overflow-y:auto;border-radius:10px;background:var(--bg3)"></div>
 
       <!-- Add as custom if no match -->
       <div id="freestyleAddCustomBtn" style="display:none;margin-top:10px">
@@ -1818,10 +1821,16 @@ function renderTrainPage() {
 function selectDay(id) {
   const plan = getActivePlan()
   selectedDay = plan.days.find(d => d.id === id)
+  // Clone exercises array so we don't mutate the plan
+  selectedDay = { ...selectedDay, exercises: [...selectedDay.exercises] }
+  freestyleMode = false
+  freestyleExercises = []
   renderTrainPage()
   buildExerciseList()
   document.getElementById('exerciseSection').style.display = 'block'
   document.getElementById('exSectionTitle').textContent = 'Übungen — ' + selectedDay.name
+  document.getElementById('addFreestyleExBtn').style.display = 'block'
+  document.getElementById('addFreestyleExBtn').textContent = '+ Übung'
   setTimeout(() => document.getElementById('exerciseSection').scrollIntoView({behavior:'smooth'}), 100)
 }
 
@@ -3639,8 +3648,17 @@ function toggleLoginUpdates() {
 // ── Auto-Save session to localStorage ──
 function autoSaveSession() {
   if (!selectedDay) return
-  const data = { dayId: selectedDay.id, date: document.getElementById('trainDate').value, exercises: [] }
-  selectedDay.exercises.forEach((exId, ei) => {
+  const exIds = freestyleMode
+    ? freestyleExercises.map(e => e.id)
+    : selectedDay.exercises
+  const data = {
+    dayId: selectedDay.id,
+    date: document.getElementById('trainDate').value,
+    exercises: [],
+    freestyleMode,
+    freestyleExercises: freestyleMode ? freestyleExercises : []
+  }
+  exIds.forEach((exId, ei) => {
     const rows = document.querySelectorAll(`#setrows_${ei} tr`)
     const sets = []
     rows.forEach(r => { const ins = r.querySelectorAll('input'); sets.push({kg: ins[0]?.value||'', reps: ins[1]?.value||''}) })
@@ -3673,6 +3691,38 @@ function restoreSessionDraft() {
     })
     toast('📋 Letzte Eingaben wiederhergestellt')
   } catch(e) {}
+}
+
+function restoreFreestyleDraft() {
+  const saved = localStorage.getItem('grindset_session_draft')
+  if (!saved) return false
+  try {
+    const data = JSON.parse(saved)
+    if (!data.freestyleMode || data.dayId !== 'freestyle') return false
+    if (data.date) document.getElementById('trainDate').value = data.date
+    if (data.freestyleExercises?.length) {
+      freestyleExercises = data.freestyleExercises
+      renderFreestyleList()
+      // Restore sets after DOM is built
+      setTimeout(() => {
+        data.exercises.forEach((ex, ei) => {
+          const tbody = document.getElementById('setrows_'+ei)
+          if (!tbody) return
+          ex.sets.forEach((set, si) => {
+            const rows = tbody.querySelectorAll('tr')
+            if (rows[si]) {
+              const ins = rows[si].querySelectorAll('input')
+              if (ins[0]) ins[0].value = set.kg
+              if (ins[1]) ins[1].value = set.reps
+            }
+          })
+          const noteEl = document.getElementById('note_'+ei)
+          if (noteEl && ex.note) noteEl.value = ex.note
+        })
+      }, 150)
+    }
+    return true
+  } catch(e) { return false }
 }
 
 function clearSessionDraft() {
@@ -3977,10 +4027,16 @@ function startFreestyle() {
   openFreestyleExPicker()
 }
 
+let freestylePickerMuscle = 'Alle'
+
 function openFreestyleExPicker() {
+  freestylePickerMuscle = 'Alle'
   document.getElementById('freestyleSearch').value = ''
   document.getElementById('freestyleResults').innerHTML = ''
   document.getElementById('freestyleAddCustomBtn').style.display = 'none'
+
+  // Muscle filters
+  renderFreestyleMuscleFilters()
 
   // Show custom exercises
   const customs = getCustomExercises()
@@ -3997,10 +4053,16 @@ function openFreestyleExPicker() {
     customRow.style.display = 'none'
   }
 
-  // Show popular suggestions initially
   freestyleSearchEx('')
   document.getElementById('freestylePickerModal').classList.add('open')
   setTimeout(() => document.getElementById('freestyleSearch').focus(), 300)
+}
+
+function renderFreestyleMuscleFilters() {
+  const muscles = ['Alle', ...MUSCLES_DE.filter(m => m !== 'Alle')]
+  document.getElementById('freestyleMuscleFilters').innerHTML = muscles.map(m =>
+    `<button onclick="freestylePickerMuscle='${m}';renderFreestyleMuscleFilters();freestyleSearchEx(document.getElementById('freestyleSearch').value)" style="white-space:nowrap;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:${freestylePickerMuscle===m?'var(--accent)':'var(--card)'};color:${freestylePickerMuscle===m?'#fff':'var(--muted)'};font-size:12px;cursor:pointer;flex-shrink:0">${m}</button>`
+  ).join('')
 }
 
 function freestyleSearchEx(q) {
@@ -4008,25 +4070,32 @@ function freestyleSearchEx(q) {
   const addBtn  = document.getElementById('freestyleAddCustomBtn')
   const addName = document.getElementById('freestyleAddCustomName')
   const allEx   = getExercises()
+  const muscleAll = 'Alle'
 
-  const matches = q.length < 1
-    ? allEx.slice(0, 30)  // show first 30 as suggestions
-    : allEx.filter(e => e.name.toLowerCase().includes(q.toLowerCase()) || (e.muscle||'').toLowerCase().includes(q.toLowerCase())).slice(0, 30)
+  const alreadyAdded = freestyleMode
+    ? freestyleExercises.map(e => e.id)
+    : (selectedDay?.exercises || [])
+
+  const matches = allEx.filter(e => {
+    const matchM = freestylePickerMuscle === muscleAll || e.muscle === freestylePickerMuscle
+    const matchS = !q || q.length < 1 || e.name.toLowerCase().includes(q.toLowerCase()) ||
+                   (e.en && e.en.toLowerCase().includes(q.toLowerCase()))
+    return matchM && matchS
+  }).slice(0, 40)
 
   results.innerHTML = matches.map(e => {
     const mColor = MUSCLE_COLORS[e.muscle] || 'var(--muted)'
-    const alreadyAdded = freestyleExercises.find(fe => fe.id === e.id)
-    return `<div onclick="${alreadyAdded ? '' : `freestylePickEx('${e.id}','${e.name.replace(/'/g,"&#39;")}','${e.muscle||''}',false)`}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.05);cursor:${alreadyAdded?'default':'pointer'};opacity:${alreadyAdded?'0.4':'1'}">
+    const added = alreadyAdded.includes(e.id)
+    return `<div onclick="${added ? '' : `freestylePickEx('${e.id}','${e.name.replace(/'/g,"&#39;")}','${e.muscle||''}',false)`}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.05);cursor:${added?'default':'pointer'};opacity:${added?'0.4':'1'}">
       <div style="width:8px;height:8px;border-radius:50%;background:${mColor};flex-shrink:0"></div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600">${e.name}</div>
         <div style="font-size:11px;color:var(--muted)">${e.muscle||''}</div>
       </div>
-      ${alreadyAdded ? '<span style="font-size:10px;color:var(--muted)">✓</span>' : ''}
+      ${added ? '<span style="font-size:10px;color:var(--muted)">✓</span>' : ''}
     </div>`
   }).join('')
 
-  // Show "add as custom" if typed something not in DB and not in custom
   const exactMatch = allEx.find(e => e.name.toLowerCase() === q.toLowerCase()) ||
                      getCustomExercises().find(e => e.name.toLowerCase() === q.toLowerCase())
   if (q.length >= 2 && !exactMatch) {
@@ -4038,10 +4107,26 @@ function freestyleSearchEx(q) {
 }
 
 function freestylePickEx(id, name, muscle, isCustom) {
-  if (freestyleExercises.find(e => e.id === id)) return
-  freestyleExercises.push({ id, name, muscle, custom: isCustom })
-  document.getElementById('freestylePickerModal').classList.remove('open')
-  renderFreestyleList()
+  if (freestyleMode) {
+    if (freestyleExercises.find(e => e.id === id)) {
+      document.getElementById('freestylePickerModal').classList.remove('open')
+      return
+    }
+    freestyleExercises.push({ id, name, muscle, custom: isCustom })
+    document.getElementById('freestylePickerModal').classList.remove('open')
+    renderFreestyleList()
+  } else {
+    // Normal plan-day mode — add to selectedDay.exercises
+    if (selectedDay.exercises.includes(id)) {
+      document.getElementById('freestylePickerModal').classList.remove('open')
+      return
+    }
+    selectedDay.exercises.push(id)
+    document.getElementById('freestylePickerModal').classList.remove('open')
+    // Save current draft, rebuild list, restore
+    autoSaveSession()
+    buildExerciseList()
+  }
 }
 
 async function freestyleAddCustomExercise() {
@@ -4049,16 +4134,25 @@ async function freestyleAddCustomExercise() {
   if (!q) return
   const id = 'custom_' + Date.now()
   const ex = { id, name: q, muscle: '', custom: true }
-  freestyleExercises.push(ex)
   await saveCustomExercise({ id, name: q, muscle: '' })
   document.getElementById('freestylePickerModal').classList.remove('open')
-  renderFreestyleList()
   toast(`"${q}" gespeichert ⭐`)
+  if (freestyleMode) {
+    freestyleExercises.push(ex)
+    renderFreestyleList()
+  } else {
+    selectedDay.exercises.push(id)
+    autoSaveSession()
+    buildExerciseList()
+  }
 }
 
 function renderFreestyleList() {
   const hint = document.getElementById('freestyleEmptyHint')
   if (hint) hint.style.display = freestyleExercises.length ? 'none' : 'block'
+
+  // Save current sets before re-rendering
+  autoSaveSession()
 
   const list = document.getElementById('freestyleExList')
   if (!list) return
@@ -4088,9 +4182,9 @@ function renderFreestyleList() {
     </div>`
   }).join('')
 
-  // Add 3 default rows per exercise
   freestyleExercises.forEach((_, ei) => { addSetRow(ei); addSetRow(ei); addSetRow(ei) })
-  setTimeout(loadFreestylePRs, 150)
+  // Restore previously entered sets
+  setTimeout(() => { restoreFreestyleDraft(); loadFreestylePRs() }, 100)
   document.getElementById('exerciseSection').addEventListener('input', autoSaveSession)
 }
 
