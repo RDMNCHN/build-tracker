@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.142</title>
+<title>Grindset v1.143</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -206,7 +206,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
     <div class="day-grid" id="dayGrid"></div>
     <!-- Freestyle button -->
     <button onclick="startFreestyle()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;border-radius:var(--radius);border:1.5px dashed var(--border);background:none;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px;transition:all .2s" id="freestyleBtn" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-      ⚡ Freestyle Session starten
+      ⚡ Freestyle Session
     </button>
     <input type="date" id="trainDate" style="margin-bottom:16px">
     <div id="exerciseSection" style="display:none">
@@ -1820,11 +1820,17 @@ function renderTrainPage() {
 
 function selectDay(id) {
   const plan = getActivePlan()
-  selectedDay = plan.days.find(d => d.id === id)
-  // Clone exercises array so we don't mutate the plan
-  selectedDay = { ...selectedDay, exercises: [...selectedDay.exercises] }
+  const baseDay = plan.days.find(d => d.id === id)
   freestyleMode = false
   freestyleExercises = []
+
+  // Check if there's a saved draft for this day (with extra exercises)
+  const saved = loadTrainDraft()
+  const extraExIds = (saved && saved.dayId === id) ? (saved.extraExercises || []) : []
+
+  selectedDay = { ...baseDay, exercises: [...baseDay.exercises, ...extraExIds.map(e => e.id)] }
+  selectedDay._extraExIds = extraExIds.map(e => e.id) // track which are "extra"
+
   renderTrainPage()
   buildExerciseList()
   document.getElementById('exerciseSection').style.display = 'block'
@@ -1848,20 +1854,28 @@ const MUSCLE_COLORS = {
 }
 
 function buildExerciseList() {
+  const extraIds = new Set(selectedDay._extraExIds || [])
   const list = document.getElementById('exerciseList')
   list.innerHTML = selectedDay.exercises.map((exId, ei) => {
     const ex = getAllExercisesWithCustom().find(e => e.id === exId) || {id:exId, name:exId, muscle:''}
     const mColor = MUSCLE_COLORS[ex.muscle] || 'var(--accent)'
-    return `<div class="ex-block" style="animation-delay:${ei * 0.05}s">
+    const isExtra = extraIds.has(exId)
+    const rightBtn = isExtra
+      ? `<button onclick="event.stopPropagation();removeExtraEx('${exId}')" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:20px;padding:3px 9px;cursor:pointer">✕</button>`
+      : `<button onclick="event.stopPropagation();openTutorial('${exId}')" style="font-size:11px;color:var(--gold);background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);border-radius:20px;padding:3px 9px;cursor:pointer;font-weight:600">Tutorial</button>`
+    return `<div class="ex-block" style="animation-delay:${ei * 0.05}s${isExtra?';border-left:2px solid var(--accent)':''}">
       <div class="ex-header" onclick="toggleEx(${ei})">
         <div style="width:7px;height:7px;border-radius:50%;background:${mColor};flex-shrink:0"></div>
         <div style="flex:1;min-width:0;margin-left:2px">
-          <div style="font-size:14px;font-weight:700">${exName(ex)}</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:14px;font-weight:700">${exName(ex)}</span>
+            ${isExtra ? '<span style="font-size:9px;font-weight:700;background:rgba(233,69,96,0.15);color:var(--accent);padding:2px 6px;border-radius:20px;letter-spacing:.3px">TEMP</span>' : ''}
+          </div>
           <div style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">${ex.muscle}</div>
           <div id="pr_${ei}" style="font-size:10px;color:var(--gold);margin-top:2px"></div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          <button onclick="event.stopPropagation();openTutorial('${exId}')" style="font-size:11px;color:var(--gold);background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);border-radius:20px;padding:3px 9px;cursor:pointer;font-weight:600">Tutorial</button>
+          ${rightBtn}
           <div id="badge_${ei}" style="font-size:11px;background:var(--bg3);color:var(--muted);padding:3px 8px;border-radius:20px;white-space:nowrap">Eintragen</div>
         </div>
       </div>
@@ -1878,8 +1892,15 @@ function buildExerciseList() {
   selectedDay.exercises.forEach((_,ei) => { addSetRow(ei); addSetRow(ei); addSetRow(ei) })
   setTimeout(restoreSessionDraft, 100)
   setTimeout(loadPRPreviews, 150)
-  // Auto-save on any input change
   document.getElementById('exerciseSection').addEventListener('input', autoSaveSession)
+}
+
+function removeExtraEx(exId) {
+  if (!selectedDay) return
+  selectedDay.exercises = selectedDay.exercises.filter(id => id !== exId)
+  selectedDay._extraExIds = (selectedDay._extraExIds || []).filter(id => id !== exId)
+  autoSaveSession()
+  buildExerciseList()
 }
 
 async function loadPRPreviews() {
@@ -1989,6 +2010,7 @@ async function saveSession() {
   haptic('success')
   freestyleMode = false
   freestyleExercises = []
+  if (selectedDay) selectedDay._extraExIds = []
   selectedDay = null
   document.getElementById('addFreestyleExBtn').style.display = 'none'
   freestyleMode = false
@@ -3651,12 +3673,18 @@ function autoSaveSession() {
   const exIds = freestyleMode
     ? freestyleExercises.map(e => e.id)
     : selectedDay.exercises
+  const extraExercises = freestyleMode ? [] : (selectedDay._extraExIds || []).map(exId => {
+    const ex = getAllExercisesWithCustom().find(e => e.id === exId) || { id: exId, name: exId, muscle: '' }
+    return { id: ex.id, name: ex.name, muscle: ex.muscle || '' }
+  })
   const data = {
     dayId: selectedDay.id,
+    dayName: selectedDay.name,
     date: document.getElementById('trainDate').value,
     exercises: [],
     freestyleMode,
-    freestyleExercises: freestyleMode ? freestyleExercises : []
+    freestyleExercises: freestyleMode ? freestyleExercises : [],
+    extraExercises
   }
   exIds.forEach((exId, ei) => {
     const rows = document.querySelectorAll(`#setrows_${ei} tr`)
@@ -3666,6 +3694,48 @@ function autoSaveSession() {
     data.exercises.push({ exId, sets, note })
   })
   localStorage.setItem('grindset_session_draft', JSON.stringify(data))
+}
+
+function restoreTrainTabIfActive() {
+  const draft = loadTrainDraft()
+  if (!draft || !draft.dayId) return
+
+  if (draft.freestyleMode) {
+    // Restore freestyle session silently (no picker popup)
+    freestyleMode = true
+    freestyleExercises = draft.freestyleExercises || []
+    selectedDay = { id: 'freestyle', name: 'Freestyle', exercises: [], color: 'var(--accent)', label: '⚡', focus: '' }
+    document.getElementById('exerciseSection').style.display = 'block'
+    document.getElementById('exSectionTitle').textContent = '⚡ Freestyle Session'
+    document.getElementById('addFreestyleExBtn').style.display = 'block'
+    initFreestyleSection()
+    if (freestyleExercises.length) renderFreestyleList()
+    if (draft.date) document.getElementById('trainDate').value = draft.date
+  } else {
+    // Restore normal day with extra exercises
+    const plan = getActivePlan()
+    if (!plan) return
+    const baseDay = plan.days.find(d => d.id === draft.dayId)
+    if (!baseDay) return
+    const extraExIds = (draft.extraExercises || []).map(e => e.id)
+    freestyleMode = false
+    freestyleExercises = []
+    selectedDay = { ...baseDay, exercises: [...baseDay.exercises, ...extraExIds] }
+    selectedDay._extraExIds = extraExIds
+    renderTrainPage()
+    document.getElementById('exerciseSection').style.display = 'block'
+    document.getElementById('exSectionTitle').textContent = 'Übungen — ' + selectedDay.name
+    document.getElementById('addFreestyleExBtn').style.display = 'block'
+    buildExerciseList()
+    if (draft.date) document.getElementById('trainDate').value = draft.date
+  }
+}
+
+function loadTrainDraft() {
+  try {
+    const s = localStorage.getItem('grindset_session_draft')
+    return s ? JSON.parse(s) : null
+  } catch(e) { return null }
 }
 
 function restoreSessionDraft() {
@@ -4012,19 +4082,38 @@ async function saveCustomExercise(ex) {
 }
 
 function startFreestyle() {
+  // Check if there's an existing freestyle draft to restore
+  const saved = loadTrainDraft()
+  if (saved && saved.freestyleMode) {
+    freestyleMode = true
+    freestyleExercises = saved.freestyleExercises || []
+    selectedDay = { id: 'freestyle', name: 'Freestyle', exercises: [], color: 'var(--accent)', label: '⚡', focus: '' }
+    document.getElementById('exerciseSection').style.display = 'block'
+    document.getElementById('exSectionTitle').textContent = '⚡ Freestyle Session'
+    document.getElementById('addFreestyleExBtn').style.display = 'block'
+    initFreestyleSection()
+    renderFreestyleList()
+    setTimeout(() => document.getElementById('exerciseSection').scrollIntoView({behavior:'smooth'}), 100)
+    return
+  }
   freestyleMode = true
   freestyleExercises = []
   selectedDay = { id: 'freestyle', name: 'Freestyle', exercises: [], color: 'var(--accent)', label: '⚡', focus: '' }
   document.getElementById('exerciseSection').style.display = 'block'
   document.getElementById('exSectionTitle').textContent = '⚡ Freestyle Session'
   document.getElementById('addFreestyleExBtn').style.display = 'block'
-  document.getElementById('exerciseList').innerHTML = `
-    <div id="freestyleExList"></div>
-    <div style="text-align:center;padding:24px;color:var(--muted);font-size:13px" id="freestyleEmptyHint">
-      Noch keine Übungen — tippe auf <strong>+ Übung</strong> um loszulegen
-    </div>`
-  document.getElementById('exerciseSection').scrollIntoView({ behavior: 'smooth' })
-  openFreestyleExPicker()
+  initFreestyleSection()
+  setTimeout(() => document.getElementById('exerciseSection').scrollIntoView({behavior:'smooth'}), 100)
+}
+
+function initFreestyleSection() {
+  const list = document.getElementById('exerciseList')
+  if (!list.querySelector('#freestyleExList')) {
+    list.innerHTML = `<div id="freestyleExList"></div>
+      <div style="text-align:center;padding:24px;color:var(--muted);font-size:13px" id="freestyleEmptyHint">
+        Noch keine Übungen — tippe auf <strong>+ Übung</strong> um loszulegen
+      </div>`
+  }
 }
 
 let freestylePickerMuscle = 'Alle'
@@ -4116,14 +4205,15 @@ function freestylePickEx(id, name, muscle, isCustom) {
     document.getElementById('freestylePickerModal').classList.remove('open')
     renderFreestyleList(true) // append only — no flicker
   } else {
-    // Normal plan-day mode — add to selectedDay.exercises
+    // Normal plan-day mode — add as temporary extra exercise
     if (selectedDay.exercises.includes(id)) {
       document.getElementById('freestylePickerModal').classList.remove('open')
       return
     }
     selectedDay.exercises.push(id)
+    if (!selectedDay._extraExIds) selectedDay._extraExIds = []
+    selectedDay._extraExIds.push(id)
     document.getElementById('freestylePickerModal').classList.remove('open')
-    // Save current draft, rebuild list, restore
     autoSaveSession()
     buildExerciseList()
   }
@@ -4142,6 +4232,8 @@ async function freestyleAddCustomExercise() {
     renderFreestyleList(true)
   } else {
     selectedDay.exercises.push(id)
+    if (!selectedDay._extraExIds) selectedDay._extraExIds = []
+    selectedDay._extraExIds.push(id)
     autoSaveSession()
     buildExerciseList()
   }
@@ -5184,6 +5276,7 @@ function showTab(tab, btn) {
   if (tab==='analyse') renderAnalyse()
   if (tab==='history') renderHistory()
   if (tab==='plans') renderPlansList()
+  if (tab==='train') restoreTrainTabIfActive()
   if (tab==='profile') { renderProfile(); setTimeout(updateThemeButtons, 50) }
   if (tab==='pit') {
     renderPit()
