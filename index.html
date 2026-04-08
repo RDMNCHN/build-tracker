@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.151</title>
+<title>Grindset v1.152</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -587,12 +587,15 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
   <div class="modal-overlay" id="freestylePickerModal" onclick="if(event.target===this)this.classList.remove('open')">
     <div class="modal-sheet">
       <div class="modal-handle"></div>
-      <div style="font-size:16px;font-weight:800;margin-bottom:12px">Übung hinzufügen</div>
+      <div style="font-size:16px;font-weight:800;margin-bottom:10px">Übung hinzufügen</div>
 
-      <input type="text" id="freestyleSearch" placeholder="Suchen oder eigene eingeben..." oninput="freestyleSearchEx(this.value)" style="margin-bottom:8px" autocomplete="off">
+      <input type="text" id="freestyleSearch" placeholder="Suchen oder eigene eingeben..." oninput="freestyleSearchEx(this.value)" style="margin-bottom:10px" autocomplete="off">
 
-      <!-- Muscle filter -->
-      <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:8px;-webkit-overflow-scrolling:touch" id="freestyleMuscleFilters"></div>
+      <!-- Level 1: Muscle filter -->
+      <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px;-webkit-overflow-scrolling:touch" id="freestyleMuscleFilters"></div>
+
+      <!-- Level 2: Equipment filter -->
+      <div id="freestyleEquipmentFilters" style="display:none;flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:8px;-webkit-overflow-scrolling:touch"></div>
 
       <!-- Custom exercises quick access -->
       <div id="freestyleCustomRow" style="display:none;margin-bottom:8px">
@@ -601,7 +604,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
       </div>
 
       <!-- Search results -->
-      <div id="freestyleResults" style="max-height:260px;overflow-y:auto;border-radius:10px;background:var(--bg3)"></div>
+      <div id="freestyleResults" style="max-height:240px;overflow-y:auto;border-radius:10px;background:var(--bg3)"></div>
 
       <!-- Add as custom if no match -->
       <div id="freestyleAddCustomBtn" style="display:none;margin-top:10px">
@@ -812,17 +815,22 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
 <div class="modal-overlay" id="exPickerModal" onclick="if(event.target===this)closeExPicker()">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div style="font-size:15px;font-weight:700;margin-bottom:12px" id="selectExTitle">Übungen auswählen</div>
-    <input type="text" id="exSearch" id="exSearchInput" placeholder="Suchen..." oninput="filterExercises()" style="margin-bottom:8px">
+    <div style="font-size:15px;font-weight:700;margin-bottom:10px" id="selectExTitle">Übungen auswählen</div>
+    <input type="text" id="exSearch" placeholder="Suchen..." oninput="filterExercises()" style="margin-bottom:10px" autocomplete="off">
+
+    <!-- Level 1: Muscle filter -->
+    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px;-webkit-overflow-scrolling:touch" id="muscleFilters"></div>
+
+    <!-- Level 2: Equipment filter (shown when muscle selected) -->
+    <div id="equipmentFilters" style="display:none;display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:8px;-webkit-overflow-scrolling:touch"></div>
 
     <!-- Custom exercises -->
-    <div id="exPickerCustomRow" style="display:none;margin-bottom:10px">
+    <div id="exPickerCustomRow" style="display:none;margin-bottom:8px">
       <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">⭐ Deine Übungen</div>
       <div id="exPickerCustomList"></div>
     </div>
 
-    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:10px" id="muscleFilters"></div>
-    <div id="exPickerList" style="max-height:260px;overflow-y:auto"></div>
+    <div id="exPickerList" style="max-height:240px;overflow-y:auto"></div>
     <button class="btn btn-accent" style="margin-top:12px" id="doneBtn" onclick="closeExPicker()">Fertig</button>
   </div>
 </div>
@@ -2497,12 +2505,16 @@ function renderBuilderDays() {
     </div>`).join('')
 }
 
+let currentPickerEquipment = 'Alle'
+
 function openExPicker(idx) {
   currentPickerDayIdx = idx
   currentPickerMuscle = 'Alle'
-  renderMuscleFilters()
-  filterExercises()
+  currentPickerEquipment = 'Alle'
   document.getElementById('exSearch').value = ''
+  renderPickerMuscleFilters()
+  renderPickerEquipmentFilters()
+  filterExercises()
   document.getElementById('exPickerModal').classList.add('open')
 }
 
@@ -2511,23 +2523,33 @@ function closeExPicker() {
   renderBuilderDays()
 }
 
-function renderMuscleFilters() {
-  document.getElementById('muscleFilters').innerHTML = getMuscles().map(m => `
-    <button onclick="currentPickerMuscle='${m}';renderMuscleFilters();filterExercises()" style="white-space:nowrap;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:${currentPickerMuscle===m?'var(--accent)':'var(--card)'};color:${currentPickerMuscle===m?'#fff':'var(--muted)'};font-size:12px;cursor:pointer;flex-shrink:0">${m}</button>`).join('')
+function renderPickerMuscleFilters() {
+  document.getElementById('muscleFilters').innerHTML = MUSCLES_DE.map(m =>
+    `<button onclick="currentPickerMuscle='${m}';currentPickerEquipment='Alle';renderPickerMuscleFilters();renderPickerEquipmentFilters();filterExercises()" style="white-space:nowrap;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:${currentPickerMuscle===m?'var(--accent)':'var(--card)'};color:${currentPickerMuscle===m?'#fff':'var(--muted)'};font-size:12px;cursor:pointer;flex-shrink:0">${m}</button>`
+  ).join('')
+}
+
+function renderPickerEquipmentFilters() {
+  const eqEl = document.getElementById('equipmentFilters')
+  if (currentPickerMuscle === 'Alle') {
+    eqEl.style.display = 'none'
+    return
+  }
+  eqEl.style.display = 'flex'
+  eqEl.innerHTML = EQUIPMENT_LIST.map(eq =>
+    `<button onclick="currentPickerEquipment='${eq}';renderPickerEquipmentFilters();filterExercises()" style="white-space:nowrap;padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:${currentPickerEquipment===eq?'var(--gold)':'var(--card)'};color:${currentPickerEquipment===eq?'#000':'var(--muted)'};font-size:11px;cursor:pointer;flex-shrink:0">${eq}</button>`
+  ).join('')
 }
 
 function filterExercises() {
   const search = document.getElementById('exSearch').value.toLowerCase()
   const day = builderDays[currentPickerDayIdx]
-  const muscleAll = getMuscles()[0]
   const filtered = getExercises().filter(ex => {
-    const matchM = currentPickerMuscle===muscleAll || ex.muscle===currentPickerMuscle || 
-                   (lang==='en' && getMuscles().indexOf(currentPickerMuscle) > 0 && 
-                    MUSCLES_DE[getMuscles().indexOf(currentPickerMuscle)]===ex.muscle)
-    const matchS = ex.name.toLowerCase().includes(search) || 
-                   (ex.en && ex.en.toLowerCase().includes(search)) ||
-                   (ex.search && ex.search.toLowerCase().includes(search))
-    return matchM && matchS
+    const matchM = currentPickerMuscle === 'Alle' || ex.muscle === currentPickerMuscle
+    const matchEq = currentPickerEquipment === 'Alle' || ex.equipment === currentPickerEquipment
+    const matchS = !search || ex.name.toLowerCase().includes(search) ||
+                   (ex.en && ex.en.toLowerCase().includes(search))
+    return matchM && matchEq && matchS
   })
   document.getElementById('exPickerList').innerHTML = filtered.map(ex => {
     const sel = day.exercises.includes(ex.id)
@@ -2536,7 +2558,7 @@ function filterExercises() {
       <div onclick="togglePickerEx('${ex.id}')" style="flex:1;cursor:pointer;min-width:0">
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-size:13px;font-weight:${isCurated?'700':'500'}">${exName(ex)}</span>
-          ${isCurated ? '<span style="font-size:9px;font-weight:700;background:rgba(233,69,96,0.15);color:var(--accent);padding:1px 5px;border-radius:20px">★</span>' : ''}
+          ${isCurated ? '<span style="font-size:9px;font-weight:800;background:rgba(233,69,96,0.2);color:var(--accent);padding:2px 6px;border-radius:20px;letter-spacing:.3px">BEST</span>' : ''}
         </div>
         <div style="font-size:11px;color:var(--muted)">${ex.muscle}${ex.equipment?' · '+ex.equipment:''}</div>
       </div>
@@ -4173,11 +4195,13 @@ function openFreestyleExPicker() {
   freestylePickerMuscle = 'Alle'
   freestylePickerEquipment = 'Alle'
   document.getElementById('freestyleSearch').value = ''
+  document.getElementById('freestyleEquipmentFilters').style.display = 'none'
   document.getElementById('freestyleResults').innerHTML = ''
   document.getElementById('freestyleAddCustomBtn').style.display = 'none'
 
-  // Muscle filters
+  // Muscle + Equipment filters
   renderFreestyleMuscleFilters()
+  renderFreestyleEquipmentFilters()
 
   // Show custom exercises
   const customs = getCustomExercises()
@@ -4202,15 +4226,21 @@ function openFreestyleExPicker() {
 let freestylePickerEquipment = 'Alle'
 
 function renderFreestyleMuscleFilters() {
-  const filterEl = document.getElementById('freestyleMuscleFilters')
-  filterEl.innerHTML =
-    MUSCLES_DE.map(m =>
-      `<button onclick="freestylePickerMuscle='${m}';renderFreestyleMuscleFilters();freestyleSearchEx(document.getElementById('freestyleSearch').value)" style="white-space:nowrap;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:${freestylePickerMuscle===m?'var(--accent)':'var(--card)'};color:${freestylePickerMuscle===m?'#fff':'var(--muted)'};font-size:12px;cursor:pointer;flex-shrink:0">${m}</button>`
-    ).join('') +
-    '<span style="color:var(--border);padding:0 4px;font-size:16px;flex-shrink:0">|</span>' +
-    EQUIPMENT_LIST.map(eq =>
-      `<button onclick="freestylePickerEquipment='${eq}';renderFreestyleMuscleFilters();freestyleSearchEx(document.getElementById('freestyleSearch').value)" style="white-space:nowrap;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:${freestylePickerEquipment===eq?'var(--gold)':'var(--card)'};color:${freestylePickerEquipment===eq?'#000':'var(--muted)'};font-size:12px;cursor:pointer;flex-shrink:0">${eq}</button>`
-    ).join('')
+  document.getElementById('freestyleMuscleFilters').innerHTML = MUSCLES_DE.map(m =>
+    `<button onclick="freestylePickerMuscle='${m}';freestylePickerEquipment='Alle';renderFreestyleMuscleFilters();renderFreestyleEquipmentFilters();freestyleSearchEx(document.getElementById('freestyleSearch').value)" style="white-space:nowrap;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:${freestylePickerMuscle===m?'var(--accent)':'var(--card)'};color:${freestylePickerMuscle===m?'#fff':'var(--muted)'};font-size:12px;cursor:pointer;flex-shrink:0">${m}</button>`
+  ).join('')
+}
+
+function renderFreestyleEquipmentFilters() {
+  const eqEl = document.getElementById('freestyleEquipmentFilters')
+  if (freestylePickerMuscle === 'Alle') {
+    eqEl.style.display = 'none'
+    return
+  }
+  eqEl.style.display = 'flex'
+  eqEl.innerHTML = EQUIPMENT_LIST.map(eq =>
+    `<button onclick="freestylePickerEquipment='${eq}';renderFreestyleEquipmentFilters();freestyleSearchEx(document.getElementById('freestyleSearch').value)" style="white-space:nowrap;padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:${freestylePickerEquipment===eq?'var(--gold)':'var(--card)'};color:${freestylePickerEquipment===eq?'#000':'var(--muted)'};font-size:11px;cursor:pointer;flex-shrink:0">${eq}</button>`
+  ).join('')
 }
 
 function freestyleSearchEx(q) {
@@ -4226,7 +4256,7 @@ function freestyleSearchEx(q) {
 
   const matches = allEx.filter(e => {
     const matchM = freestylePickerMuscle === 'Alle' || e.muscle === freestylePickerMuscle
-    const matchEq = freestylePickerEquipment === 'Alle' || e.equipment === freestylePickerEquipment
+    const matchEq = freestylePickerEquipment === 'Alle' || (e.equipment||'') === freestylePickerEquipment
     const matchS = !q || q.length < 1 || e.name.toLowerCase().includes(q.toLowerCase()) ||
                    (e.en && e.en.toLowerCase().includes(q.toLowerCase()))
     return matchM && matchEq && matchS
@@ -4241,7 +4271,7 @@ function freestyleSearchEx(q) {
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-size:13px;font-weight:${isCurated?'700':'500'}">${e.name}</span>
-          ${isCurated ? '<span style="font-size:9px;font-weight:700;background:rgba(233,69,96,0.15);color:var(--accent);padding:1px 5px;border-radius:20px">★</span>' : ''}
+          ${isCurated ? '<span style="font-size:9px;font-weight:800;background:rgba(233,69,96,0.2);color:var(--accent);padding:2px 6px;border-radius:20px;letter-spacing:.3px">BEST</span>' : ''}
         </div>
         <div style="font-size:11px;color:var(--muted)">${e.muscle||''}${e.equipment?' · '+e.equipment:''}</div>
       </div>
