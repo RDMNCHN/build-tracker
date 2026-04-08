@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.152</title>
+<title>Grindset v1.153</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -721,6 +721,17 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
 
     <!-- Users tab -->
     <div id="adminTabUsers">
+      <div class="section-header">System</div>
+      <div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:16px;border:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px">Übungs-Cache</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Lädt bei allen Usern beim nächsten Start neu. Eigenen Cache sofort leeren.</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-card btn-sm" onclick="adminClearMyCache()">🗑 Eigenen Cache leeren</button>
+          <button class="btn btn-accent btn-sm" onclick="adminBumpCacheVersion()">⚡ Cache für alle invalidieren</button>
+        </div>
+        <div id="adminCacheStatus" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
+      </div>
+
       <div class="section-header">Update Log verwalten</div>
       <div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:16px;border:1px solid var(--border)">
         <div style="display:grid;grid-template-columns:80px 1fr;gap:8px;margin-bottom:8px">
@@ -1627,12 +1638,14 @@ async function submitNewPassword() {
 let dbExercises = [] // loaded from Supabase
 
 async function loadExercises() {
-  const CACHE_KEY = 'grindset_exercises_v3'
-  const CACHE_TS  = 'grindset_exercises_ts_v3'
+  const CACHE_KEY = 'grindset_exercises_v4'
+  const CACHE_TS  = 'grindset_exercises_ts_v4'
   const TTL = 60 * 60 * 1000
   const cached = localStorage.getItem(CACHE_KEY)
   const ts = parseInt(localStorage.getItem(CACHE_TS) || '0')
-  if (cached && Date.now() - ts < TTL) {
+  // Check admin cache bust — if DB bust timestamp is newer than local cache, force reload
+  const bustTs = currentProfile?.settings?.ex_cache_bust || 0
+  if (cached && Date.now() - ts < TTL && bustTs <= ts) {
     try { dbExercises = JSON.parse(cached); return } catch(e) {}
   }
   // Fetch curated first, then legacy — curated always on top
@@ -3438,6 +3451,26 @@ async function loadApprovedExercises() {
       </div>
       <span style="font-size:11px;color:var(--green);background:rgba(39,174,96,0.15);padding:3px 8px;border-radius:20px;flex-shrink:0;margin-left:8px">✅ Genehmigt</span>
     </div>`).join('')
+}
+
+function adminClearMyCache() {
+  localStorage.removeItem('grindset_exercises_v4')
+  localStorage.removeItem('grindset_exercises_ts_v4')
+  dbExercises = []
+  document.getElementById('adminCacheStatus').textContent = '✓ Eigener Cache geleert — wird beim nächsten Laden neu geladen'
+  toast('Cache geleert ✓')
+}
+
+async function adminBumpCacheVersion() {
+  // Store a "cache bust" timestamp in DB — loadExercises checks this
+  const { error } = await sb.from('profiles').update({
+    settings: { ...(currentProfile?.settings || {}), ex_cache_bust: Date.now() }
+  }).eq('user_id', ADMIN_ID)
+  if (error) return toast('Fehler: ' + error.message, true)
+  // Also clear own cache
+  adminClearMyCache()
+  document.getElementById('adminCacheStatus').textContent = '✓ Cache-Version für alle User invalidiert — laden beim nächsten Start neu'
+  toast('Cache für alle invalidiert ✓')
 }
 
 async function saveUpdateLog() {
