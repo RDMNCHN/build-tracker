@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.156</title>
+<title>Grindset v1.157</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -225,7 +225,10 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
 
   <div id="page-analyse" class="page">
     <div class="stat-grid" id="statsGrid"></div>
-    <div id="apiUsageBox"></div>
+
+    <!-- Top 3 Übungen -->
+    <div class="section-header">🏆 Top Übungen</div>
+    <div id="topExercisesBox" style="margin-bottom:16px"></div>
 
     <div class="section-header">Letzte 4 Wochen</div>
     <div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:16px">
@@ -2234,23 +2237,36 @@ function renderAnalyse() {
     heatmap.innerHTML = cells.join('')
   }
 
-  const today = new Date().toISOString().slice(0,10)
-  sb.from('api_usage').select('count').eq('date', today).single().then(({data}) => {
-    const used = data?.count || 0
-    const left = 690 - used  // per month
-    document.getElementById('apiUsageBox').innerHTML = `
-      <div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:12px;border:1px solid var(--border)">
-        <div style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">GIF API — Diesen Monat</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span style="font-size:13px;color:var(--text)">Verbraucht</span>
-          <span style="font-size:15px;font-weight:700;color:${used>600?'var(--accent)':'var(--gold)'}">${used} / 690</span>
-        </div>
-        <div style="background:var(--bg3);border-radius:4px;height:8px;overflow:hidden">
-          <div style="background:${used>600?'var(--accent)':'var(--green)'};height:100%;width:${Math.min(100,(used/690)*100).toFixed(1)}%;transition:width .3s"></div>
-        </div>
-        <div style="font-size:12px;color:var(--muted);margin-top:6px">${left} Anfragen heute noch verfügbar · Reset um Mitternacht</div>
-      </div>`
+  // Top 3 most used exercises
+  const exCount = {}
+  const exNames = {}
+  sessions.forEach(s => {
+    (s.exercises||[]).forEach(e => {
+      if (!(e.sets||[]).some(set => set.reps > 0)) return
+      exCount[e.id] = (exCount[e.id] || 0) + 1
+      exNames[e.id] = e.name
+    })
   })
+  const top3 = Object.entries(exCount)
+    .sort((a,b) => b[1] - a[1])
+    .slice(0, 3)
+  const medals = ['🥇','🥈','🥉']
+  document.getElementById('topExercisesBox').innerHTML = top3.length
+    ? top3.map(([id, count], i) => {
+        const name = exNames[id] || id
+        const pct = Math.round((count / totalSessions) * 100)
+        return `<div style="background:var(--card);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">
+          <div style="font-size:22px;flex-shrink:0">${medals[i]}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+            <div style="background:var(--bg3);border-radius:4px;height:5px;margin-top:6px;overflow:hidden">
+              <div style="width:${pct}%;background:var(--accent);height:100%;border-radius:4px;transition:width .5s"></div>
+            </div>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0">${count}×</div>
+        </div>`
+      }).join('')
+    : '<div style="color:var(--muted);font-size:13px;padding:12px 0">Noch keine Sessions</div>'
   const allExIds = [...new Set(sessions.flatMap(s => (s.exercises||[]).map(e=>e.id)))]
   const sel = document.getElementById('analyseSelect')
   const cur = sel.value
