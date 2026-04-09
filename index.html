@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.154</title>
+<title>Grindset v1.155</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1886,7 +1886,7 @@ function selectDay(id) {
   document.getElementById('exSectionTitle').textContent = 'Übungen — ' + selectedDay.name
   document.getElementById('addFreestyleExBtn').style.display = 'block'
   document.getElementById('addFreestyleExBtn').textContent = '+ Übung'
-  // Save draft immediately so reload restores this day
+  // Save day draft immediately (does NOT touch freestyle draft since freestyleMode=false)
   autoSaveSession()
   setTimeout(() => document.getElementById('exerciseSection').scrollIntoView({behavior:'smooth'}), 100)
 }
@@ -3805,6 +3805,25 @@ function autoSaveSession() {
   localStorage.setItem(draftKey, JSON.stringify(data))
 }
 
+function saveFreestyleDraft() {
+  if (!selectedDay || !freestyleMode) return
+  const existing = loadTrainDraft('freestyle') || {}
+  const data = {
+    ...existing,
+    dayId: 'freestyle',
+    freestyleMode: true,
+    freestyleExercises,
+    date: document.getElementById('trainDate')?.value || today(),
+    exercises: freestyleExercises.map((ex, ei) => {
+      const rows = document.querySelectorAll(`#setrows_${ei} tr`)
+      const sets = []
+      rows.forEach(r => { const ins = r.querySelectorAll('input'); sets.push({kg: ins[0]?.value||'', reps: ins[1]?.value||''}) })
+      return { exId: ex.id, sets, note: document.getElementById('note_'+ei)?.value||'' }
+    })
+  }
+  localStorage.setItem('grindset_draft_freestyle', JSON.stringify(data))
+}
+
 function restoreTrainTabIfActive() {
   // Check freestyle draft first, then normal day draft
   const fsDraft = loadTrainDraft('freestyle')
@@ -4210,9 +4229,9 @@ function startFreestyle() {
   document.getElementById('trainDate').value = document.getElementById('trainDate').value || today()
   document.getElementById('exSectionTitle').textContent = '⚡ Freestyle Session'
   document.getElementById('addFreestyleExBtn').style.display = 'block'
-  // Save draft immediately so reload restores the empty session
-  autoSaveSession()
   renderFreestyleList()
+  // Save after state is fully set
+  autoSaveSession()
   setTimeout(() => document.getElementById('exerciseSection').scrollIntoView({behavior:'smooth'}), 100)
 }
 
@@ -4334,6 +4353,7 @@ function freestylePickEx(id, name, muscle, isCustom) {
     }
     freestyleExercises.push({ id, name, muscle, custom: isCustom })
     document.getElementById('freestylePickerModal').classList.remove('open')
+    saveFreestyleDraft()
     renderFreestyleList(true) // append only — no flicker
   } else {
     // Normal plan-day mode — add as temporary extra exercise
@@ -4360,6 +4380,7 @@ async function freestyleAddCustomExercise() {
   toast(`"${q}" gespeichert ⭐`)
   if (freestyleMode) {
     freestyleExercises.push(ex)
+    saveFreestyleDraft()
     renderFreestyleList(true)
   } else {
     selectedDay.exercises.push(id)
@@ -4457,6 +4478,7 @@ function buildFreestyleExBlock(ex, ei, mColor) {
 
 function freestyleRemoveEx(ei) {
   freestyleExercises.splice(ei, 1)
+  saveFreestyleDraft()
   renderFreestyleList()
 }
 
