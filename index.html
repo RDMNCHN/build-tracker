@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.153</title>
+<title>Grindset v1.154</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1886,6 +1886,8 @@ function selectDay(id) {
   document.getElementById('exSectionTitle').textContent = 'Übungen — ' + selectedDay.name
   document.getElementById('addFreestyleExBtn').style.display = 'block'
   document.getElementById('addFreestyleExBtn').textContent = '+ Übung'
+  // Save draft immediately so reload restores this day
+  autoSaveSession()
   setTimeout(() => document.getElementById('exerciseSection').scrollIntoView({behavior:'smooth'}), 100)
 }
 
@@ -4208,6 +4210,8 @@ function startFreestyle() {
   document.getElementById('trainDate').value = document.getElementById('trainDate').value || today()
   document.getElementById('exSectionTitle').textContent = '⚡ Freestyle Session'
   document.getElementById('addFreestyleExBtn').style.display = 'block'
+  // Save draft immediately so reload restores the empty session
+  autoSaveSession()
   renderFreestyleList()
   setTimeout(() => document.getElementById('exerciseSection').scrollIntoView({behavior:'smooth'}), 100)
 }
