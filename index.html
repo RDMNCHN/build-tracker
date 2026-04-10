@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.161</title>
+<title>Grindset v1.162</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -5166,11 +5166,17 @@ async function submitBugReport() {
     try {
       const blob = await fetch(bugScreenshotBase64).then(r => r.blob())
       const ext = blob.type.includes('png') ? 'png' : 'jpg'
-      const fileName = `${currentUser.id}_${Date.now()}.${ext}`
-      const { error: uploadError } = await sb.storage.from('bug-reports').upload(fileName, blob, { upsert: true })
+      const fileName = `${currentUser.id}/bug_${Date.now()}.${ext}`
+      const { error: uploadError } = await sb.storage.from('avatars').upload(fileName, blob, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: blob.type
+      })
       if (!uploadError) {
-        const { data: urlData } = sb.storage.from('bug-reports').getPublicUrl(fileName)
+        const { data: urlData } = sb.storage.from('avatars').getPublicUrl(fileName)
         screenshotUrl = urlData.publicUrl
+      } else {
+        console.error('Screenshot upload error:', uploadError)
       }
     } catch(e) { console.error('Screenshot upload failed:', e) }
   }
