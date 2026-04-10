@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Grindset v1.158</title>
+<title>Grindset v1.159</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#e94560">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -405,6 +405,11 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
       <span style="color:var(--muted);font-size:18px">›</span>
     </button>
 
+    <button onclick="openBugReport()" class="btn btn-card" style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;padding:14px 16px">
+      <span style="font-weight:700">🐛 Bug melden</span>
+      <span style="color:var(--muted);font-size:18px">›</span>
+    </button>
+
     <button class="btn btn-danger" style="margin-top:8px" onclick="handleLogout()" id="logoutBtn">Ausloggen</button>
   </div>
 
@@ -722,6 +727,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
       <button id="adminTabExercisesBtn" onclick="switchAdminTab('exercises')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:700;border:none;border-radius:8px;cursor:pointer;background:none;color:var(--muted);transition:all .2s">💪 Übungen</button>
       <button id="adminTabChallengesBtn" onclick="switchAdminTab('challenges')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:700;border:none;border-radius:8px;cursor:pointer;background:none;color:var(--muted);transition:all .2s">⚡ Challenges</button>
       <button id="adminTabLogsBtn" onclick="switchAdminTab('logs')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:700;border:none;border-radius:8px;cursor:pointer;background:none;color:var(--muted);transition:all .2s">📋 Logs</button>
+      <button id="adminTabBugsBtn" onclick="switchAdminTab('bugs')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:700;border:none;border-radius:8px;cursor:pointer;background:none;color:var(--muted);transition:all .2s">🐛 Bugs</button>
     </div>
 
     <!-- Users tab -->
@@ -811,6 +817,43 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-wei
       <div class="section-header">Audit Log</div>
       <div id="adminAuditLog"></div>
     </div>
+
+    <!-- Bug Reports tab -->
+    <div id="adminTabBugs" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="section-header" style="margin-bottom:0">Bug Reports</div>
+        <button onclick="loadAdminBugReports()" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:20px;padding:4px 10px;cursor:pointer">🔄 Aktualisieren</button>
+      </div>
+      <div id="adminBugList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Bug Report Modal -->
+<div class="modal-overlay" id="bugReportModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="font-size:16px;font-weight:800;margin-bottom:4px">🐛 Bug melden</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Beschreib was nicht funktioniert</div>
+
+    <textarea id="bugDescription" placeholder="Was ist passiert? Was hast du erwartet?..." style="height:120px;resize:none;margin-bottom:12px"></textarea>
+
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">Screenshot (optional)</div>
+    <div id="bugScreenshotPreview" style="display:none;margin-bottom:8px;border-radius:10px;overflow:hidden;border:1px solid var(--border)">
+      <img id="bugScreenshotImg" style="width:100%;max-height:200px;object-fit:contain;background:var(--bg3)">
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button onclick="document.getElementById('bugScreenshotInput').click()" style="flex:1;padding:10px;border-radius:10px;border:1px dashed var(--border);background:none;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer">📷 Screenshot hochladen</button>
+      <button id="bugScreenshotRemove" onclick="removeBugScreenshot()" style="display:none;padding:10px;border-radius:10px;border:1px solid var(--accent);background:none;color:var(--accent);font-size:12px;cursor:pointer">✕ Entfernen</button>
+    </div>
+    <input type="file" id="bugScreenshotInput" accept="image/*" style="display:none" onchange="bugScreenshotSelected(this)">
+
+    <div style="background:var(--bg3);border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:11px;color:var(--muted);line-height:1.6">
+      Wird automatisch mitgeschickt: App-Version · Browser · Aktiver Tab
+    </div>
+
+    <button onclick="submitBugReport()" style="background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;width:100%;cursor:pointer;margin-bottom:8px">Absenden</button>
+    <button class="btn btn-card" onclick="document.getElementById('bugReportModal').classList.remove('open')">Abbrechen</button>
   </div>
 </div>
 
@@ -3112,7 +3155,7 @@ let currentAdminExTab = 'approved'
 
 function switchAdminTab(tab) {
   currentAdminTab = tab
-  const tabs = ['users','exercises','challenges','logs']
+  const tabs = ['users','exercises','challenges','logs','bugs']
   tabs.forEach(t => {
     const el = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1))
     const btn = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1) + 'Btn')
@@ -3122,6 +3165,7 @@ function switchAdminTab(tab) {
   if (tab === 'exercises') loadAdminExercises('approved')
   if (tab === 'logs') loadAdminLogs()
   if (tab === 'challenges') adminLoadChallenges()
+  if (tab === 'bugs') loadAdminBugReports()
 }
 
 function switchAdminExTab(tab) {
@@ -5065,6 +5109,104 @@ async function adminDeleteChallenge(challengeId) {
   await sb.from('challenges').delete().eq('id', challengeId)
   toast('Gelöscht')
   adminLoadChallenges()
+}
+
+// ── Bug Report ──
+let bugScreenshotBase64 = null
+
+function openBugReport() {
+  document.getElementById('bugDescription').value = ''
+  bugScreenshotBase64 = null
+  document.getElementById('bugScreenshotPreview').style.display = 'none'
+  document.getElementById('bugScreenshotRemove').style.display = 'none'
+  document.getElementById('bugReportModal').classList.add('open')
+}
+
+function bugScreenshotSelected(input) {
+  const file = input.files[0]
+  if (!file) return
+  if (file.size > 5 * 1024 * 1024) return toast('Bild zu groß (max 5MB)', true)
+  const reader = new FileReader()
+  reader.onload = e => {
+    bugScreenshotBase64 = e.target.result
+    document.getElementById('bugScreenshotImg').src = bugScreenshotBase64
+    document.getElementById('bugScreenshotPreview').style.display = 'block'
+    document.getElementById('bugScreenshotRemove').style.display = 'block'
+  }
+  reader.readAsDataURL(file)
+  input.value = ''
+}
+
+function removeBugScreenshot() {
+  bugScreenshotBase64 = null
+  document.getElementById('bugScreenshotPreview').style.display = 'none'
+  document.getElementById('bugScreenshotRemove').style.display = 'none'
+}
+
+async function submitBugReport() {
+  const description = document.getElementById('bugDescription').value.trim()
+  if (!description) return toast('Bitte beschreib den Bug', true)
+
+  let screenshotUrl = null
+  if (bugScreenshotBase64) {
+    // Upload screenshot to Supabase storage
+    const blob = await fetch(bugScreenshotBase64).then(r => r.blob())
+    const fileName = `bug_reports/${currentUser.id}_${Date.now()}.${blob.type.includes('png')?'png':'jpg'}`
+    const { data, error } = await sb.storage.from('avatars').upload(fileName, blob, { upsert: true })
+    if (!error) {
+      const { data: urlData } = sb.storage.from('avatars').getPublicUrl(fileName)
+      screenshotUrl = urlData.publicUrl
+    }
+  }
+
+  // Get active tab
+  const activeTab = document.querySelector('.tab-btn.active span:last-child')?.textContent || ''
+
+  const { error } = await sb.from('bug_reports').insert({
+    user_id: currentUser.id,
+    description,
+    screenshot_url: screenshotUrl,
+    app_version: document.title.match(/v[\d.]+/)?.[0] || '',
+    user_agent: navigator.userAgent,
+    app_tab: activeTab
+  })
+
+  if (error) return toast('Fehler beim Senden: ' + error.message, true)
+  document.getElementById('bugReportModal').classList.remove('open')
+  toast('Bug gemeldet — danke! 🐛')
+  haptic('success')
+}
+
+async function loadAdminBugReports() {
+  const list = document.getElementById('adminBugList')
+  list.innerHTML = '<div class="spinner"></div>'
+  const { data, error } = await sb.from('bug_reports')
+    .select('*, profiles(username)')
+    .order('created_at', { ascending: false })
+  if (error || !data?.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px">Keine Bug Reports</div>'
+    return
+  }
+  list.innerHTML = data.map(r => `
+    <div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:10px;border:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--accent)">${r.profiles?.username||'Anonym'}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${new Date(r.created_at).toLocaleString('de-DE')} · ${r.app_version||''} · ${r.app_tab||''}</div>
+        </div>
+        <button onclick="deleteAdminBugReport('${r.id}')" style="font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer">✕</button>
+      </div>
+      <div style="font-size:13px;line-height:1.5;margin-bottom:${r.screenshot_url?'10px':'0'}">${r.description}</div>
+      ${r.screenshot_url ? `<img src="${r.screenshot_url}" style="width:100%;border-radius:8px;max-height:200px;object-fit:contain;background:var(--bg3)" onclick="window.open('${r.screenshot_url}')">` : ''}
+      <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.5;opacity:0.6">${(r.user_agent||'').slice(0,80)}...</div>
+    </div>`).join('')
+}
+
+async function deleteAdminBugReport(id) {
+  if (!confirm('Report löschen?')) return
+  await sb.from('bug_reports').delete().eq('id', id)
+  toast('Gelöscht')
+  loadAdminBugReports()
 }
 
 // ── Achievement System ──
